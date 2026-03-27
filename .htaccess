@@ -1,0 +1,12 @@
+Options -Indexes
+RewriteEngine On
+
+# --- Admin area: /admin/* → admin.php ---
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^admin(/(.*))?$ admin.php?url=$2 [QSA,L]
+
+# --- Public area: everything else → index.php ---
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

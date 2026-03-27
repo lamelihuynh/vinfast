@@ -1,0 +1,41 @@
+/**
+ * public/css/frontend/global.css — Global Frontend Styles
+ * Owner: All members (common)
+ *
+ * Overrides Bootstrap 5 and defines VinFast brand tokens.
+ * Each member adds page-specific styles below the shared section,
+ * clearly marked with a comment block.
+ */
+
+/* ===== BRAND TOKENS ===== */
+:root {
+  --vf-blue:   #005BAA;   /* VinFast primary blue  */
+  --vf-red:    #E8002D;   /* VinFast accent red    */
+  --vf-dark:   #1a1a1a;
+  --vf-light:  #f5f7fa;
+}
+
+/* ===== BASE ===== */
+body         { font-family: "Segoe UI", Roboto, sans-serif; color: var(--vf-dark); }
+a            { color: var(--vf-blue); }
+a:hover      { color: var(--vf-red);  }
+.btn-primary { background: var(--vf-blue); border-color: var(--vf-blue); }
+
+/* ===== NAVBAR ===== */
+.navbar-brand img { max-height: 38px; }
+
+/* ===== SCROLL-TO-TOP BUTTON (injected by main.js) ===== */
+#scrollTopBtn {
+  position:fixed; bottom:1.5rem; right:1.5rem;
+  width:40px; height:40px; border-radius:50%;
+  background:var(--vf-blue); color:#fff; border:none;
+  display:none; font-size:18px; cursor:pointer; z-index:999;
+}
+
+/* ===== Tang Vu (Member 1) — Homepage ===== */
+
+
+/* ===== Hai Nam (Member 3) — Products ===== */
+
+
+/* ===== Nhat Tan (Member 4) — News ===== */
