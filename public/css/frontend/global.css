@@ -9,7 +9,9 @@
 
 /* ===== BRAND TOKENS ===== */
 :root {
-  --vf-blue:   #005BAA;   /* VinFast primary blue  */
+  --vf-blue:   #1464F4;   /* VinFast primary blue  */
+  --vf-navy:   #1a2240;   /* VinFast navy          */
+  --vf-gold:   #c8a22e;   /* VinFast gold          */
   --vf-red:    #E8002D;   /* VinFast accent red    */
   --vf-dark:   #1a1a1a;
   --vf-light:  #f5f7fa;
@@ -21,8 +23,51 @@ a            { color: var(--vf-blue); }
 a:hover      { color: var(--vf-red);  }
 .btn-primary { background: var(--vf-blue); border-color: var(--vf-blue); }
 
-/* ===== NAVBAR ===== */
-.navbar-brand img { max-height: 38px; }
+/* ===== HEADER INTERACTIONS ===== */
+#vfHeader.vf-header--compact #vfUtilityBar {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ===== MEGA MENU (Tailwind navbar.php + CSS enhancements) ===== */
+.vf-mega-item {
+  display: block;
+  text-decoration: none;
+  color: #334155;
+  border-radius: 8px;
+  padding: .42rem .5rem;
+  font-size: 13px;
+  position: relative;
+}
+
+.vf-mega-item:hover { background: #f8fafc; color: #1464f4; }
+
+.vf-mega-item span {
+  display: block;
+  font-weight: 600;
+}
+
+.vf-mega-item small {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.vf-badge {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+.vf-badge--hot { background: #ef4444; }
+.vf-badge--new { background: #22c55e; }
+.vf-badge--best { background: #c8a22e; }
 
 /* ===== SCROLL-TO-TOP BUTTON (injected by main.js) ===== */
 #scrollTopBtn {
@@ -33,9 +78,6 @@ a:hover      { color: var(--vf-red);  }
 }
 
 /* ===== Tang Vu (Member 1) — Homepage ===== */
-
-
-/* ===== Hai Nam (Member 3) — Products ===== */
 
 
 /* ===== Nhat Tan (Member 4) — News ===== */

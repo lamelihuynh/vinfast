@@ -15,13 +15,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <?= SEO::titleTag() ?>
   <?= SEO::metaTags() ?>
-  <!-- CSRF token in meta for AJAX requests -->
   <meta name="csrf-token" content="<?= Auth::csrfToken() ?>">
-  <!-- Bootstrap 5 -->
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Global + page-specific styles -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            vfNavy: '#0B233F',
+            vfGold: '#c8a22e'
+          }
+        }
+      }
+    };
+  </script>
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/global.css">
 </head>
 <body>
