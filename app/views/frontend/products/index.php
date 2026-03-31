@@ -14,26 +14,26 @@ if ($cat > 0) $activeFilters++;
 if ($price !== 'all') $activeFilters++;
 if ($range !== 'all') $activeFilters++;
 
-function selectedValue(string $value, string $current): string {
-    return $value === $current ? 'selected' : '';
+function selectedValue(string $value, string $current): string
+{
+  return $value === $current ? 'selected' : '';
 }
 
-function extractRangeText(array $specs): string {
-    if (isset($specs['range'])) return (string)$specs['range'];
-    return 'N/A';
+function extractRangeText(array $specs): string
+{
+  if (isset($specs['range'])) return (string)$specs['range'];
+  return 'N/A';
 }
 
-function isProductNew(array $product): bool {
-    if (empty($product['created_at'])) return false;
-    $created = strtotime($product['created_at']);
-    if (!$created) return false;
-    return (time() - $created) <= 60 * 24 * 3600;
+function isProductNew(array $product): bool
+{
+  if (empty($product['created_at'])) return false;
+  $created = strtotime($product['created_at']);
+  if (!$created) return false;
+  return (time() - $created) <= 60 * 24 * 3600;
 }
 
-$productsJsPath = ROOT . '/public/js/frontend/products.js';
-$productsJsVersion = file_exists($productsJsPath)
-  ? (string) filemtime($productsJsPath)
-  : (string) time();
+$productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/products.css">
@@ -46,7 +46,7 @@ $productsJsVersion = file_exists($productsJsPath)
       <i class="fa-solid fa-sliders"></i>
       Bộ lọc
       <?php if ($activeFilters > 0): ?>
-        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-vfGold text-white text-[11px] font-bold\"><?= $activeFilters ?></span>
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-vfGold text-white text-[11px] font-bold"><?= $activeFilters ?></span>
       <?php endif; ?>
     </button>
 
@@ -62,7 +62,7 @@ $productsJsVersion = file_exists($productsJsPath)
 
           <div class="flex items-center gap-2 sm:gap-3">
             <span class="text-slate-500 hidden sm:inline text-[12px]">Hiển thị:</span>
-            <select id="productsPerPageSelect" class="border border-slate-200 rounded-md px-2 sm:px-3 py-1.5 text-slate-700 outline-none focus:border-vfNavy bg-white text-[12px]" onchange="var f=document.getElementById('productsFilterForm');var p=document.getElementById('filterPerPageInput');if(p){p.value=this.value;}if(f){f.submit();}">
+            <select id="productsPerPageSelect" class="border border-slate-200 rounded-md px-2 sm:px-3 py-1.5 text-slate-700 outline-none focus:border-vfNavy bg-white text-[12px]">
               <option value="6" <?= $pp === 6 ? 'selected' : '' ?>>6</option>
               <option value="12" <?= $pp === 12 ? 'selected' : '' ?>>12</option>
               <option value="15" <?= $pp === 15 ? 'selected' : '' ?>>15</option>
@@ -85,7 +85,7 @@ $productsJsVersion = file_exists($productsJsPath)
                 <i class="fa-solid fa-sliders text-slate-400 text-xl"></i>
               </div>
               <p class="text-slate-500 text-[14px]">Không tìm thấy sản phẩm phù hợp</p>
-              <a href="<?= BASE_URL ?>products" class="mt-3 inline-block text-vfNavy hover:text-vfBlue transition text-[12px] font-semibold">
+              <a href="<?= BASE_URL ?>products" class="mt-3 inline-block text-vfNavy hover:text-vfNavy/80 transition text-[12px] font-semibold">
                 Xóa bộ lọc
               </a>
             </div>
@@ -97,7 +97,7 @@ $productsJsVersion = file_exists($productsJsPath)
             </div>
           <?php endif; ?>
 
-          <?php include ROOT . '/app/views/frontend/products/partials/pagination.php'; ?>
+          <?php include ROOT . '/app/views/frontend/partials/pagination.php'; ?>
         </div>
       </div>
     </div>

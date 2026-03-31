@@ -40,7 +40,6 @@ foreach ($categories as $c) {
   </div>
 
   <form id="productsFilterForm" method="get" action="<?= BASE_URL ?>products" class="p-4 space-y-3">
-  <input type="hidden" name="_csrf" value="<?= htmlspecialchars(Auth::csrfToken()) ?>">
     <input type="hidden" id="filterCatInput" name="cat" value="<?= (int)$cat ?>">
     <input type="hidden" id="filterSortInput" name="sort" value="<?= htmlspecialchars($sort) ?>">
   <input type="hidden" id="filterPerPageInput" name="pp" value="<?= (int)($pp ?? 12) ?>">

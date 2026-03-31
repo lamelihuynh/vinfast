@@ -1,4 +1,5 @@
 <?php
+
 /**
  * app/views/frontend/user/orders.php
  * Owner  : All members (common)
@@ -25,5 +26,7 @@
     <h1 class="mb-3">My Orders</h1>
     <p class="text-muted">Owner: All members (common)</p>
     <p class="small">Table of the member's deposit/test-drive orders: product name, order type, status badge, date.</p>
+
+    <?php include ROOT . '/app/views/frontend/partials/pagination.php'; ?>
   </div>
 </section>

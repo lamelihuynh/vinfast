@@ -1,4 +1,5 @@
 <?php
+
 /**
  * app/views/frontend/layouts/main.php — Public Layout
  * Owner: All members (common)
@@ -10,6 +11,7 @@
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -17,24 +19,36 @@
   <?= SEO::metaTags() ?>
   <meta name="csrf-token" content="<?= Auth::csrfToken() ?>">
 
+  <?php
+  $hasTailwindBuild = AssetHelper::exists('public/css/frontend/tailwind.css');
+  $tailwindBuildVersion = AssetHelper::getVersion('public/css/frontend/tailwind.css');
+  ?>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            vfNavy: '#0B233F',
-            vfGold: '#c8a22e'
+
+  <?php if ($hasTailwindBuild): ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/tailwind.css?v=<?= htmlspecialchars($tailwindBuildVersion) ?>">
+  <?php else: ?>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              vfNavy: '#0B233F',
+              vfGold: '#c8a22e'
+            }
           }
         }
-      }
-    };
-  </script>
+      };
+    </script>
+  <?php endif; ?>
+
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/global.css">
 </head>
+
 <body>
   <?php include ROOT . '/app/views/frontend/partials/navbar.php'; ?>
   <?php include ROOT . '/app/views/frontend/partials/flash.php'; ?>
@@ -48,4 +62,5 @@
   <!-- Extra scripts injected by child views via $scripts variable -->
   <?= $scripts ?? '' ?>
 </body>
+
 </html>

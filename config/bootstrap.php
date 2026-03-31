@@ -1,4 +1,5 @@
 <?php
+
 /**
  * config/bootstrap.php — Application Bootstrap
  * Owner: All members (common)
@@ -15,12 +16,12 @@ define('UPLOAD_PATH',   ROOT . '/public/images/uploads/');
 define('UPLOAD_URL',    BASE_URL . 'public/images/uploads/');
 define('PER_PAGE',      10);
 define('MAX_FILE_SIZE', 2 * 1024 * 1024);            // 2 MB
-define('ALLOWED_MIME',  ['image/jpeg','image/png','image/webp']);
+define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
 
 require_once ROOT . '/config/database.php';
 
 // Auto-load helpers (always needed)
-foreach (['Auth','Validator','Upload','Pagination','SEO','View'] as $h) {
+foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelper'] as $h) {
     require_once ROOT . "/app/helpers/{$h}.php";
 }
 

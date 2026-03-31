@@ -1,4 +1,5 @@
 <?php
+
 /**
  * app/controllers/frontend/ProductController.php
  * Owner: Hai Nam
@@ -15,44 +16,53 @@ class ProductController
         $range = trim($_GET['range'] ?? 'all');
         $allowedPerPage = [6, 12, 15];
         $pp = (int)($_GET['pp'] ?? 12);
-        if (!in_array($pp, $allowedPerPage, true)) {    
+        if (!in_array($pp, $allowedPerPage, true)) {
             $pp = 12;
         }
         $page  = max(1, (int)($_GET['page'] ?? 1));
 
         $categories = Category::getAll();
 
-        // Fetch a large active set then apply combined filters in PHP
-        $all = Product::getAll(1, 1000);
+        $filters = [];
 
         if ($q !== '') {
-            $needle = strtolower($q);
-            $all = array_values(array_filter($all, function (array $p) use ($needle): bool {
-                $name = strtolower((string)($p['name'] ?? ''));
-                return strpos($name, $needle) !== false;
-            }));
+            $filters['search'] = $q;
         }
 
         if ($cat > 0) {
-            $all = array_values(array_filter($all, function (array $p) use ($cat): bool {
-                return (int)($p['category_id'] ?? 0) === $cat;
-            }));
+            $filters['category_id'] = $cat;
         }
 
+        // Convert price range to VND values
         if ($price !== 'all') {
-            $all = array_values(array_filter($all, function (array $p) use ($price): bool {
-                $million = ((float)($p['price'] ?? 0)) / 1000000;
-                if ($price === 'under300') return $million < 300;
-                if ($price === '300-500') return $million >= 300 && $million <= 500;
-                if ($price === '500-1000') return $million > 500 && $million <= 1000;
-                if ($price === 'over1000') return $million > 1000;
-                return true;
-            }));
+            switch ($price) {
+                case 'under300':
+                    $filters['price_max'] = 300 * 1000000;
+                    break;
+                case '300-500':
+                    $filters['price_min'] = 300 * 1000000;
+                    $filters['price_max'] = 500 * 1000000;
+                    break;
+                case '500-1000':
+                    $filters['price_min'] = 500 * 1000000;
+                    $filters['price_max'] = 1000 * 1000000;
+                    break;
+                case 'over1000':
+                    $filters['price_min'] = 1000 * 1000000;
+                    break;
+            }
         }
+
+        $filters['sort'] = $sort;
+
+        $total = Product::countFiltered($filters);
+        $pg = new Pagination($total, $page, $pp);
+
+        $products = Product::filter($filters, $page, $pp);
 
         if ($range !== 'all') {
-            $all = array_values(array_filter($all, function (array $p) use ($range): bool {
-                $km = $this->extractRangeKm($p['specs'] ?? []);
+            $products = array_values(array_filter($products, function (array $p) use ($range): bool {
+                $km = Product::extractRangeKm($p['specs'] ?? []);
                 if ($range === 'lt200') return $km > 0 && $km < 200;
                 if ($range === '200-400') return $km >= 200 && $km <= 400;
                 if ($range === 'gt400') return $km > 400;
@@ -60,31 +70,15 @@ class ProductController
             }));
         }
 
-        usort($all, function (array $a, array $b) use ($sort): int {
-            $pa = (float)($a['price'] ?? 0);
-            $pb = (float)($b['price'] ?? 0);
-            if ($sort === 'price_asc') return $pa <=> $pb;
-            if ($sort === 'price_desc') return $pb <=> $pa;
-            if ($sort === 'newest') {
-                $ta = strtotime((string)($a['created_at'] ?? '')) ?: 0;
-                $tb = strtotime((string)($b['created_at'] ?? '')) ?: 0;
-                return $tb <=> $ta;
-            }
-            return 0;
-        });
-
-        $total = count($all);
-        $pg = new Pagination((int)$total, $page, $pp);
-        $products = array_slice($all, $pg->offset(), $pg->limit());
-
         $query = [];
-        if ($q !== '') $query[] = 'q=' . urlencode($q);
-        if ($cat > 0) $query[] = 'cat=' . $cat;
-        if ($sort !== 'default') $query[] = 'sort=' . urlencode($sort);
-        if ($pp !== 12) $query[] = 'pp=' . $pp;
-        if ($price !== 'all') $query[] = 'price=' . urlencode($price);
-        if ($range !== 'all') $query[] = 'range=' . urlencode($range);
-        $pageUrl = BASE_URL . 'products?' . (empty($query) ? '' : implode('&', $query) . '&') . 'page=';
+        if ($q !== '') $query['q'] = $q;
+        if ($cat > 0) $query['cat'] = $cat;
+        if ($sort !== 'default') $query['sort'] = $sort;
+        if ($pp !== 12) $query['pp'] = $pp;
+        if ($price !== 'all') $query['price'] = $price;
+        if ($range !== 'all') $query['range'] = $range;
+        $baseQuery = http_build_query($query);
+        $pageUrl = BASE_URL . 'products?' . ($baseQuery !== '' ? $baseQuery . '&' : '') . 'page=';
 
         SEO::set('Vehicles', 'Danh sách xe VinFast', 'Vinfast, xe điện, products');
 
@@ -121,16 +115,5 @@ class ProductController
         View::render('frontend/products/detail', [
             'product' => $product
         ]);
-    }
-
-    private function extractRangeKm(array $specs): float
-    {
-        if (!isset($specs['range'])) {
-            return 0;
-        }
-        if (preg_match('/(\d+(?:\.\d+)?)/', (string)$specs['range'], $m)) {
-            return (float)$m[1];
-        }
-        return 0;
     }
 }

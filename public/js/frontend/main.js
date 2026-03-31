@@ -44,8 +44,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (userTrigger && userDropdown) {
     userTrigger.addEventListener("click", (e) => {
       e.preventDefault();
-      userDropdown.classList.toggle("is-open");
-      const expanded = userDropdown.classList.contains("is-open") ? "true" : "false";
+      const willOpen = userDropdown.classList.contains("hidden");
+      userDropdown.classList.toggle("hidden", !willOpen);
+      userDropdown.classList.toggle("is-open", willOpen);
+      const expanded = willOpen ? "true" : "false";
       userTrigger.setAttribute("aria-expanded", expanded);
     });
 
@@ -53,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const target = e.target;
       if (!(target instanceof Node)) return;
       if (!userDropdown.contains(target) && !userTrigger.contains(target)) {
+        userDropdown.classList.add("hidden");
         userDropdown.classList.remove("is-open");
         userTrigger.setAttribute("aria-expanded", "false");
       }

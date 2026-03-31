@@ -1,4 +1,4 @@
-/**
+﻿/**
  * public/css/frontend/products.css — Products Page Styles
  * Owner: Hai Nam (Member 3)
  *
@@ -87,32 +87,6 @@
   font-size: 0.9rem;
 }
 
-.products-card {
-  background: #fff;
-  border: 1px solid #e9edf3;
-  border-radius: 12px;
-  overflow: hidden;
-  height: 100%;
-  transition: all 0.2s ease;
-}
-
-.products-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(23, 31, 56, 0.12);
-}
-
-.products-card-image-wrap {
-  position: relative;
-  height: 220px;
-  background: #f8fafc;
-}
-
-.products-card-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .products-badge-new {
   position: absolute;
   top: 10px;
@@ -124,19 +98,6 @@
   font-size: 0.66rem;
   font-weight: 700;
   z-index: 2;
-}
-
-.products-card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.products-card-body h5 {
-  margin: 0;
-  font-size: 1.02rem;
-  font-weight: 700;
 }
 
 .products-price {
@@ -156,6 +117,44 @@
   color: #fff;
   font-size: 0.68rem;
   font-weight: 700;
+}
+
+/* Product detail JS state styles */
+.vf-pd-wishlist.is-active {
+  color: #ef4444;
+}
+
+.vf-pd-thumb.is-active {
+  border-color: #1464f4;
+  box-shadow: 0 3px 12px rgba(20, 100, 244, 0.2);
+}
+
+.vf-pd-tab-btn.is-active {
+  border-bottom-color: #0b233f;
+  color: #0b233f;
+  font-weight: 600;
+}
+
+.vf-pd-pane {
+  display: none;
+}
+
+.vf-pd-pane.is-active {
+  display: block;
+}
+
+/* Product detail top layout fallback (for cases where Tailwind utilities are unavailable) */
+#vfProductDetail .vf-pd-top-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  #vfProductDetail .vf-pd-top-layout {
+    grid-template-columns: 58% 42%;
+  }
 }
 
 @media (max-width: 991.98px) {
