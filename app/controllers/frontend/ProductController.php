@@ -15,9 +15,9 @@ class ProductController
         $price = trim($_GET['price'] ?? 'all');
         $range = trim($_GET['range'] ?? 'all');
         $allowedPerPage = [6, 12, 15];
-        $pp = (int)($_GET['pp'] ?? 12);
+        $pp = (int)($_GET['pp'] ?? 6);
         if (!in_array($pp, $allowedPerPage, true)) {
-            $pp = 12;
+            $pp = 6;
         }
         $page  = max(1, (int)($_GET['page'] ?? 1));
 
@@ -55,10 +55,7 @@ class ProductController
 
         $filters['sort'] = $sort;
 
-        $total = Product::countFiltered($filters);
-        $pg = new Pagination($total, $page, $pp);
-
-        $products = Product::filter($filters, $page, $pp);
+        $products = Product::filterAll($filters);
 
         if ($range !== 'all') {
             $products = array_values(array_filter($products, function (array $p) use ($range): bool {
@@ -70,11 +67,15 @@ class ProductController
             }));
         }
 
+        $total = count($products);
+        $pg = new Pagination($total, $page, $pp);
+        $products = array_slice($products, $pg->offset(), $pg->limit());
+
         $query = [];
         if ($q !== '') $query['q'] = $q;
         if ($cat > 0) $query['cat'] = $cat;
         if ($sort !== 'default') $query['sort'] = $sort;
-        if ($pp !== 12) $query['pp'] = $pp;
+        if ($pp !== 6) $query['pp'] = $pp;
         if ($price !== 'all') $query['price'] = $price;
         if ($range !== 'all') $query['range'] = $range;
         $baseQuery = http_build_query($query);

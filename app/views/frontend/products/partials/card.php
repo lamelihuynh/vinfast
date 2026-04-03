@@ -27,7 +27,7 @@ if ($powerText === '') {
       <?= htmlspecialchars($rangeText) ?>
     </span>
 
-    <img src="<?= htmlspecialchars($imgUrl) ?>" alt="<?= htmlspecialchars($p['name'] ?? 'Product') ?>" class="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300">
+    <img src="<?= htmlspecialchars($imgUrl) ?>" class="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300">
   </div>
 
   <div class="p-4">

@@ -81,3 +81,15 @@ a:hover      { color: var(--vf-red);  }
 
 
 /* ===== Nhat Tan (Member 4) — News ===== */
+
+/* Auth pages use Tailwind utility classes via CDN in auth layout. */
+
+.password-require .below-desc li {
+  color: #94a3b8;
+  transition: color .2s ease, font-weight .2s ease;
+}
+
+.password-require .below-desc li.is-valid {
+  color: #16a34a;
+  font-weight: 600;
+}

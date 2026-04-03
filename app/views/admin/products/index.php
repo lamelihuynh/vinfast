@@ -1,4 +1,5 @@
 <?php
+
 /**
  * app/views/admin/products/index.php
  * Owner  : Hai Nam 
@@ -17,3 +18,26 @@
  *  - Include pagination partial where needed: include ROOT."/app/views/frontend/partials/pagination.php"
  */
 ?>
+<?php
+$q = (string)($q ?? '');
+$cat = (int)($cat ?? 0);
+$status = (string)($status ?? 'all');
+$products = is_array($products ?? null) ? $products : [];
+$cats = is_array($cats ?? null) ? $cats : [];
+$summary = is_array($summary ?? null) ? $summary : [];
+$productsForModal = is_array($productsForModal ?? null) ? $productsForModal : [];
+
+$styles = '<link rel="stylesheet" href="' . BASE_URL . 'public/css/admin/product-modal.css">';
+?>
+
+<?php include ROOT . '/app/views/admin/products/partials/page-header.php'; ?>
+
+<?php include ROOT . '/app/views/admin/products/partials/stats.php'; ?>
+
+<div class="card">
+    <?php include ROOT . '/app/views/admin/products/partials/filters.php'; ?>
+    <?php include ROOT . '/app/views/admin/products/partials/table.php'; ?>
+    <?php include ROOT . '/app/views/admin/products/partials/pagination.php'; ?>
+</div>
+<?php include ROOT . '/app/views/admin/products/partials/modal.php'; ?>
+<?php include ROOT . '/app/views/admin/products/partials/modal-script.php'; ?>

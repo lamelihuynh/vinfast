@@ -11,6 +11,67 @@
  */
 class Product
 {
+    private static function bindNamedParams(PDOStatement $stmt, array $params): void
+    {
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+    }
+
+    private static function buildCatalogFilters(array $filters = []): array
+    {
+        $where = ['is_active = 1'];
+        $params = [];
+
+        if (!empty($filters['search'])) {
+            $where[] = 'name LIKE :search';
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+
+        if (!empty($filters['category_id'])) {
+            $where[] = 'category_id = :cat_id';
+            $params[':cat_id'] = (int)$filters['category_id'];
+        }
+
+        if (!empty($filters['price_min'])) {
+            $where[] = 'price >= :price_min';
+            $params[':price_min'] = (float)$filters['price_min'];
+        }
+
+        if (!empty($filters['price_max'])) {
+            $where[] = 'price <= :price_max';
+            $params[':price_max'] = (float)$filters['price_max'];
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
+    private static function buildAdminFilters(array $filters = []): array
+    {
+        $where = ['1=1'];
+        $params = [];
+
+        if (!empty($filters['search'])) {
+            $where[] = '(p.name LIKE :search_name OR c.name LIKE :search_category)';
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[':search_name'] = $searchTerm;
+            $params[':search_category'] = $searchTerm;
+        }
+
+        if (!empty($filters['category_id'])) {
+            $where[] = 'p.category_id = :category_id';
+            $params[':category_id'] = (int)$filters['category_id'];
+        }
+
+        if (($filters['status'] ?? 'all') === 'active') {
+            $where[] = 'p.is_active = 1';
+        } elseif (($filters['status'] ?? 'all') === 'inactive') {
+            $where[] = 'p.is_active = 0';
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
     public static function create($categoryId, $name, $slug, $description, $specs, $price, $images, $isActive)
     {
         global $pdo;
@@ -41,6 +102,14 @@ class Product
         global $pdo;
         $stmt = $pdo->prepare("SELECT * FROM products WHERE is_active = 1 AND id = ? LIMIT 0,1");
         $stmt->execute([$id]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
+        return self::formatProduct($product);
+    }
+    public static function getByIdAdmin($id)
+    {
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? LIMIT 0,1");
+        $stmt->execute([(int)$id]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
         return self::formatProduct($product);
     }
@@ -107,41 +176,22 @@ class Product
     public static function filter(array $filters = [], int $page = 1, int $perPage = 10): array
     {
         global $pdo;
-
         $page = max(1, $page);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $where = ['is_active = 1'];
-        $params = [];
+        $items = self::filterAll($filters);
 
-        // Search filter
-        if (!empty($filters['search'])) {
-            $where[] = "name LIKE :search";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
+        return array_slice($items, $offset, $perPage);
+    }
 
-        // Category filter
-        if (!empty($filters['category_id'])) {
-            $where[] = "category_id = :cat_id";
-            $params[':cat_id'] = (int)$filters['category_id'];
-        }
+    public static function filterAll(array $filters = []): array
+    {
+        global $pdo;
 
-        // Price range filter (in VND)
-        if (!empty($filters['price_min'])) {
-            $where[] = "price >= :price_min";
-            $params[':price_min'] = (float)$filters['price_min'];
-        }
-        if (!empty($filters['price_max'])) {
-            $where[] = "price <= :price_max";
-            $params[':price_max'] = (float)$filters['price_max'];
-        }
+        [$whereClause, $params] = self::buildCatalogFilters($filters);
 
-        $whereClause = implode(' AND ', $where);
-
-        // Build base query
         $sql = "SELECT * FROM products WHERE $whereClause ORDER BY ";
 
-        // Sorting
         $sort = $filters['sort'] ?? 'default';
         if ($sort === 'price_asc') {
             $sql .= "price ASC ";
@@ -153,18 +203,10 @@ class Product
             $sql .= "created_at DESC ";
         }
 
-        $sql .= "LIMIT :limit OFFSET :offset";
-
         $stmt = $pdo->prepare($sql);
-
-        // Bind all parameters (named)
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-
+        self::bindNamedParams($stmt, $params);
         $stmt->execute();
+
         return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
@@ -172,38 +214,11 @@ class Product
     {
         global $pdo;
 
-        $where = ['is_active = 1'];
-        $params = [];
-
-        // Search filter
-        if (!empty($filters['search'])) {
-            $where[] = "name LIKE :search";
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
-
-        // Category filter
-        if (!empty($filters['category_id'])) {
-            $where[] = "category_id = :cat_id";
-            $params[':cat_id'] = (int)$filters['category_id'];
-        }
-
-        // Price range filter
-        if (!empty($filters['price_min'])) {
-            $where[] = "price >= :price_min";
-            $params[':price_min'] = (float)$filters['price_min'];
-        }
-        if (!empty($filters['price_max'])) {
-            $where[] = "price <= :price_max";
-            $params[':price_max'] = (float)$filters['price_max'];
-        }
-
-        $whereClause = implode(' AND ', $where);
+        [$whereClause, $params] = self::buildCatalogFilters($filters);
         $sql = "SELECT COUNT(*) FROM products WHERE $whereClause";
 
         $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
+        self::bindNamedParams($stmt, $params);
         $stmt->execute();
 
         return (int)$stmt->fetchColumn();
@@ -218,5 +233,136 @@ class Product
             return (float)$m[1];
         }
         return 0;
+    }
+
+    public static function getAdminList(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
+        global $pdo;
+
+        $page = max(1, $page);
+        $offset = max(0, (int)($page - 1) * $perPage);
+
+        [$whereSql, $params] = self::buildAdminFilters($filters);
+
+        $sql = "SELECT p.*, c.name AS category_name
+                FROM products p
+                JOIN categories c ON c.id = p.category_id
+                WHERE {$whereSql}
+                ORDER BY p.created_at DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $pdo->prepare($sql);
+        self::bindNamedParams($stmt, $params);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    public static function countAdminList(array $filters = []): int
+    {
+        global $pdo;
+
+        [$whereSql, $params] = self::buildAdminFilters($filters);
+
+        $sql = "SELECT COUNT(*)
+                FROM products p
+                JOIN categories c ON c.id = p.category_id
+                WHERE {$whereSql}";
+
+        $stmt = $pdo->prepare($sql);
+        self::bindNamedParams($stmt, $params);
+        $stmt->execute();
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    public static function countAdminDistinctCategories(array $filters = []): int
+    {
+        global $pdo;
+
+        [$whereSql, $params] = self::buildAdminFilters($filters);
+        $sql = "SELECT COUNT(DISTINCT p.category_id)
+                FROM products p
+                JOIN categories c ON c.id = p.category_id
+                WHERE {$whereSql}";
+
+        $stmt = $pdo->prepare($sql);
+        self::bindNamedParams($stmt, $params);
+        $stmt->execute();
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    public static function slugExists(string $slug, ?int $excludeId = null): bool
+    {
+        global $pdo;
+        $sql = 'SELECT COUNT(*) FROM products WHERE slug = :slug';
+        if ($excludeId !== null) {
+            $sql .= ' AND id <> :id';
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':slug', $slug, PDO::PARAM_STR);
+        if ($excludeId !== null) {
+            $stmt->bindValue(':id', $excludeId, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    public static function updateById(
+        int $id,
+        int $categoryId,
+        string $name,
+        string $slug,
+        string $description,
+        array $specs,
+        float $price,
+        array $images,
+        int $isActive
+    ): bool {
+        global $pdo;
+        $stmt = $pdo->prepare(
+            'UPDATE products
+             SET category_id = ?, name = ?, slug = ?, description = ?, specs = ?, price = ?, images = ?, is_active = ?
+             WHERE id = ?'
+        );
+
+        return $stmt->execute([
+            $categoryId,
+            $name,
+            $slug,
+            $description,
+            json_encode($specs),
+            $price,
+            json_encode($images),
+            $isActive,
+            $id,
+        ]);
+    }
+
+    public static function setActive(int $id, int $isActive): bool
+    {
+        global $pdo;
+        $stmt = $pdo->prepare('UPDATE products SET is_active = ? WHERE id = ?');
+        return $stmt->execute([$isActive ? 1 : 0, $id]);
+    }
+
+    public static function hasOrders(int $id): bool
+    {
+        global $pdo;
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE product_id = ?');
+        $stmt->execute([$id]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    public static function deleteById(int $id): bool
+    {
+        global $pdo;
+        $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
+        return $stmt->execute([$id]);
     }
 }

@@ -34,12 +34,11 @@ $mainImage = $imageUrls[0];
 $categoryText = (string)($specs['category'] ?? ($specs['segment'] ?? 'Xe điện VinFast'));
 $powerText = (string)($specs['power'] ?? ($specs['motor_power'] ?? ($specs['max_power'] ?? 'N/A')));
 $rangeText = (string)($specs['range'] ?? ($specs['driving_range'] ?? 'N/A'));
-$accelText = (string)($specs['acceleration'] ?? ($specs['zero_to_hundred'] ?? ($specs['0_100'] ?? 'N/A')));
-
+$batteryText = (string)($specs['battery'] ?? 'N/A');
 $stats = [
     ['icon' => 'fa-solid fa-bolt', 'val' => $powerText, 'label' => 'Công suất'],
+    ['icon' => 'fa-solid fa-battery-three-quarters', 'val' => $batteryText, 'label' => 'Pin'],
     ['icon' => 'fa-solid fa-battery-three-quarters', 'val' => $rangeText, 'label' => 'Phạm vi'],
-    ['icon' => 'fa-solid fa-gauge-high', 'val' => $accelText, 'label' => '0-100 km/h'],
 ];
 
 $featureList = [];

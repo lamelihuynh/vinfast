@@ -2,7 +2,7 @@
 $q = $q ?? '';
 $cat = (int)($cat ?? 0);
 $sort = $sort ?? 'default';
-$pp = (int)($pp ?? 12);
+$pp = (int)($pp ?? 6);
 $price = $price ?? 'all';
 $range = $range ?? 'all';
 $products = $products ?? [];
