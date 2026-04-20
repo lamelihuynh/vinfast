@@ -5,7 +5,7 @@
  * Owner: All members (common)
  *
  * Sticky Bootstrap 5 navbar. Shows login/register for guests,
- * user dropdown + cart icon for members.
+ * user dropdown for members.
  * Admin link appears only when role === "admin".
  */
 
