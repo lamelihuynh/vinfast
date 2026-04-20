@@ -8,6 +8,7 @@ $switchProducts = is_array($switchProducts ?? null) ? $switchProducts : [];
 
 $productId = (int)($product['id'] ?? 0);
 $productName = (string)($product['name'] ?? 'VinFast');
+$productSlug = trim((string)($product['slug'] ?? ''));
 $priceText = number_format((float)($product['price'] ?? 0), 0, ',', '.');
 
 $extractProductFamily = static function (string $text): string {
@@ -61,10 +62,15 @@ $rawExteriorColors = is_array($specs['exterior_colors'] ?? null) ? $specs['exter
 $rawInteriorColors = is_array($specs['interior_colors'] ?? null) ? $specs['interior_colors'] : [];
 $rawVariants = is_array($specs['variants'] ?? null) ? $specs['variants'] : [];
 
-$resolveImageUrl = static function (string $imgRel) use ($productFamily): string {
+$resolveImageUrl = static function (string $imgRel, string $preferredSlug = '') use ($productFamily): string {
     $imgRel = trim($imgRel);
     if ($imgRel === '') {
         return '';
+    }
+
+    $preferredSlug = strtolower(trim($preferredSlug));
+    if ($preferredSlug === '') {
+        $preferredSlug = '';
     }
 
     if (preg_match('/^https?:\/\//i', $imgRel)) {
@@ -74,23 +80,57 @@ $resolveImageUrl = static function (string $imgRel) use ($productFamily): string
     $imgRel = ltrim($imgRel, '/');
 
     if (strpos($imgRel, '/') !== false) {
+        $fullPath = ROOT . '/public/images/' . $imgRel;
+        if (is_file($fullPath)) {
+            return BASE_URL . 'public/images/' . $imgRel;
+        }
+
+        $basename = basename($imgRel);
+        $fixCandidates = [];
+        if ($preferredSlug !== '') {
+            $fixCandidates[] = 'uploads/products/' . $preferredSlug . '/' . $basename;
+        }
+        if ($productFamily !== '') {
+            $fixCandidates[] = 'uploads/products/' . $productFamily . '/' . $basename;
+        }
+
+        foreach ($fixCandidates as $candidate) {
+            $candidatePath = ROOT . '/public/images/' . $candidate;
+            if (is_file($candidatePath)) {
+                return BASE_URL . 'public/images/' . $candidate;
+            }
+        }
+
         return BASE_URL . 'public/images/' . $imgRel;
     }
 
+    $basename = basename($imgRel);
     $candidates = [
+        $preferredSlug !== '' ? 'uploads/products/' . $preferredSlug . '/' . $basename : '',
+        $productFamily !== '' ? 'uploads/products/' . $productFamily . '/' . $basename : '',
         'uploads/products/' . $imgRel,
         'products/' . $imgRel,
         $imgRel,
     ];
 
     foreach ($candidates as $candidate) {
+        if ($candidate === '') {
+            continue;
+        }
         $fullPath = ROOT . '/public/images/' . $candidate;
         if (is_file($fullPath)) {
             return BASE_URL . 'public/images/' . $candidate;
         }
     }
 
-    $basename = basename($imgRel);
+    if ($preferredSlug !== '') {
+        $slugPriorityPath = ROOT . '/public/images/uploads/products/' . $preferredSlug . '/' . $basename;
+        if (is_file($slugPriorityPath)) {
+            $match = str_replace(ROOT . '/public/images/', '', $slugPriorityPath);
+            $match = str_replace('\\', '/', $match);
+            return BASE_URL . 'public/images/' . $match;
+        }
+    }
 
     if ($productFamily !== '') {
         $priorityPath = ROOT . '/public/images/uploads/products/' . $productFamily . '/' . $basename;
@@ -156,7 +196,7 @@ foreach ($rawExteriorColors as $row) {
 foreach ($colorChoices as &$colorChoice) {
     $colorImage = '';
     if (!empty($colorChoice['image'])) {
-        $colorImage = $resolveImageUrl((string)$colorChoice['image']);
+        $colorImage = $resolveImageUrl((string)$colorChoice['image'], $productSlug);
     }
 
     if ($colorImage === '') {
@@ -170,7 +210,7 @@ foreach ($colorChoices as &$colorChoice) {
             $imgFilename = is_string($imgPath) ? basename($imgPath) : basename((string)$imgRel);
             $imgBasename = strtoupper((string)pathinfo($imgFilename, PATHINFO_FILENAME));
             if ($imgBasename !== '' && $imgBasename === $targetCode) {
-                $colorImage = $resolveImageUrl((string)$imgRel);
+                $colorImage = $resolveImageUrl((string)$imgRel, $productSlug);
                 break;
             }
         }
@@ -207,7 +247,7 @@ if ($colorCode === '' && !empty($colorChoices)) {
 
 $mainImage = BASE_URL . 'public/images/products/default.jpg';
 if (!empty($images) && is_string($images[0])) {
-    $resolved = $resolveImageUrl((string)$images[0]);
+    $resolved = $resolveImageUrl((string)$images[0], $productSlug);
     if ($resolved !== '') {
         $mainImage = $resolved;
     }
@@ -246,7 +286,7 @@ foreach ($switchProducts as $item) {
         'modelKey' => $modelKey,
         'priceRaw' => (float)($item['price'] ?? 0),
         'priceText' => number_format((float)($item['price'] ?? 0), 0, ',', '.') . ' VNĐ',
-        'imageUrl' => $resolveImageUrl((string)($item['image'] ?? '')),
+        'imageUrl' => $resolveImageUrl((string)($item['image'] ?? ''), (string)($item['slug'] ?? '')),
         'isCurrent' => (bool)($item['is_current'] ?? false),
     ];
 }

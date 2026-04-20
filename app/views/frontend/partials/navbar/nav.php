@@ -39,7 +39,7 @@
           <p class="text-vfGold text-[9px] font-bold tracking-[1px] mb-1">XE NỔI BẬT</p>
           <p class="text-white text-lg font-bold mb-1">VF 9</p>
           <p class="text-white/60 text-[11px] mb-3">Flagship SUV Thuần Điện</p>
-          <img src="<?= BASE_URL ?>public/images/products/ce18.webp" alt="VF 9" class="h-28 w-full object-cover rounded-md border border-white/20 mb-3">
+          <img src="<?= BASE_URL ?>public/images/products/vf9.webp" alt="VF 9" class="h-28 w-full object-cover rounded-md border border-white/20 mb-3">
           <p class="text-white/70 text-[10px] leading-4 mb-3">Không gian 7 cho sang trọng, phạm vi 594km, đỉnh cao của dòng xe VinFast.</p>
           <a class="mt-auto text-center rounded-md bg-vfGold hover:bg-[#b8921e] transition text-white text-[11px] font-semibold py-2" href="<?= BASE_URL ?>products?q=VF+9">Khám phá ngay</a>
         </div>

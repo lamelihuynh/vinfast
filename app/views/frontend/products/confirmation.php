@@ -15,6 +15,7 @@ $province = (string)($order['province'] ?? '');
 $showroom = (string)($order['showroom'] ?? '');
 $payMethod = (string)($order['payMethod'] ?? 'transfer');
 $depositAmount = (float)($order['depositAmount'] ?? 15000000);
+$paymentStatus = (string)($order['paymentStatus'] ?? 'pending_verify');
 $orderDate = (string)($order['orderDate'] ?? date('d/m/Y H:i'));
 
 $fmtVnd = static function (float $value): string {
@@ -30,6 +31,20 @@ $fmtPayMethod = static function (string $method): string {
     }
     return 'Chuyển khoản ngân hàng';
 };
+
+$fmtPaymentStatus = static function (string $status): array {
+    $map = [
+        'unpaid' => ['label' => 'Chưa thanh toán', 'bg' => '#FEF3C7', 'color' => '#B45309'],
+        'pending_verify' => ['label' => 'Chờ xác nhận thanh toán', 'bg' => '#DBEAFE', 'color' => '#1D4ED8'],
+        'paid' => ['label' => 'Đã nhận cọc', 'bg' => '#DCFCE7', 'color' => '#16A34A'],
+        'failed' => ['label' => 'Thanh toán thất bại', 'bg' => '#FEE2E2', 'color' => '#B91C1C'],
+        'refunded' => ['label' => 'Đã hoàn tiền', 'bg' => '#F3E8FF', 'color' => '#7E22CE'],
+    ];
+
+    return $map[$status] ?? $map['pending_verify'];
+};
+
+$paymentUi = $fmtPaymentStatus($paymentStatus);
 
 $nextSteps = [
     'Email xác nhận đã được gửi đến ' . ($email !== '' ? $email : 'hộp thư của bạn'),
@@ -53,8 +68,8 @@ $scripts = '';
                 </div>
             </div>
 
-            <h1 class="mb-2 text-white" style="font-size: 26px; font-weight: 800; letter-spacing: -0.3px;">Đặt Cọc Thành Công!</h1>
-            <p class="mb-6 text-white/70" style="font-size: 14px;">Cảm ơn Quý khách đã tin tưởng chọn VinFast. Đơn đặt cọc của bạn đã được ghi nhận.</p>
+            <h1 class="mb-2 text-white" style="font-size: 26px; font-weight: 800; letter-spacing: -0.3px;">Đã Ghi Nhận Yêu Cầu Đặt Cọc</h1>
+            <p class="mb-6 text-white/70" style="font-size: 14px;">Yêu cầu của Quý khách đã được tạo. Chúng tôi sẽ xác nhận thanh toán và cập nhật trạng thái đơn sớm nhất.</p>
 
             <div class="inline-flex items-center gap-3 rounded-xl px-5 py-3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
                 <span class="text-white/60" style="font-size: 11px; font-weight: 600; letter-spacing: 1px;">MÃ ĐẶT CỌC</span>
@@ -130,7 +145,7 @@ $scripts = '';
                             [
                                 ['label' => 'Hình thức', 'value' => $fmtPayMethod($payMethod)],
                                 ['label' => 'Số tiền đặt cọc', 'value' => $fmtVnd($depositAmount), 'highlight' => true],
-                                ['label' => 'Trạng thái', 'value' => 'Đã xác nhận', 'status' => true],
+                                ['label' => 'Trạng thái', 'value' => $paymentUi['label'], 'status' => true],
                                 ['label' => 'Ngày đặt cọc', 'value' => $orderDate],
                             ] as $row
                         ): ?>
@@ -138,7 +153,7 @@ $scripts = '';
                                 <span class="text-gray-500" style="font-size: 12px;"><?= htmlspecialchars($row['label']) ?></span>
                                 <span style="font-size: 12px; font-weight: <?= !empty($row['highlight']) ? 700 : 500 ?>; color: <?= !empty($row['highlight']) ? '#1a6fe0' : '#374151' ?>; text-align: right; max-width: 55%;">
                                     <?php if (!empty($row['status'])): ?>
-                                        <span class="rounded-full px-2 py-0.5" style="background: #DCFCE7; color: #16a34a; font-size: 11px; font-weight: 600;">✓ <?= htmlspecialchars((string)$row['value']) ?></span>
+                                        <span class="rounded-full px-2 py-0.5" style="background: <?= htmlspecialchars($paymentUi['bg']) ?>; color: <?= htmlspecialchars($paymentUi['color']) ?>; font-size: 11px; font-weight: 600;"><?= htmlspecialchars((string)$row['value']) ?></span>
                                     <?php else: ?>
                                         <?= htmlspecialchars((string)$row['value']) ?>
                                     <?php endif; ?>

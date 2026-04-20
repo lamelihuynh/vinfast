@@ -11,6 +11,17 @@
  */
 class Order
 {
+    private const ALLOWED_STATUSES = ['pending', 'confirmed', 'cancelled', 'done'];
+
+    private const ALLOWED_PAYMENT_STATUSES = ['unpaid', 'pending_verify', 'paid', 'failed', 'refunded'];
+
+    private const STATUS_TRANSITIONS = [
+        'pending' => ['confirmed', 'cancelled'],
+        'confirmed' => ['done', 'cancelled'],
+        'done' => [],
+        'cancelled' => [],
+    ];
+
     public static function create($userId, $productId, $type = 'deposit', $note = null)
     {
         global $pdo;
@@ -80,8 +91,7 @@ class Order
     public static function updateStatus($id, $status)
     {
         global $pdo;
-        $allowedStatuses = ['pending', 'confirmed', 'cancelled', 'done'];
-        if (!in_array($status, $allowedStatuses, true)) {
+        if (!in_array($status, self::ALLOWED_STATUSES, true)) {
             return false;
         }
 
@@ -116,5 +126,195 @@ class Order
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getAdminList(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
+        global $pdo;
+
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        $where = [];
+        $params = [];
+
+        $status = trim((string)($filters['status'] ?? 'all'));
+        if ($status !== '' && $status !== 'all' && in_array($status, self::ALLOWED_STATUSES, true)) {
+            $where[] = 'o.status = :status';
+            $params[':status'] = $status;
+        }
+
+        $q = trim((string)($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(u.name LIKE :q OR u.email LIKE :q OR p.name LIKE :q OR CAST(o.id AS CHAR) LIKE :q)';
+            $params[':q'] = '%' . $q . '%';
+        }
+
+        $sql = "
+            SELECT o.*, p.name AS product_name, p.price, u.name AS user_name, u.email
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            JOIN users u ON o.user_id = u.id
+        ";
+
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' ORDER BY o.created_at DESC, o.id DESC LIMIT :limit OFFSET :offset';
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function countAdminList(array $filters = []): int
+    {
+        global $pdo;
+
+        $where = [];
+        $params = [];
+
+        $status = trim((string)($filters['status'] ?? 'all'));
+        if ($status !== '' && $status !== 'all' && in_array($status, self::ALLOWED_STATUSES, true)) {
+            $where[] = 'o.status = :status';
+            $params[':status'] = $status;
+        }
+
+        $q = trim((string)($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(u.name LIKE :q OR u.email LIKE :q OR p.name LIKE :q OR CAST(o.id AS CHAR) LIKE :q)';
+            $params[':q'] = '%' . $q . '%';
+        }
+
+        $sql = "
+            SELECT COUNT(*) AS cnt
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            JOIN users u ON o.user_id = u.id
+        ";
+
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->execute();
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['cnt'] ?? 0);
+    }
+
+    public static function validStatuses(): array
+    {
+        return self::ALLOWED_STATUSES;
+    }
+
+    public static function allowedNextStatuses(string $status): array
+    {
+        $status = trim($status);
+        return self::STATUS_TRANSITIONS[$status] ?? [];
+    }
+
+    public static function canTransition(string $fromStatus, string $toStatus): bool
+    {
+        $fromStatus = trim($fromStatus);
+        $toStatus = trim($toStatus);
+
+        if (!in_array($fromStatus, self::ALLOWED_STATUSES, true) || !in_array($toStatus, self::ALLOWED_STATUSES, true)) {
+            return false;
+        }
+
+        if ($fromStatus === $toStatus) {
+            return true;
+        }
+
+        return in_array($toStatus, self::allowedNextStatuses($fromStatus), true);
+    }
+
+    public static function validPaymentStatuses(): array
+    {
+        return self::ALLOWED_PAYMENT_STATUSES;
+    }
+
+    public static function getPaymentStatusFromNote($note): string
+    {
+        $decoded = self::decodeOrderNote($note);
+        $status = trim((string)($decoded['payment_status'] ?? 'pending_verify'));
+        if (!in_array($status, self::ALLOWED_PAYMENT_STATUSES, true)) {
+            return 'pending_verify';
+        }
+
+        return $status;
+    }
+
+    public static function getPaymentStatusById(int $orderId): string
+    {
+        $order = self::getById($orderId);
+        if (!$order) {
+            return 'pending_verify';
+        }
+
+        return self::getPaymentStatusFromNote($order['note'] ?? null);
+    }
+
+    public static function updatePaymentStatus(int $orderId, string $paymentStatus): bool
+    {
+        global $pdo;
+
+        $paymentStatus = trim($paymentStatus);
+        if (!in_array($paymentStatus, self::ALLOWED_PAYMENT_STATUSES, true)) {
+            return false;
+        }
+
+        $order = self::getById($orderId);
+        if (!$order) {
+            return false;
+        }
+
+        $note = self::decodeOrderNote($order['note'] ?? null);
+        $note['payment_status'] = $paymentStatus;
+        $note['payment_updated_at'] = date('c');
+
+        if ($paymentStatus === 'paid' && empty($note['payment_verified_at'])) {
+            $note['payment_verified_at'] = date('c');
+        }
+
+        if ($paymentStatus !== 'paid' && $paymentStatus !== 'refunded' && isset($note['payment_verified_at'])) {
+            unset($note['payment_verified_at']);
+        }
+
+        $json = json_encode($note, JSON_UNESCAPED_UNICODE);
+        if ($json === false) {
+            return false;
+        }
+
+        $stmt = $pdo->prepare('UPDATE orders SET note = ? WHERE id = ?');
+        return $stmt->execute([$json, $orderId]);
+    }
+
+    private static function decodeOrderNote($note): array
+    {
+        if (is_array($note)) {
+            return $note;
+        }
+
+        $raw = trim((string)$note);
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
     }
 }

@@ -364,6 +364,8 @@ class ProductController
                 'variant_name' => (string)$formData['variant_name'],
                 'interior_code' => (string)$formData['interior_code'],
                 'deposit_amount' => 15000000,
+                'payment_status' => 'pending_verify',
+                'payment_verified_at' => null,
             ];
 
             $noteJson = json_encode($notePayload, JSON_UNESCAPED_UNICODE);
@@ -396,6 +398,7 @@ class ProductController
                 'showroom' => (string)$formData['showroom'],
                 'payMethod' => (string)$formData['pay_method'],
                 'depositAmount' => 15000000,
+                'paymentStatus' => 'pending_verify',
                 'orderDate' => date('d/m/Y H:i'),
             ];
 

@@ -26,8 +26,6 @@ $products = is_array($products ?? null) ? $products : [];
 $cats = is_array($cats ?? null) ? $cats : [];
 $summary = is_array($summary ?? null) ? $summary : [];
 $productsForModal = is_array($productsForModal ?? null) ? $productsForModal : [];
-
-$styles = '<link rel="stylesheet" href="' . BASE_URL . 'public/css/admin/product-modal.css">';
 ?>
 
 <?php include ROOT . '/app/views/admin/products/partials/page-header.php'; ?>

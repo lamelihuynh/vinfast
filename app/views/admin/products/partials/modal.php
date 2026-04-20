@@ -1,12 +1,12 @@
 <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered vf-product-modal-dialog">
-        <div class="modal-content vf-product-modal">
-            <form method="POST" action="<?= ADMIN_URL ?>products/save" enctype="multipart/form-data" id="productModalForm" class="vf-product-modal-form">
-                <div class="modal-header vf-product-modal-header">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="POST" action="<?= ADMIN_URL ?>products/save" enctype="multipart/form-data" id="productModalForm" class="d-flex flex-column" style="max-height: calc(100vh - 3.5rem);">
+                <div class="modal-header">
                     <h5 class="modal-title" id="productModalTitle">Chỉnh sửa sản phẩm</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body vf-product-modal-body">
+                <div class="modal-body overflow-auto" style="max-height: calc(100vh - 12rem);">
                     <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
                     <input type="hidden" name="id" id="modal_id" value="0">
                     <input type="hidden" name="main_image" id="modal_main_image" value="">
@@ -79,12 +79,12 @@
 
                         <div class="col-12 d-none" id="newImagesSection">
                             <label class="form-label">Xem trước ảnh mới</label>
-                            <div class="row g-2 vf-existing-images" id="newImagesContainer"></div>
+                            <div class="row g-2" id="newImagesContainer"></div>
                         </div>
 
                         <div class="col-12 d-none" id="existingImagesSection">
                             <label class="form-label">Ảnh hiện tại</label>
-                            <div class="row g-2 vf-existing-images" id="existingImagesContainer"></div>
+                            <div class="row g-2" id="existingImagesContainer"></div>
                         </div>
 
                         <div class="col-12">
@@ -95,7 +95,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer vf-product-modal-footer">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
                     <button type="submit" class="btn btn-primary" id="productModalSubmitBtn">Lưu</button>
                 </div>

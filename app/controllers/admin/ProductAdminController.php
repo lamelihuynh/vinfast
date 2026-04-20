@@ -525,22 +525,30 @@ class ProductAdminController
 
     private function resolveImageFamilyFromPayload(array $payload, array $existing = []): string
     {
-        $candidates = [];
+        $slugCandidates = [];
 
         if (!empty($existing['slug'])) {
-            $candidates[] = (string)$existing['slug'];
+            $slugCandidates[] = strtolower(trim((string)$existing['slug']));
         }
         if (!empty($payload['slug'])) {
-            $candidates[] = (string)$payload['slug'];
-        }
-        if (!empty($existing['name'])) {
-            $candidates[] = (string)$existing['name'];
-        }
-        if (!empty($payload['name'])) {
-            $candidates[] = (string)$payload['name'];
+            $slugCandidates[] = strtolower(trim((string)$payload['slug']));
         }
 
-        foreach ($candidates as $candidate) {
+        foreach ($slugCandidates as $slug) {
+            if ($slug !== '' && preg_match('/^[a-z0-9-]+$/', $slug)) {
+                return $slug;
+            }
+        }
+
+        $familyCandidates = [];
+        if (!empty($existing['name'])) {
+            $familyCandidates[] = (string)$existing['name'];
+        }
+        if (!empty($payload['name'])) {
+            $familyCandidates[] = (string)$payload['name'];
+        }
+
+        foreach ($familyCandidates as $candidate) {
             $family = $this->extractImageFamily($candidate);
             if ($family !== '') {
                 return $family;
@@ -616,24 +624,35 @@ class ProductAdminController
             return '';
         }
 
-        $dir = ROOT . '/public/images/uploads/products/' . $family;
-        if (!is_dir($dir)) {
-            return '';
+        $dirs = [];
+        $dirs[] = ROOT . '/public/images/uploads/products/' . $family;
+
+        $familyFallback = $this->extractImageFamily($family);
+        if ($familyFallback !== '' && $familyFallback !== $family) {
+            $dirs[] = ROOT . '/public/images/uploads/products/' . $familyFallback;
         }
 
         $extensions = ['webp', 'jpg', 'jpeg', 'png'];
-        foreach ($extensions as $ext) {
-            $candidate = $dir . '/' . $code . '.' . $ext;
-            if (is_file($candidate)) {
-                return 'uploads/products/' . $family . '/' . $code . '.' . $ext;
-            }
-        }
 
-        $matches = glob($dir . '/' . $code . '.*') ?: [];
-        if (!empty($matches)) {
-            $match = (string)$matches[0];
-            $relative = str_replace(ROOT . '/public/images/', '', str_replace('\\', '/', $match));
-            return $relative;
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) {
+                continue;
+            }
+
+            foreach ($extensions as $ext) {
+                $candidate = $dir . '/' . $code . '.' . $ext;
+                if (is_file($candidate)) {
+                    $relative = str_replace(ROOT . '/public/images/', '', str_replace('\\', '/', $candidate));
+                    return $relative;
+                }
+            }
+
+            $matches = glob($dir . '/' . $code . '.*') ?: [];
+            if (!empty($matches)) {
+                $match = (string)$matches[0];
+                $relative = str_replace(ROOT . '/public/images/', '', str_replace('\\', '/', $match));
+                return $relative;
+            }
         }
 
         return '';
