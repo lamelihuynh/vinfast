@@ -28,7 +28,6 @@
   <link rel="stylesheet" href="<?= SRTDASH_LIB_URL ?>css/default-css.css">
   <link rel="stylesheet" href="<?= SRTDASH_LIB_URL ?>css/styles.css">
   <link rel="stylesheet" href="<?= SRTDASH_LIB_URL ?>css/responsive.css">
-  <link rel="stylesheet" href="<?= BASE_URL ?>public/css/admin/global.css">
   <?= $styles ?? '' ?>
 </head>
 

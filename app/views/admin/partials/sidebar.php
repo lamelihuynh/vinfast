@@ -23,9 +23,9 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
 <div class="sidebar-menu">
   <div class="sidebar-header">
     <div class="logo">
-      <a href="<?= ADMIN_URL ?>dashboard" class="vf-sidebar-brand">
+      <a href="<?= ADMIN_URL ?>dashboard">
         <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast logo" style="max-width: 130px;">
-        <span class="vf-admin-label">Admin Panel</span>
+        <small class="text-muted d-block mt-1">Admin Panel</small>
       </a>
     </div>
   </div>

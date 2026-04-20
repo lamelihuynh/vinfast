@@ -33,8 +33,8 @@ if (strpos($requestPath, '/admin/products') !== false) {
           <span></span>
         </div>
 
-        <div class="vf-topbar-title-wrap">
-          <h6 class="mb-0 vf-topbar-title"><?= htmlspecialchars($sectionTitle) ?></h6>
+        <div>
+          <h6 class="mb-0"><?= htmlspecialchars($sectionTitle) ?></h6>
           <small class="text-muted">VinFast Administration</small>
         </div>
       </div>
@@ -43,7 +43,7 @@ if (strpos($requestPath, '/admin/products') !== false) {
     <div class="col-md-4 col-sm-12 clearfix mt-3 mt-md-0">
       <ul class="notification-area pull-right list-unstyled mb-0 d-flex align-items-center justify-content-md-end gap-3">
         <li class="user-dropdown d-flex align-items-center gap-2">
-          <span class="vf-user-badge"><i class="ti-user"></i></span>
+          <i class="ti-user text-secondary"></i>
           <div class="d-flex flex-column lh-sm">
             <span class="text-muted small">Quản trị viên</span>
             <strong><?= htmlspecialchars(Auth::name()) ?></strong>
