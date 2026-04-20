@@ -62,6 +62,33 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Notification dropdown
+  const notificationTrigger = document.getElementById("vfNotificationTrigger");
+  const notificationDropdown = document.getElementById("vfNotificationDropdown");
+  if (notificationTrigger && notificationDropdown) {
+    notificationTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = notificationDropdown.classList.contains("hidden");
+      if (willOpen) {
+        notificationDropdown.classList.remove("hidden");
+      } else {
+        notificationDropdown.classList.add("hidden");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof Node)) return;
+      // Check if click is inside notification trigger or dropdown
+      const isClickInsideTrigger = notificationTrigger.contains(target);
+      const isClickInsideDropdown = notificationDropdown.contains(target);
+      
+      if (!isClickInsideTrigger && !isClickInsideDropdown) {
+        notificationDropdown.classList.add("hidden");
+      }
+    });
+  }
+
   const mobileOpen = document.getElementById("vfMobileToggle");
   const mobileClose = document.getElementById("vfMobileClose");
   const mobilePanel = document.getElementById("vfMobilePanel");

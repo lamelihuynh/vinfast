@@ -11,7 +11,7 @@
 :root {
   --vf-blue:   #1464F4;   /* VinFast primary blue  */
   --vf-navy:   #1a2240;   /* VinFast navy          */
-  --vf-gold:   #c8a22e;   /* VinFast gold          */
+  --vf-gold:   #FFB81C;   /* VinFast gold (brightened for better contrast) */
   --vf-red:    #E8002D;   /* VinFast accent red    */
   --vf-dark:   #1a1a1a;
   --vf-light:  #f5f7fa;
@@ -67,7 +67,7 @@ a:hover      { color: var(--vf-red);  }
 
 .vf-badge--hot { background: #ef4444; }
 .vf-badge--new { background: #22c55e; }
-.vf-badge--best { background: #c8a22e; }
+.vf-badge--best { background: #FFB81C; }
 
 /* ===== SCROLL-TO-TOP BUTTON (injected by main.js) ===== */
 #scrollTopBtn {
@@ -92,4 +92,70 @@ a:hover      { color: var(--vf-red);  }
 .password-require .below-desc li.is-valid {
   color: #16a34a;
   font-weight: 600;
+}
+
+/* ===== NAVIGATION STYLING IMPROVEMENTS ===== */
+/* Active nav links with better contrast */
+a.nav-link.active {
+  font-weight: 600;
+  color: #FFB81C !important;
+  border-bottom: 3px solid #FFB81C !important;
+}
+
+/* Register button visibility */
+.vf-register-btn {
+  background: #0B233F;
+  color: #FFB81C;
+  border: 2px solid #FFB81C;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.vf-register-btn:hover {
+  background: #FFB81C;
+  color: #0B233F;
+}
+
+/* Call-to-action buttons */
+.vf-cta-btn {
+  background: #FFB81C;
+  color: #0B233F;
+  border: 2px solid #FFB81C;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.vf-cta-btn:hover {
+  background: #FFA500;
+  border-color: #FFA500;
+}
+
+/* Deposit button (outline style) */
+.vf-deposit-btn {
+  border: 2px solid #FFB81C;
+  color: #FFB81C;
+  background: transparent;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.vf-deposit-btn:hover {
+  background: #FFB81C;
+  color: #0B233F;
+}
+
+/* ===== NOTIFICATION DROPDOWN ===== */
+#vfNotificationDropdown {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

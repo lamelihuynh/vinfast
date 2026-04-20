@@ -34,3 +34,10 @@ logs/
 .cache/
 %CACHE%/
 commit.md
+
+#skill
+/agent/skills/
+skills-lock.json
+
+#docs
+assignment.pdf

@@ -10,7 +10,15 @@
 
 define('ROOT',          __DIR__ . '/..');
 define('APP_NAME',      'VinFast');
-define('BASE_URL',      'http://localhost/vinfast/');
+
+// Detect BASE_URL dynamically for multi-machine compatibility
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$scriptPath = dirname($_SERVER['SCRIPT_NAME'] ?? '/');
+// Remove trailing slash from dirname, then add it back
+$baseDir = rtrim($scriptPath, '/') . '/';
+define('BASE_URL',      $protocol . '://' . $host . $baseDir);
+
 define('ADMIN_URL',     BASE_URL . 'admin/');
 define('SRTDASH_LIB_URL', BASE_URL . 'public/libs/srtdash/');
 define('UPLOAD_PATH',   ROOT . '/public/images/uploads/');

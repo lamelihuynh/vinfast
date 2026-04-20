@@ -31,19 +31,24 @@
   <?php if ($hasTailwindBuild): ?>
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/tailwind.css?v=<?= htmlspecialchars($tailwindBuildVersion) ?>">
   <?php else: ?>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        corePlugins: {
+          // Project này đang dùng Bootstrap ở nhiều page.
+          // Tắt preflight để hạn chế Tailwind reset phá layout Bootstrap.
+          preflight: false
+        },
         theme: {
           extend: {
             colors: {
               vfNavy: '#0B233F',
-              vfGold: '#c8a22e'
+              vfGold: '#FFB81C'
             }
           }
         }
       };
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
   <?php endif; ?>
 
   <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/global.css">
