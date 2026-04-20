@@ -120,6 +120,9 @@
   var wishlistBtn = document.getElementById('vfPdWishlistBtn');
   var tabButtons = root.querySelectorAll('.vf-pd-tab-btn');
   var panes = root.querySelectorAll('.vf-pd-pane');
+  var colorButtons = root.querySelectorAll('.vf-pd-color-btn');
+  var selectedColorLabels = root.querySelectorAll('[data-selected-color-label]');
+  var checkoutLinks = root.querySelectorAll('.vf-pd-checkout-link');
 
   function setActiveThumb(targetBtn) {
     if (!thumbsWrap || !mainImage || !targetBtn) return;
@@ -165,10 +168,85 @@
     });
   }
 
+  function setCheckoutColor(code) {
+    if (!checkoutLinks.length) return;
+
+    checkoutLinks.forEach(function (checkoutLink) {
+      var base = checkoutLink.getAttribute('data-checkout-base') || checkoutLink.getAttribute('href') || '';
+      if (!base) return;
+
+      if (!code) {
+        checkoutLink.href = base;
+        return;
+      }
+
+      checkoutLink.href = base + '?color=' + encodeURIComponent(code);
+    });
+  }
+
+  function setActiveColor(btn) {
+    if (!btn) return;
+
+    colorButtons.forEach(function (item) {
+      item.classList.remove('is-active');
+    });
+
+    btn.classList.add('is-active');
+
+    var colorCode = btn.getAttribute('data-color-code') || '';
+    var colorName = btn.getAttribute('data-color-name') || '';
+    var colorImage = btn.getAttribute('data-color-image') || '';
+
+    if (colorName && selectedColorLabels.length) {
+      selectedColorLabels.forEach(function (label) {
+        label.textContent = colorName;
+      });
+    }
+
+    setCheckoutColor(colorCode);
+
+    if (!colorImage || !mainImage) return;
+
+    var matchedThumb = null;
+    if (thumbsWrap) {
+      thumbsWrap.querySelectorAll('.vf-pd-thumb').forEach(function (thumb) {
+        if (thumb.getAttribute('data-img') === colorImage) {
+          matchedThumb = thumb;
+        }
+      });
+    }
+
+    if (matchedThumb) {
+      setActiveThumb(matchedThumb);
+    } else {
+      mainImage.src = colorImage;
+    }
+
+    if (window.innerWidth < 1024 && mainImage) {
+      var rect = mainImage.getBoundingClientRect();
+      if (rect.bottom < 72 || rect.top > window.innerHeight - 120) {
+        mainImage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }
+
   tabButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var key = btn.getAttribute('data-tab') || 'mota';
       setTab(key);
     });
   });
+
+  if (colorButtons.length > 0) {
+    colorButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setActiveColor(btn);
+      });
+    });
+
+    var defaultColorBtn = root.querySelector('.vf-pd-color-btn.is-active') || colorButtons[0];
+    if (defaultColorBtn) {
+      setActiveColor(defaultColorBtn);
+    }
+  }
 })();

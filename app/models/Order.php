@@ -15,7 +15,12 @@ class Order
     {
         global $pdo;
         $stmt = $pdo->prepare("\n            INSERT INTO orders (user_id, product_id, type, status, note) \n            VALUES (?, ?, ?, 'pending', ?)\n        ");
-        return $stmt->execute([$userId, $productId, $type, $note]);
+        $ok = $stmt->execute([$userId, $productId, $type, $note]);
+        if (!$ok) {
+            return false;
+        }
+
+        return (int)$pdo->lastInsertId();
     }
 
     public static function getByUserId($userId, $page = 1, $perPage = 10)
@@ -25,8 +30,8 @@ class Order
         $perPage = max(1, (int)$perPage);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $stmt = $pdo->prepare("\n            SELECT o.*, p.name as product_name, p.price \n            FROM orders o \n            JOIN products p ON o.product_id = p.id \n            WHERE o.user_id = ? \n            ORDER BY o.created_at DESC\n            LIMIT :limit OFFSET :offset\n        ");
-        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt = $pdo->prepare("\n            SELECT o.*, p.name as product_name, p.price \n            FROM orders o \n            JOIN products p ON o.product_id = p.id \n            WHERE o.user_id = :user_id \n            ORDER BY o.created_at DESC\n            LIMIT :limit OFFSET :offset\n        ");
+        $stmt->bindValue(':user_id', (int)$userId, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();

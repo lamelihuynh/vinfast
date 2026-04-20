@@ -35,9 +35,6 @@ VALUES
 (1, 'VinFast FELIZ II', 'vinfast-feliz-ii', 'Phiên bản nâng cấp công suất tối đa 3000W.', 30500000, 
  '{"category": "Xe máy điện", "power": "1800 W", "range": "82-156 km", "acceleration": "15s (0-50km/h)", "battery": "LFP 1.5 kWh", "max_speed": "70 km/h"}', '[]', 1),
 
-(1, 'VinFast Vero X', 'vinfast-vero-x', 'Xe điện thể thao với khóa thông minh Smart Key.', 34900000, 
- '{"category": "Xe máy điện", "power": "1500 W", "range": "134-262 km", "acceleration": "<15s (0-50km/h)", "battery": "LFP 2.4 kWh", "max_speed": "70 km/h"}', '[]', 1),
-
 (1, 'VinFast Viper', 'vinfast-viper', 'Xe máy điện cao cấp với phanh đĩa/cơ an toàn.', 45500000, 
  '{"category": "Xe máy điện", "power": "1800 W", "range": "82-156 km", "acceleration": "15s (0-50km/h)", "battery": "LFP 1.5 kWh", "max_speed": "70 km/h"}', '[]', 1),
 
@@ -48,17 +45,11 @@ VALUES
 (2, 'VinFast VF 3 Plus', 'vinfast-vf3-plus', 'Phiên bản cao cấp của VF 3 tích hợp Android Auto.', 315000000, 
  '{"category": "SUV phân khúc Mini", "power": "30 kW", "range": "215 km (NEDC)", "acceleration": "N/A", "battery": "18.64 kWh", "top_speed": "100 km/h"}', '[]', 1),
 
-(2, 'VinFast VF 5 Plus', 'vinfast-vf5-plus', 'SUV hạng A lý tưởng với 6 túi khí an toàn.', 529000000, 
- '{"category": "SUV phân khúc A", "power": "100 kW", "range": "326 km (NEDC)", "acceleration": "12s (0-100km/h)", "battery": "37.23 kWh"}', '[]', 1),
-
 (2, 'VinFast VF 6 Eco', 'vinfast-vf6-eco', 'Sự lựa chọn hoàn hảo cho gia đình trẻ.', 689000000, 
  '{"category": "SUV phân khúc B", "power": "130 kW", "range": "485 km (NEDC)", "acceleration": "N/A", "battery": "59.6 kWh"}', '[]', 1),
 
 (2, 'VinFast VF 6 Plus', 'vinfast-vf6-plus', 'Hiệu năng cao với công suất 201 hp.', 745000000, 
  '{"category": "SUV phân khúc B", "power": "150 kW", "range": "460 km (NEDC)", "acceleration": "N/A", "battery": "59.6 kWh"}', '[]', 1),
-
-(2, 'VinFast VF MPV 7', 'vinfast-vf-mpv7', 'Dòng xe gia đình 7 chỗ trọn vẹn mọi hành trình.', 819000000, 
- '{"category": "MPV", "power": "150 kW", "range": "450 km (NEDC)", "acceleration": "N/A", "battery": "60.13 kWh"}', '[]', 1),
 
 (2, 'VinFast VF 7 Eco', 'vinfast-vf7-eco', 'SUV hạng C với thiết kế tương lai.', 789000000, 
  '{"category": "SUV phân khúc C", "power": "130 kW", "range": "440 km (NEDC)", "acceleration": "N/A", "battery": "59.6 kWh"}', '[]', 1),

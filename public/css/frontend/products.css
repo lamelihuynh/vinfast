@@ -129,6 +129,31 @@
   box-shadow: 0 3px 12px rgba(20, 100, 244, 0.2);
 }
 
+.vf-pd-color-btn {
+  background: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.vf-pd-color-btn .vf-pd-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: var(--vf-color-chip, repeating-linear-gradient(45deg, #f1f5f9 0, #f1f5f9 4px, #e2e8f0 4px, #e2e8f0 8px));
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.vf-pd-color-btn.is-active {
+  border-color: #1464f4;
+  box-shadow: 0 0 0 3px rgba(20, 100, 244, 0.15);
+}
+
 .vf-pd-tab-btn.is-active {
   border-bottom-color: #0b233f;
   color: #0b233f;
@@ -151,9 +176,87 @@
   align-items: start;
 }
 
+#vfProductDetail .vf-pd-col-summary {
+  position: static;
+}
+
+.vf-pd-mobile-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.75), #f8fafc 35%);
+  border-top: 1px solid #e2e8f0;
+}
+
+.vf-pd-mobile-cta-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vf-pd-mobile-cta-meta {
+  min-width: 0;
+}
+
+.vf-pd-mobile-cta-price {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.vf-pd-mobile-cta-color {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.2;
+}
+
+.vf-pd-mobile-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0b233f;
+  background: #0b233f;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vf-pd-mobile-cta-btn:hover {
+  color: #fff;
+  background: #0d2e54;
+  border-color: #0d2e54;
+}
+
 @media (min-width: 1024px) {
   #vfProductDetail .vf-pd-top-layout {
     grid-template-columns: 58% 42%;
+  }
+
+  #vfProductDetail .vf-pd-col-summary {
+    position: sticky;
+    top: 88px;
+    align-self: start;
+  }
+
+  .vf-pd-mobile-cta {
+    display: none;
   }
 }
 
@@ -195,5 +298,9 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     z-index: 1035;
+  }
+
+  #vfProductDetail {
+    padding-bottom: 96px;
   }
 }

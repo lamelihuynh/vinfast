@@ -39,6 +39,39 @@ $specOld = [
     'battery' => $value('battery', (string)($specs['battery'] ?? '')),
 ];
 
+$exteriorColors = [];
+if (isset($old['exterior_colors_raw'])) {
+    $exteriorColorsText = (string)$old['exterior_colors_raw'];
+} else {
+    $exteriorColorsRows = is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [];
+    foreach ($exteriorColorsRows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $code = strtoupper(trim((string)($row['code'] ?? '')));
+        $name = trim((string)($row['name'] ?? ''));
+        $image = trim((string)($row['image'] ?? ''));
+        $hex = trim((string)($row['hex'] ?? ''));
+
+        if ($code === '' || $name === '') {
+            continue;
+        }
+
+        $line = $code . '|' . $name;
+        if ($image !== '') {
+            $line .= '|' . $image;
+        }
+        if ($hex !== '') {
+            $line .= '|' . strtoupper($hex);
+        }
+
+        $exteriorColors[] = $line;
+    }
+
+    $exteriorColorsText = implode("\n", $exteriorColors);
+}
+
 $existingImages = [];
 if (isset($old['existing_images']) && is_array($old['existing_images'])) {
     $existingImages = $old['existing_images'];
@@ -196,6 +229,14 @@ if (isset($old['existing_images']) && is_array($old['existing_images'])) {
                             value="<?= htmlspecialchars((string)$specOld['battery']) ?>">
                         <span class="input-group-text">kWh</span>
                     </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-group">
+                    <label class="form-label" for="exteriorColorsInput">Màu ngoại thất <small class="text-muted">(Mỗi dòng 1 màu)</small></label>
+                    <textarea class="form-control" rows="5" name="exterior_colors_raw" id="exteriorColorsInput" placeholder="CE18|Infinity Blanc|#E5E5E5&#10;CE1V|Zenith Grey|#8B9284&#10;CE2Q|Crimson Red|uploads/products/CE2Q.webp|#8A1C2B"><?= htmlspecialchars((string)$exteriorColorsText) ?></textarea>
+                    <small class="text-muted d-block mt-1"><i class="fa-solid fa-palette me-1"></i>Gộp luôn trong 1 dòng: MA_MAU|TEN_MAU|#HEX. Nếu có ảnh riêng theo màu thì chèn thêm cột ảnh trước HEX.</small>
                 </div>
             </div>
 

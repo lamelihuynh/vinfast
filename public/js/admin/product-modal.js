@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var inputAcceleration = document.getElementById('modal_acceleration');
   var inputMaxSpeed = document.getElementById('modal_max_speed');
   var inputBattery = document.getElementById('modal_battery');
+  var inputExteriorColorsRaw = document.getElementById('modal_exterior_colors_raw');
   var inputIsActive = document.getElementById('modal_is_active');
   var inputImages = document.getElementById('modal_images');
   var inputMainImage = document.getElementById('modal_main_image');
@@ -42,12 +43,62 @@ document.addEventListener('DOMContentLoaded', function () {
   var newImageObjectUrls = [];
 
   var slugTouched = false;
+  var currentEditingFamily = '';
+
+  function colorRowsToTextarea(rows) {
+    if (!Array.isArray(rows)) return '';
+
+    return rows
+      .map(function (row) {
+        if (!row || typeof row !== 'object') return '';
+        var code = String(row.code || '').trim().toUpperCase();
+        var name = String(row.name || '').trim();
+        var image = String(row.image || '').trim();
+        var hex = String(row.hex || '').trim();
+        if (!code || !name) return '';
+
+        var parts = [code, name];
+        if (image) parts.push(image);
+        if (hex) parts.push(hex);
+        return parts.join('|');
+      })
+      .filter(function (line) {
+        return line !== '';
+      })
+      .join('\n');
+  }
 
   function slugify(text) {
     return (text || '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  function extractFamily(text) {
+    var value = String(text || '').toLowerCase().trim();
+    if (!value) return '';
+
+    var match = value.match(/(?:^|[-_])vf(?:-?mpv)?-?([3-9])(?:[-_]|$)/i);
+    if (match) return 'vf' + match[1];
+
+    var normalized = value.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (!normalized) return '';
+
+    if (normalized.indexOf('vinfast-') === 0) {
+      normalized = normalized.slice(8);
+    }
+
+    normalized = normalized.replace(/^-+|-+$/g, '');
+    if (!normalized) return '';
+
+    var family = normalized.split('-')[0] || '';
+    return /^[a-z0-9]+$/.test(family) ? family : '';
+  }
+
+  function getFamilyFromProduct(product) {
+    if (!product || typeof product !== 'object') return '';
+    return String(product.family || extractFamily(product.slug || product.name || '') || '').toLowerCase();
   }
 
   function clearExistingImages() {
@@ -251,11 +302,13 @@ document.addEventListener('DOMContentLoaded', function () {
     inputAcceleration.value = '';
     inputMaxSpeed.value = '';
     inputBattery.value = '';
+    if (inputExteriorColorsRaw) inputExteriorColorsRaw.value = '';
     inputIsActive.checked = true;
     inputImages.value = '';
     inputMainImage.value = '';
     inputMainNewIndex.value = '';
     slugTouched = false;
+    currentEditingFamily = '';
     clearExistingImages();
     clearNewImagesPreview();
   }
@@ -274,11 +327,15 @@ document.addEventListener('DOMContentLoaded', function () {
     inputAcceleration.value = product.acceleration || '';
     inputMaxSpeed.value = product.max_speed || '';
     inputBattery.value = product.battery || '';
+    if (inputExteriorColorsRaw) {
+      inputExteriorColorsRaw.value = colorRowsToTextarea(product.exterior_colors || []);
+    }
     inputIsActive.checked = Number(product.is_active || 0) === 1;
     inputImages.value = '';
     inputMainImage.value = '';
     inputMainNewIndex.value = '';
     slugTouched = true;
+    currentEditingFamily = getFamilyFromProduct(product);
 
     clearExistingImages();
     if (Array.isArray(product.images) && product.images.length > 0) {

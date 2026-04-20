@@ -11,7 +11,7 @@
         <p><?= nl2br(htmlspecialchars($descriptionText)) ?></p>
         <p>Sở hữu hệ thống hỗ trợ lái nâng cao ADAS, kết nối thông minh qua ứng dụng VinFast, và chính sách bảo hành pin 10 năm, đây là người bạn đồng hành thông minh trên mọi cung đường.</p>
       </div>
-      <a href="<?= BASE_URL ?>products/checkout/<?= (int)$productId ?>" class="mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-vfNavy no-underline transition hover:text-vfNavy/80">
+      <a href="<?= BASE_URL ?>products/checkout/<?= (int)$productId ?><?= !empty($defaultColor['code']) ? ('?color=' . urlencode((string)$defaultColor['code'])) : '' ?>" data-checkout-base="<?= BASE_URL ?>products/checkout/<?= (int)$productId ?>" class="vf-pd-checkout-link mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-vfNavy no-underline transition hover:text-vfNavy/80">
         Đặt cọc ngay để nhận xe sớm nhất
         <i class="fa-solid fa-chevron-right"></i>
       </a>
