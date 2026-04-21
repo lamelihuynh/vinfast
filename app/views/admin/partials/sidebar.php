@@ -40,7 +40,7 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
             </a>
             <ul class="collapse <?= $isDashboardGroup ? 'show' : '' ?>">
               <li class="<?= $isActive('/admin/dashboard') ? 'active' : '' ?>">
-                <a href="<?= ADMIN_URL ?>dashboard">Tong quan</a>
+                <a href="<?= ADMIN_URL ?>dashboard">Tổng quan</a>
               </li>
             </ul>
           </li>
@@ -71,7 +71,7 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
               <i class="ti-layout"></i><span>Nội dung website</span>
             </a>
             <ul class="collapse <?= $isContentGroup ? 'show' : '' ?>">
-              <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">ấu hình hệ thống</a></li>
+              <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">Cấu hình hệ thống</a></li>
               <li class="<?= $isActive('/admin/contacts') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>contacts">Liên hệ</a></li>
               <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">FAQ</a></li>
             </ul>
