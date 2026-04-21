@@ -1,4 +1,5 @@
 <?php
+
 /**
  * app/views/frontend/partials/footer.php — Customer Footer
  * Owner: Tang Vu (Member 1) — initial build, others can extend
@@ -6,31 +7,71 @@
  * Contact info is loaded from SiteSetting when available.
  */
 ?>
-<footer class="bg-dark text-light pt-5 pb-3 mt-5">
-  <div class="container">
-    <div class="row g-4 mb-4">
-      <div class="col-md-4">
-        <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast" height="40" class="mb-3">
-        <p class="text-muted small">Vietnam's leading electric vehicle manufacturer.</p>
+<?php
+// Footer dùng SiteSetting để admin chỉnh nhanh.
+$settings = SiteSetting::all();
+$logoUrl = SiteSetting::imageUrl($settings['logo'] ?? '', 'public/images/logo/logo_footer.png');
+$address = (string)($settings['address'] ?? '');
+$phone = (string)($settings['phone'] ?? '');
+$email = (string)($settings['email'] ?? '');
+$facebook = (string)($settings['facebook_url'] ?? '');
+?>
+
+<!-- =========================================================
+     FOOTER (Tailwind)
+     - Contact info đọc từ site_settings
+========================================================== -->
+<footer class="mt-12 border-t border-slate-200 bg-slate-950 text-slate-200">
+  <div class="mx-auto max-w-6xl px-4 py-10">
+    <div class="grid gap-8 md:grid-cols-12">
+      <!-- ===== Brand ===== -->
+      <div class="md:col-span-5">
+        <img src="<?= htmlspecialchars($logoUrl) ?>" alt="VinFast" class="h-10 w-auto">
+        <p class="mt-3 text-sm text-slate-400">
+          Vietnam's leading electric vehicle manufacturer.
+        </p>
       </div>
-      <div class="col-md-2">
-        <h6 class="text-white mb-3">Quick Links</h6>
-        <ul class="list-unstyled small">
-          <li><a href="<?= BASE_URL ?>products" class="text-muted text-decoration-none">Vehicles</a></li>
-          <li><a href="<?= BASE_URL ?>news"     class="text-muted text-decoration-none">News</a></li>
-          <li><a href="<?= BASE_URL ?>about"    class="text-muted text-decoration-none">About</a></li>
-          <li><a href="<?= BASE_URL ?>faq"      class="text-muted text-decoration-none">FAQ</a></li>
-          <li><a href="<?= BASE_URL ?>contact"  class="text-muted text-decoration-none">Contact</a></li>
+
+      <!-- ===== Quick links ===== -->
+      <div class="md:col-span-3">
+        <h3 class="text-sm font-semibold tracking-wide text-white">Quick links</h3>
+        <ul class="mt-4 space-y-2 text-sm">
+          <li><a href="<?= BASE_URL ?>products" class="text-slate-400 hover:text-white">Vehicles</a></li>
+          <li><a href="<?= BASE_URL ?>news" class="text-slate-400 hover:text-white">News</a></li>
+          <li><a href="<?= BASE_URL ?>about" class="text-slate-400 hover:text-white">About</a></li>
+          <li><a href="<?= BASE_URL ?>faq" class="text-slate-400 hover:text-white">FAQ</a></li>
+          <li><a href="<?= BASE_URL ?>contact" class="text-slate-400 hover:text-white">Contact</a></li>
         </ul>
       </div>
-      <div class="col-md-3">
-        <h6 class="text-white mb-3">Contact</h6>
-        <p class="text-muted small mb-1"><i class="fa fa-location-dot me-2"></i>TODO: load from SiteSetting</p>
-        <p class="text-muted small mb-1"><i class="fa fa-phone me-2"></i>TODO</p>
-        <p class="text-muted small"><i class="fa fa-envelope me-2"></i>TODO</p>
+
+      <!-- ===== Contact ===== -->
+      <div class="md:col-span-4">
+        <h3 class="text-sm font-semibold tracking-wide text-white">Contact</h3>
+        <div class="mt-4 space-y-2 text-sm text-slate-400">
+          <p class="flex gap-2">
+            <i class="fa fa-location-dot mt-0.5 text-slate-500"></i>
+            <span><?= htmlspecialchars($address ?: 'Chưa cập nhật địa chỉ') ?></span>
+          </p>
+          <p class="flex gap-2">
+            <i class="fa fa-phone mt-0.5 text-slate-500"></i>
+            <span><?= htmlspecialchars($phone ?: 'Chưa cập nhật SĐT') ?></span>
+          </p>
+          <p class="flex gap-2">
+            <i class="fa fa-envelope mt-0.5 text-slate-500"></i>
+            <span><?= htmlspecialchars($email ?: 'Chưa cập nhật email') ?></span>
+          </p>
+          <?php if ($facebook !== ''): ?>
+            <p class="flex gap-2">
+              <i class="fa-brands fa-facebook mt-0.5 text-slate-500"></i>
+              <a class="hover:text-white" href="<?= htmlspecialchars($facebook) ?>" target="_blank" rel="noreferrer">Facebook</a>
+            </p>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
-    <hr class="border-secondary">
-    <p class="text-center text-muted small mb-0">&copy; <?= date('Y') ?> VinFast. All rights reserved.</p>
+
+    <div class="mt-10 border-t border-white/10 pt-6 text-center text-xs text-slate-500">
+      &copy; <?= date('Y') ?> VinFast. All rights reserved.
+    </div>
   </div>
 </footer>
