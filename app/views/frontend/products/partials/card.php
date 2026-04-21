@@ -1,7 +1,6 @@
 <?php
 $images = is_array($p['images'] ?? null) ? $p['images'] : [];
-$imgRel = !empty($images[0]) ? ltrim($images[0], '/') : 'products/default.jpg';
-$imgUrl = BASE_URL . 'public/images/' . $imgRel;
+$imgUrl = ProductViewHelper::thumbUrl($p);
 
 $specs = is_array($p['specs'] ?? null) ? $p['specs'] : [];
 $isNew = isProductNew($p);
@@ -9,12 +8,12 @@ $rangeText = extractRangeText($specs);
 
 $categoryText = (string)($p['category_name'] ?? ($specs['category'] ?? 'VinFast'));
 if ($categoryText === '') {
-    $categoryText = 'VinFast';
+  $categoryText = 'VinFast';
 }
 
 $powerText = (string)($specs['power'] ?? ($specs['motor_power'] ?? ($specs['max_power'] ?? 'N/A')));
 if ($powerText === '') {
-    $powerText = 'N/A';
+  $powerText = 'N/A';
 }
 ?>
 <a href="<?= BASE_URL ?>products/detail/<?= (int)($p['id'] ?? 0) ?>" class="bg-white rounded-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
