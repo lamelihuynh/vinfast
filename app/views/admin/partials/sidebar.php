@@ -1,52 +1,97 @@
 <?php
+
 /**
  * app/views/admin/partials/sidebar.php — Srtdash Sidebar Navigation
  * Owner: All members (common)
  *
  * Sidebar links map to admin controllers.
  * Each member adds their section's links in the relevant group.
- * Srtdash CSS class: l-navbar / nav__list / nav__link
+ * Srtdash CSS class: sidebar-menu / metismenu
  */
-$cur = $_SERVER['REQUEST_URI'];
+
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+$isActive = static function (string $needle) use ($requestPath): bool {
+  return strpos($requestPath, $needle) !== false;
+};
+
+$isDashboardGroup = $isActive('/admin/dashboard');
+$isUserGroup = $isActive('/admin/users');
+$isProductGroup = $isActive('/admin/products') || $isActive('/admin/orders');
+$isContentGroup = $isActive('/admin/settings') || $isActive('/admin/contacts') || $isActive('/admin/faq');
+$isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
 ?>
-<div class="l-navbar" id="nav-bar">
-  <nav class="nav">
-    <div>
-      <a href="<?= ADMIN_URL ?>dashboard" class="nav__logo">
-        <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast" height="30">
-        <span class="nav__logo-name ms-2">VinFast Admin</span>
+<div class="sidebar-menu">
+  <div class="sidebar-header">
+    <div class="logo">
+      <a href="<?= ADMIN_URL ?>dashboard">
+        <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast logo" style="max-width: 130px;">
+        <small class="text-muted d-block mt-1">Admin Panel</small>
       </a>
-      <div class="nav__list">
-        <!-- Common -->
-        <a href="<?= ADMIN_URL ?>dashboard" class="nav__link">
-          <i class="fa-solid fa-gauge nav__icon"></i><span class="nav__name">Dashboard</span></a>
-        <a href="<?= ADMIN_URL ?>users" class="nav__link">
-          <i class="fa-solid fa-users nav__icon"></i><span class="nav__name">Users</span></a>
-
-        <!-- Tang Vu (Member 1) -->
-        <a href="<?= ADMIN_URL ?>settings" class="nav__link">
-          <i class="fa-solid fa-gear nav__icon"></i><span class="nav__name">Site Settings</span></a>
-        <a href="<?= ADMIN_URL ?>contacts" class="nav__link">
-          <i class="fa-solid fa-envelope nav__icon"></i><span class="nav__name">Messages</span></a>
-
-        <!-- Nhat Linh (Member 2) -->
-        <a href="<?= ADMIN_URL ?>faq" class="nav__link">
-          <i class="fa-solid fa-circle-question nav__icon"></i><span class="nav__name">FAQ</span></a>
-
-        <!-- Hai Nam (Member 3) -->
-        <a href="<?= ADMIN_URL ?>products" class="nav__link">
-          <i class="fa-solid fa-car nav__icon"></i><span class="nav__name">Products</span></a>
-        <a href="<?= ADMIN_URL ?>orders" class="nav__link">
-          <i class="fa-solid fa-clipboard-list nav__icon"></i><span class="nav__name">Orders</span></a>
-
-        <!-- Nhat Tan (Member 4) -->
-        <a href="<?= ADMIN_URL ?>news" class="nav__link">
-          <i class="fa-solid fa-newspaper nav__icon"></i><span class="nav__name">News</span></a>
-        <a href="<?= ADMIN_URL ?>comments" class="nav__link">
-          <i class="fa-solid fa-comments nav__icon"></i><span class="nav__name">Comments</span></a>
-      </div>
     </div>
-    <a href="<?= BASE_URL ?>auth/logout" class="nav__link">
-      <i class="fa-solid fa-right-from-bracket nav__icon"></i><span class="nav__name">Logout</span></a>
-  </nav>
+  </div>
+
+  <div class="main-menu">
+    <div class="menu-inner">
+      <nav>
+        <ul class="metismenu" id="menu">
+          <li class="<?= $isDashboardGroup ? 'active' : '' ?>">
+            <a href="javascript:void(0)" aria-expanded="<?= $isDashboardGroup ? 'true' : 'false' ?>">
+              <i class="ti-dashboard"></i><span>dashboard</span>
+            </a>
+            <ul class="collapse <?= $isDashboardGroup ? 'show' : '' ?>">
+              <li class="<?= $isActive('/admin/dashboard') ? 'active' : '' ?>">
+                <a href="<?= ADMIN_URL ?>dashboard">Tong quan</a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="<?= $isUserGroup ? 'active' : '' ?>">
+            <a href="javascript:void(0)" aria-expanded="<?= $isUserGroup ? 'true' : 'false' ?>">
+              <i class="ti-user"></i><span>Quản trị người dùng</span>
+            </a>
+            <ul class="collapse <?= $isUserGroup ? 'show' : '' ?>">
+              <li class="<?= $isActive('/admin/users') ? 'active' : '' ?>">
+                <a href="<?= ADMIN_URL ?>users">Danh sách người dùng</a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="<?= $isProductGroup ? 'active' : '' ?>">
+            <a href="javascript:void(0)" aria-expanded="<?= $isProductGroup ? 'true' : 'false' ?>">
+              <i class="ti-package"></i><span> Sản phẩm và Đơn hàng</span>
+            </a>
+            <ul class="collapse <?= $isProductGroup ? 'show' : '' ?>">
+              <li class="<?= $isActive('/admin/products') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>products">Sản phẩm</a></li>
+              <li class="<?= $isActive('/admin/orders') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>orders">Đơn hàng</a></li>
+            </ul>
+          </li>
+
+          <li class="<?= $isContentGroup ? 'active' : '' ?>">
+            <a href="javascript:void(0)" aria-expanded="<?= $isContentGroup ? 'true' : 'false' ?>">
+              <i class="ti-layout"></i><span>Nội dung website</span>
+            </a>
+            <ul class="collapse <?= $isContentGroup ? 'show' : '' ?>">
+              <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">ấu hình hệ thống</a></li>
+              <li class="<?= $isActive('/admin/contacts') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>contacts">Liên hệ</a></li>
+              <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">FAQ</a></li>
+            </ul>
+          </li>
+
+          <li class="<?= $isNewsGroup ? 'active' : '' ?>">
+            <a href="javascript:void(0)" aria-expanded="<?= $isNewsGroup ? 'true' : 'false' ?>">
+              <i class="ti-write"></i><span>Tin tức và Bình luận</span>
+            </a>
+            <ul class="collapse <?= $isNewsGroup ? 'show' : '' ?>">
+              <li class="<?= $isActive('/admin/news') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>news">Tin tức</a></li>
+              <li class="<?= $isActive('/admin/comments') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>comments">Bình luận</a></li>
+            </ul>
+          </li>
+
+          <li>
+            <a href="<?= BASE_URL ?>auth/logout"><i class="ti-power-off"></i><span>Đăng xuất</span></a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
 </div>

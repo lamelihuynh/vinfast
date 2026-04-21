@@ -1,0 +1,306 @@
+﻿/**
+ * public/css/frontend/products.css — Products Page Styles
+ * Owner: Hai Nam (Member 3)
+ *
+ * Page-specific styles for frontend products listing.
+ * Keep shared/global tokens in global.css.
+ */
+
+.products-page {
+  font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+.products-wrap {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  gap: 1.25rem;
+}
+
+.products-filter-toggle {
+  display: none;
+}
+
+.products-sidebar {
+  background: #fff;
+  border: 1px solid #e9edf3;
+  border-radius: 12px;
+  padding: 1rem;
+  height: fit-content;
+  position: sticky;
+  top: 88px;
+}
+
+.products-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #eef2f6;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.products-sidebar-head h3 {
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.products-filter-group {
+  margin-bottom: 0.85rem;
+}
+
+.products-filter-group .form-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #5c6774;
+  margin-bottom: 0.35rem;
+}
+
+.products-content {
+  min-width: 0;
+}
+
+.products-grid-wrap {
+  width: 100%;
+  max-width: 1140px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.products-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.products-toolbar h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.products-toolbar p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.products-badge-new {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #16a34a;
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  z-index: 2;
+}
+
+.products-price {
+  margin: 0;
+  color: #c1121f;
+  font-weight: 700;
+}
+
+.products-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #c8a22e;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* Product detail JS state styles */
+.vf-pd-wishlist.is-active {
+  color: #ef4444;
+}
+
+.vf-pd-thumb.is-active {
+  border-color: #1464f4;
+  box-shadow: 0 3px 12px rgba(20, 100, 244, 0.2);
+}
+
+.vf-pd-color-btn {
+  background: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.vf-pd-color-btn .vf-pd-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: var(--vf-color-chip, repeating-linear-gradient(45deg, #f1f5f9 0, #f1f5f9 4px, #e2e8f0 4px, #e2e8f0 8px));
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.vf-pd-color-btn.is-active {
+  border-color: #1464f4;
+  box-shadow: 0 0 0 3px rgba(20, 100, 244, 0.15);
+}
+
+.vf-pd-tab-btn.is-active {
+  border-bottom-color: #0b233f;
+  color: #0b233f;
+  font-weight: 600;
+}
+
+.vf-pd-pane {
+  display: none;
+}
+
+.vf-pd-pane.is-active {
+  display: block;
+}
+
+/* Product detail top layout fallback (for cases where Tailwind utilities are unavailable) */
+#vfProductDetail .vf-pd-top-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+#vfProductDetail .vf-pd-col-summary {
+  position: static;
+}
+
+.vf-pd-mobile-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.75), #f8fafc 35%);
+  border-top: 1px solid #e2e8f0;
+}
+
+.vf-pd-mobile-cta-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vf-pd-mobile-cta-meta {
+  min-width: 0;
+}
+
+.vf-pd-mobile-cta-price {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.vf-pd-mobile-cta-color {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.2;
+}
+
+.vf-pd-mobile-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0b233f;
+  background: #0b233f;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vf-pd-mobile-cta-btn:hover {
+  color: #fff;
+  background: #0d2e54;
+  border-color: #0d2e54;
+}
+
+@media (min-width: 1024px) {
+  #vfProductDetail .vf-pd-top-layout {
+    grid-template-columns: 58% 42%;
+  }
+
+  #vfProductDetail .vf-pd-col-summary {
+    position: sticky;
+    top: 88px;
+    align-self: start;
+  }
+
+  .vf-pd-mobile-cta {
+    display: none;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .products-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .products-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .products-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 85vw;
+    border-radius: 0;
+    z-index: 1040;
+    transform: translateX(-102%);
+    transition: transform 0.2s ease;
+    overflow-y: auto;
+  }
+
+  .products-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .products-grid-wrap {
+    max-width: none;
+  }
+
+  body.products-filter-open::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1035;
+  }
+
+  #vfProductDetail {
+    padding-bottom: 96px;
+  }
+}

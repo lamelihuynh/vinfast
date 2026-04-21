@@ -1,4 +1,5 @@
 <?php
+
 /**
  * config/bootstrap.php — Application Bootstrap
  * Owner: All members (common)
@@ -11,16 +12,18 @@ define('ROOT',          __DIR__ . '/..');
 define('APP_NAME',      'VinFast');
 define('BASE_URL',      'http://localhost/vinfast/');
 define('ADMIN_URL',     BASE_URL . 'admin/');
+define('SRTDASH_LIB_URL', BASE_URL . 'public/libs/srtdash/');
 define('UPLOAD_PATH',   ROOT . '/public/images/uploads/');
 define('UPLOAD_URL',    BASE_URL . 'public/images/uploads/');
+define('AUTH_COOKIE_SECRET', hash('sha256', ROOT . '|vinfast|auth-cookie-v1'));
 define('PER_PAGE',      10);
 define('MAX_FILE_SIZE', 2 * 1024 * 1024);            // 2 MB
-define('ALLOWED_MIME',  ['image/jpeg','image/png','image/webp']);
+define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
 
 require_once ROOT . '/config/database.php';
 
 // Auto-load helpers (always needed)
-foreach (['Auth','Validator','Upload','Pagination','SEO','View'] as $h) {
+foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelper', 'ProductViewHelper'] as $h) {
     require_once ROOT . "/app/helpers/{$h}.php";
 }
 
@@ -30,4 +33,24 @@ spl_autoload_register(function (string $class): void {
     if (file_exists($file)) require_once $file;
 });
 
-session_start();
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => $isHttps,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+
+if (PHP_VERSION_ID >= 70300) {
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_secure' => $isHttps,
+        'cookie_samesite' => 'Lax',
+        'use_strict_mode' => 1,
+    ]);
+} else {
+    session_start();
+}

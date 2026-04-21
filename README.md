@@ -24,7 +24,6 @@ vinfast/
 │   │   │   ├── AboutController.php        [Nhat Linh]   GET /about
 │   │   │   ├── FaqController.php          [Nhat Linh]   GET /faq
 │   │   │   ├── ProductController.php      [Hai Nam]     GET /products  /products/detail/{id}
-│   │   │   ├── CartController.php         [Hai Nam]     GET+POST /cart  /cart/placeOrder
 │   │   │   ├── NewsController.php         [Nhat Tan]    GET /news  /news/read/{slug}
 │   │   │   └── CommentController.php      [Nhat Tan]    POST /comment/post
 │   │   │
@@ -46,7 +45,6 @@ vinfast/
 │   │   ├── Faq.php              [Nhat Linh]
 │   │   ├── Category.php         [Hai Nam]
 │   │   ├── Product.php          [Hai Nam]
-│   │   ├── Cart.php             [Hai Nam]
 │   │   ├── Order.php            [Hai Nam]
 │   │   ├── News.php             [Nhat Tan]
 │   │   └── Comment.php          [Nhat Tan]
@@ -72,8 +70,8 @@ vinfast/
 │   │   │   ├── products/
 │   │   │   │   ├── index.php        [Hai Nam]    listing + search + filter
 │   │   │   │   ├── detail.php       [Hai Nam]    specs + gallery + booking form
-│   │   │   │   ├── cart.php         [Hai Nam]    cart items
-│   │   │   │   └── checkout.php     [Hai Nam]    deposit/test-drive confirmation
+│   │   │   │   ├── checkout.php     [Hai Nam]    deposit/test-drive confirmation
+│   │   │   │   └── confirmation.php [Hai Nam]    order confirmation
 │   │   │   ├── news/
 │   │   │   │   ├── index.php        [Nhat Tan]   article listing
 │   │   │   │   └── detail.php       [Nhat Tan]   full article + comments
@@ -134,7 +132,8 @@ vinfast/
 │   │   ├── frontend/
 │   │   │   ├── main.js          [Common]  scroll-to-top, lazy load, active nav
 │   │   │   ├── validate.js      [Common]  Bootstrap 5 client-side validation
-│   │   │   └── cart.js          [Hai Nam] AJAX add-to-cart
+│   │   │   ├── products.js      [Hai Nam] product listing/detail interactions
+│   │   │   └── checkout.js      [Hai Nam] checkout/confirmation interactions
 │   │   └── admin/
 │   │       └── main.js          [Common]  Srtdash sidebar toggle + confirm dialogs
 │   │
@@ -197,14 +196,14 @@ app/views/admin/faq/
 **Hai Nam (Member 3)**
 ```
 app/controllers/frontend/ProductController.php
-app/controllers/frontend/CartController.php
 app/controllers/admin/ProductAdminController.php
 app/controllers/admin/OrderAdminController.php
-app/models/Product.php  Category.php  Cart.php  Order.php
+app/models/Product.php  Category.php  Order.php
 app/views/frontend/products/
 app/views/admin/products/
 app/views/admin/orders/
-public/js/frontend/cart.js
+public/js/frontend/products.js
+public/js/frontend/checkout.js
 public/images/products/
 ```
 
