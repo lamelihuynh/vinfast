@@ -22,7 +22,6 @@ if ($userName !== '') {
 
 $isLoggedIn = Auth::check();
 
-$defaultCheckoutUrl = BASE_URL . 'products/checkout/94';
 
 $navCategories = Category::getAll();
 $navProductGroups = [];

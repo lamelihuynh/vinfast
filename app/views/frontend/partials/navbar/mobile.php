@@ -22,7 +22,6 @@
       <p class="text-white/40 text-[10px] tracking-[1px] mb-2 uppercase">Dịch vụ nhanh</p>
       <div class="grid grid-cols-2 gap-2">
         <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= BASE_URL ?>products">Dự toán lăn bánh</a>
-        <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= htmlspecialchars($defaultCheckoutUrl) ?>">Đặt cọc xe</a>
         <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= BASE_URL ?>contact">Chính sách</a>
         <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= BASE_URL ?>contact">Hotline hỗ trợ</a>
       </div>

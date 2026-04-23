@@ -22,7 +22,6 @@ Thumbs.db
 # Build
 dist/
 build/
-*.min.js
 
 # Logs
 logs/
