@@ -1,9 +1,9 @@
 <nav class="bg-vfNavy hidden md:block" style="background-color:#0B233F;">
   <div class="w-full px-4 lg:px-6 xl:px-8 flex items-center text-[12px] font-semibold tracking-[0.4px]">
-    <a href="<?= BASE_URL ?>" class="px-5 py-3 border-b-2 <?= vf_is_active('') ? 'text-[#FFB81C] border-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">TRANG CHỦ</a>
+    <a href="<?= BASE_URL ?>" class="px-5 py-3 border-b-2 <?= vf_is_active('') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">TRANG CHỦ</a>
 
     <div class="relative group" id="vfProductsMegaRoot">
-      <a href="<?= BASE_URL ?>products" class="inline-flex items-center gap-1 px-5 py-3 border-b-2 <?= vf_is_active('products') || vf_is_active('product') ? 'text-[#FFB81C] border-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">
+      <a href="<?= BASE_URL ?>products" class="inline-flex items-center gap-1 px-5 py-3 border-b-2 <?= vf_is_active('products') || vf_is_active('product') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">
         SẢN PHẨM <i class="fa-solid fa-chevron-down text-[11px]"></i>
       </a>
       <div id="vfProductsMega" class="absolute left-0 top-full w-[780px] max-w-[85vw] bg-white rounded-b-2xl border border-slate-200 shadow-2xl hidden group-hover:flex overflow-hidden">
@@ -46,13 +46,13 @@
       </div>
     </div>
 
-    <a href="<?= BASE_URL ?>about" class="px-5 py-3 border-b-2 <?= vf_is_active('about') ? 'text-[#FFB81C] border-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">GIỚI THIỆU</a>
-    <a href="<?= BASE_URL ?>news" class="px-5 py-3 border-b-2 <?= vf_is_active('news') ? 'text-[#FFB81C] border-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">TIN TỨC</a>
-    <a href="<?= BASE_URL ?>contact" class="px-5 py-3 border-b-2 <?= vf_is_active('contact') ? 'text-[#FFB81C] border-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">LIÊN HỆ</a>
+    <a href="<?= BASE_URL ?>about" class="px-5 py-3 border-b-2 <?= vf_is_active('about') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">GIỚI THIỆU</a>
+    <a href="<?= BASE_URL ?>news" class="px-5 py-3 border-b-2 <?= vf_is_active('news') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">TIN TỨC</a>
+    <a href="<?= BASE_URL ?>contact" class="px-5 py-3 border-b-2 <?= vf_is_active('contact') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">LIÊN HỆ</a>
 
     <div class="ml-auto flex items-center gap-2 pl-4">
       <a class="px-4 py-2 text-[11px] font-semibold border-2 border-[#FFB81C] text-[#FFB81C] rounded-md hover:bg-[#FFB81C] hover:text-vfNavy transition" href="<?= BASE_URL ?>products/checkout/94">Đặt cọc</a>
-      <a class="px-4 py-2 text-[11px] font-semibold bg-[#FFB81C] text-vfNavy rounded-md hover:bg-[#FFA500] transition" href="<?= BASE_URL ?>contact">Lái thử xe</a>
+      <a class="px-4 py-2 text-[11px] font-semibold bg-[#FFB81C] text-vfNavy rounded-md hover:bg-[#FFA500] transition" href="<?= BASE_URL ?>contact?tab=test-drive">Lái thử xe</a>
     </div>
   </div>
 </nav>

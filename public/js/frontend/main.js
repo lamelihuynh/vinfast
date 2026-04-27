@@ -62,33 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Notification dropdown
-  const notificationTrigger = document.getElementById("vfNotificationTrigger");
-  const notificationDropdown = document.getElementById("vfNotificationDropdown");
-  if (notificationTrigger && notificationDropdown) {
-    notificationTrigger.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const willOpen = notificationDropdown.classList.contains("hidden");
-      if (willOpen) {
-        notificationDropdown.classList.remove("hidden");
-      } else {
-        notificationDropdown.classList.add("hidden");
-      }
-    });
-
-    document.addEventListener("click", (e) => {
-      const target = e.target;
-      if (!(target instanceof Node)) return;
-      // Check if click is inside notification trigger or dropdown
-      const isClickInsideTrigger = notificationTrigger.contains(target);
-      const isClickInsideDropdown = notificationDropdown.contains(target);
-      
-      if (!isClickInsideTrigger && !isClickInsideDropdown) {
-        notificationDropdown.classList.add("hidden");
-      }
-    });
-  }
-
   const mobileOpen = document.getElementById("vfMobileToggle");
   const mobileClose = document.getElementById("vfMobileClose");
   const mobilePanel = document.getElementById("vfMobilePanel");
@@ -113,25 +86,5 @@ document.addEventListener("DOMContentLoaded", () => {
   if (mobileOpen) mobileOpen.addEventListener("click", openMobilePanel);
   if (mobileClose) mobileClose.addEventListener("click", closeMobilePanel);
   if (mobileOverlay) mobileOverlay.addEventListener("click", closeMobilePanel);
-
-  const langButtons = [
-    document.getElementById("vfLangToggle"),
-    document.getElementById("vfLangToggleMain"),
-  ].filter(Boolean);
-  let lang = "VI";
-
-  const setLang = (next) => {
-    lang = next;
-    const topLabel = document.getElementById("vfLangLabel");
-    if (topLabel) topLabel.textContent = lang;
-    const mainLabel = document.querySelector("#vfLangToggleMain .vf-lang-toggle__label");
-    if (mainLabel) mainLabel.textContent = lang;
-  };
-
-  langButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setLang(lang === "VI" ? "EN" : "VI");
-    });
-  });
 
 });

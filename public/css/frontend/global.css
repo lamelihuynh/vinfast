@@ -15,12 +15,15 @@
   --vf-red:    #E8002D;   /* VinFast accent red    */
   --vf-dark:   #1a1a1a;
   --vf-light:  #f5f7fa;
+
+  /* Override Bootstrap 5 link hover color globally */
+  --bs-link-hover-color-rgb: 11, 35, 63;
 }
 
 /* ===== BASE ===== */
 body         { font-family: "Segoe UI", Roboto, sans-serif; color: var(--vf-dark); }
 a            { color: var(--vf-blue); }
-a:hover      { color: var(--vf-red);  }
+a:hover      { color: #0B233F;  }
 .btn-primary { background: var(--vf-blue); border-color: var(--vf-blue); }
 
 /* ===== HEADER INTERACTIONS ===== */
