@@ -8,6 +8,8 @@
  * $content is injected by View::render() via output buffering.
  * CSS: public/css/frontend/  |  JS: public/js/frontend/
  */
+$content = $content ?? '';
+$scripts = $scripts ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -1,11 +1,12 @@
 <?php
-$order = is_array($order ?? null) ? $order : [];
+$order = isset($order) && is_array($order) ? $order : [];
 
 $orderId = (string)($order['orderId'] ?? 'VF-0000');
 $carName = (string)($order['carName'] ?? 'VinFast');
 $variantName = (string)($order['variantName'] ?? '');
 $carPrice = (float)($order['carPrice'] ?? 0);
 $exteriorColor = (string)($order['exteriorColor'] ?? '');
+$colorSurcharge = (float)($order['colorSurcharge'] ?? 0);
 $interiorColor = (string)($order['interiorColor'] ?? '');
 $customerName = (string)($order['customerName'] ?? '');
 $phone = (string)($order['phone'] ?? '');
@@ -123,10 +124,13 @@ $scripts = '';
                                 ['label' => 'Dòng xe', 'value' => $carName],
                                 ['label' => 'Phiên bản', 'value' => $variantName !== '' ? $variantName : '—'],
                                 ['label' => 'Ngoại thất', 'value' => $exteriorColor !== '' ? $exteriorColor : '—'],
-                                ['label' => 'Nội thất', 'value' => $interiorColor !== '' ? $interiorColor : '—'],
+                                $colorSurcharge > 0 ? ['label' => 'Phụ thu màu', 'value' => $fmtVnd($colorSurcharge), 'highlight' => true] : null,
                                 ['label' => 'Giá xe (kèm pin)', 'value' => $fmtVnd($carPrice), 'highlight' => true],
                             ] as $row
                         ): ?>
+                            <?php if ($row === null) {
+                                continue;
+                            } ?>
                             <div class="flex items-start justify-between gap-3">
                                 <span class="text-gray-500" style="font-size: 12px;"><?= htmlspecialchars($row['label']) ?></span>
                                 <span style="font-size: 12px; font-weight: <?= !empty($row['highlight']) ? 700 : 500 ?>; color: <?= !empty($row['highlight']) ? '#1a2240' : '#374151' ?>; text-align: right; max-width: 55%;"><?= htmlspecialchars((string)$row['value']) ?></span>

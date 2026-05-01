@@ -1,3 +1,14 @@
+<?php
+$currentStep = isset($currentStep) ? (int)$currentStep : 3;
+$productName = isset($productName) ? (string)$productName : '';
+$colorCode = isset($colorCode) ? (string)$colorCode : '';
+$colorName = isset($colorName) ? (string)$colorName : '';
+$selectedInteriorName = isset($selectedInteriorName) ? (string)$selectedInteriorName : '';
+$selectedVariant = isset($selectedVariant) && is_array($selectedVariant) ? $selectedVariant : [];
+$depositAmount = isset($depositAmount) ? (int)$depositAmount : 15000000;
+$selectedColorSurcharge = isset($selectedColorSurcharge) ? (int)$selectedColorSurcharge : 0;
+$formData = isset($formData) && is_array($formData) ? $formData : [];
+?>
 <section data-step-panel="3" class="space-y-4<?= $currentStep === 3 ? '' : ' hidden' ?>">
     <div>
         <h2 class="mb-1 text-[15px] font-bold text-slate-900">Bước 3 - Xác nhận và thanh toán</h2>
@@ -20,19 +31,21 @@
                 <span class="text-right font-semibold text-slate-800" data-summary-color><?= htmlspecialchars($colorName !== '' ? $colorName : $colorCode) ?></span>
             </div>
             <div class="flex items-start justify-between gap-2">
-                <span class="text-slate-500">Nội thất</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-interior><?= htmlspecialchars($selectedInteriorName !== '' ? $selectedInteriorName : '—') ?></span>
-            </div>
-            <div class="flex items-start justify-between gap-2">
                 <span class="text-slate-500">Giá xe tham khảo</span>
                 <span class="text-right font-semibold text-slate-800" data-summary-price><?= htmlspecialchars(number_format((float)($selectedVariant['price'] ?? 0), 0, ',', '.')) ?> VNĐ</span>
             </div>
             <div class="flex items-start justify-between gap-2">
                 <span class="text-slate-500">Tiền đặt cọc</span>
-                <span class="text-right font-semibold text-slate-800">15.000.000 VNĐ</span>
+                <span class="text-right font-semibold text-slate-800" data-summary-deposit><?= htmlspecialchars(number_format((float)($depositAmount ?? 15000000), 0, ',', '.')) ?> VNĐ</span>
+            </div>
+            <div class="hidden items-start justify-between gap-2" data-summary-color-surcharge-wrap>
+                <span class="text-slate-500">Phụ thu màu</span>
+                <span class="text-right font-semibold text-slate-800" data-summary-color-surcharge><?= htmlspecialchars(number_format((float)($selectedColorSurcharge ?? 0), 0, ',', '.')) ?> VNĐ</span>
             </div>
         </div>
     </div>
+
+    <p class="text-[11px] text-slate-500" data-deposit-hint>Tiền đặt cọc có thể không được hoàn lại.</p>
 
     <div>
         <p class="mb-2 text-[12px] font-semibold text-slate-800">Hình thức thanh toán</p>

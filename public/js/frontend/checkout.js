@@ -18,6 +18,8 @@
   var summaryVariant = form.querySelector('[data-summary-variant]');
   var summaryInterior = form.querySelector('[data-summary-interior]');
   var summaryPrice = form.querySelector('[data-summary-price]');
+  var summaryDeposit = form.querySelector('[data-summary-deposit]');
+  var summaryColorSurcharge = form.querySelector('[data-summary-color-surcharge]');
   var selectedExterior = form.querySelector('[data-selected-exterior]');
   var selectedInterior = form.querySelector('[data-selected-interior]');
   var selectedVariantPrice = form.querySelector('[data-selected-variant-price]');
@@ -26,6 +28,15 @@
   var interiorRadios = form.querySelectorAll('[data-interior-radio]');
   var interiorInput = form.querySelector('[data-interior-input]');
   var switchButtons = form.querySelectorAll('[data-switch-product]');
+  var baseDeposit = Number(root.getAttribute('data-deposit-amount') || '15000000');
+  if (Number.isNaN(baseDeposit) || baseDeposit < 0) {
+    baseDeposit = 15000000;
+  }
+  var depositNonRefundable = String(root.getAttribute('data-deposit-non-refundable') || '0') === '1';
+  var selectedColorSurcharge = Number(root.getAttribute('data-color-surcharge') || '0');
+  if (Number.isNaN(selectedColorSurcharge) || selectedColorSurcharge < 0) {
+    selectedColorSurcharge = 0;
+  }
 
   var step = Number(root.getAttribute('data-step') || '1');
   if (Number.isNaN(step) || step < 1 || step > 3) {
@@ -111,10 +122,24 @@
 
     var colorName = checked.getAttribute('data-color-name') || checked.value || '';
     var colorImage = checked.getAttribute('data-color-image') || '';
+    selectedColorSurcharge = Number(checked.getAttribute('data-color-surcharge') || 0);
+    if (Number.isNaN(selectedColorSurcharge) || selectedColorSurcharge < 0) {
+      selectedColorSurcharge = 0;
+    }
 
     if (summaryColor) {
       summaryColor.textContent = colorName;
     }
+
+    if (summaryColorSurcharge) {
+      summaryColorSurcharge.textContent = formatVnd(selectedColorSurcharge);
+    }
+
+    var surchargeWraps = form.querySelectorAll('[data-summary-color-surcharge-wrap], [data-selected-color-surcharge-wrap]');
+    surchargeWraps.forEach(function (wrap) {
+      if (!wrap) return;
+      wrap.classList.toggle('hidden', selectedColorSurcharge <= 0);
+    });
 
     if (selectedExterior) {
       selectedExterior.textContent = colorName;
@@ -123,6 +148,8 @@
     if (mainImage && colorImage) {
       mainImage.src = colorImage;
     }
+
+    updateDepositSummary();
   }
 
   function formatVnd(value) {
@@ -132,6 +159,24 @@
     }
 
     return num.toLocaleString('vi-VN') + ' VNĐ';
+  }
+
+  function updateDepositSummary() {
+    var totalDeposit = baseDeposit + selectedColorSurcharge;
+    if (summaryDeposit) {
+      summaryDeposit.textContent = formatVnd(totalDeposit);
+    }
+
+    var depositHint = form.querySelector('[data-deposit-hint]');
+    if (depositHint) {
+      depositHint.textContent = depositNonRefundable ? 'Tiền đặt cọc có thể không được hoàn lại.' : '';
+    }
+
+    var surchargeWraps = form.querySelectorAll('[data-summary-color-surcharge-wrap], [data-selected-color-surcharge-wrap]');
+    surchargeWraps.forEach(function (wrap) {
+      if (!wrap) return;
+      wrap.classList.toggle('hidden', selectedColorSurcharge <= 0);
+    });
   }
 
   function setActiveVariant(btn) {
@@ -258,5 +303,6 @@
 
   syncSelectedColor();
   syncSelectedInterior();
+  updateDepositSummary();
   setStep(step);
 })();

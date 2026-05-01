@@ -13,9 +13,15 @@
  */
 ?>
 <?php
-$product = is_array($product ?? null) ? $product : null;
-$old = is_array($old ?? null) ? $old : [];
-$cats = is_array($cats ?? null) ? $cats : [];
+if (!isset($product) || !is_array($product)) {
+    $product = null;
+}
+if (!isset($old) || !is_array($old)) {
+    $old = [];
+}
+if (!isset($cats) || !is_array($cats)) {
+    $cats = [];
+}
 
 $isEdit = isset($product['id']);
 $formId = (int)($old['id'] ?? ($product['id'] ?? 0));
@@ -30,7 +36,7 @@ $value = static function (string $key, $default = '') use ($old, $product) {
     return $default;
 };
 
-$specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
+$specs = is_array($product) && is_array($product['specs'] ?? null) ? $product['specs'] : [];
 $specOld = [
     'range' => $value('range', (string)($specs['range'] ?? '')),
     'power' => $value('power', (string)($specs['power'] ?? '')),
@@ -40,6 +46,20 @@ $specOld = [
 ];
 
 $exteriorColors = [];
+$normalizeColorImagePath = static function (string $path): string {
+    $path = trim($path);
+    if ($path === '') {
+        return '';
+    }
+
+    $path = str_replace('\\', '/', $path);
+    if (preg_match('~(?:^|[A-Za-z]:)?(?:.*/)?public/images/(.+)$~i', $path, $match)) {
+        return ltrim((string)$match[1], '/');
+    }
+
+    return ltrim($path, '/');
+};
+
 if (isset($old['exterior_colors_raw'])) {
     $exteriorColorsText = (string)$old['exterior_colors_raw'];
 } else {
@@ -51,7 +71,7 @@ if (isset($old['exterior_colors_raw'])) {
 
         $code = strtoupper(trim((string)($row['code'] ?? '')));
         $name = trim((string)($row['name'] ?? ''));
-        $image = trim((string)($row['image'] ?? ''));
+        $image = $normalizeColorImagePath((string)($row['image'] ?? ''));
         $hex = trim((string)($row['hex'] ?? ''));
 
         if ($code === '' || $name === '') {
@@ -75,7 +95,7 @@ if (isset($old['exterior_colors_raw'])) {
 $existingImages = [];
 if (isset($old['existing_images']) && is_array($old['existing_images'])) {
     $existingImages = $old['existing_images'];
-} elseif (is_array($product['images'] ?? null)) {
+} elseif (is_array($product) && is_array($product['images'] ?? null)) {
     $existingImages = $product['images'];
 }
 ?>

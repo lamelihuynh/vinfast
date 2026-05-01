@@ -30,13 +30,13 @@ document.addEventListener('DOMContentLoaded', function () {
   var inputAcceleration = document.getElementById('modal_acceleration');
   var inputMaxSpeed = document.getElementById('modal_max_speed');
   var inputBattery = document.getElementById('modal_battery');
+  var inputDepositAmount = document.getElementById('modal_deposit_amount');
+  var inputDepositNonRefundable = document.getElementById('modal_deposit_non_refundable');
   var inputExteriorColorsRaw = document.getElementById('modal_exterior_colors_raw');
   var inputIsActive = document.getElementById('modal_is_active');
   var inputImages = document.getElementById('modal_images');
   var inputMainImage = document.getElementById('modal_main_image');
   var inputMainNewIndex = document.getElementById('modal_main_new_index');
-  var existingSection = document.getElementById('existingImagesSection');
-  var existingContainer = document.getElementById('existingImagesContainer');
   var newSection = document.getElementById('newImagesSection');
   var newContainer = document.getElementById('newImagesContainer');
   var openCreateBtn = document.getElementById('openCreateProductBtn');
@@ -48,18 +48,29 @@ document.addEventListener('DOMContentLoaded', function () {
   function colorRowsToTextarea(rows) {
     if (!Array.isArray(rows)) return '';
 
+    function normalizePath(path) {
+      var value = String(path || '').trim().replace(/\\/g, '/');
+      var match = value.match(/(?:^|[A-Za-z]:)?(?:.*\/)?public\/images\/(.+)$/i);
+      if (match) {
+        value = match[1] || '';
+      }
+      return value.replace(/^\/+/, '');
+    }
+
     return rows
       .map(function (row) {
         if (!row || typeof row !== 'object') return '';
         var code = String(row.code || '').trim().toUpperCase();
         var name = String(row.name || '').trim();
-        var image = String(row.image || '').trim();
+        var image = normalizePath(row.image || '');
         var hex = String(row.hex || '').trim();
+        var surcharge = Number(row.surcharge || 0);
         if (!code || !name) return '';
 
         var parts = [code, name];
         if (image) parts.push(image);
         if (hex) parts.push(hex);
+        if (surcharge > 0) parts.push(String(Math.max(0, Math.floor(surcharge))));
         return parts.join('|');
       })
       .filter(function (line) {
@@ -99,11 +110,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function getFamilyFromProduct(product) {
     if (!product || typeof product !== 'object') return '';
     return String(product.family || extractFamily(product.slug || product.name || '') || '').toLowerCase();
-  }
-
-  function clearExistingImages() {
-    existingContainer.innerHTML = '';
-    existingSection.classList.add('d-none');
   }
 
   function clearNewImagesPreview() {
@@ -151,24 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var currentMainRel = normalizeRel(inputMainImage.value);
     var currentMainNewIndex = inputMainNewIndex.value;
 
-    existingContainer.querySelectorAll('.image-item').forEach(function (item) {
-      var rel = normalizeRel(item.getAttribute('data-rel') || '');
-      var isMain = rel !== '' && rel === currentMainRel;
-      item.classList.toggle('border-primary', isMain);
-
-      var badge = item.querySelector('.badge-main-existing');
-      if (badge) {
-        badge.classList.toggle('d-none', !isMain);
-      }
-
-      var btn = item.querySelector('.btn-set-main-existing');
-      if (btn) {
-        btn.textContent = isMain ? 'Ảnh chính' : 'Đặt ảnh chính';
-        btn.classList.toggle('btn-primary', isMain);
-        btn.classList.toggle('btn-outline-primary', !isMain);
-      }
-    });
-
+    // Only handle new image preview section (existing images are in the table)
     newContainer.querySelectorAll('.new-image-item').forEach(function (item) {
       var idx = item.getAttribute('data-new-index') || '';
       var isMain = idx !== '' && idx === currentMainNewIndex;
@@ -186,27 +175,6 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.classList.toggle('btn-outline-primary', !isMain);
       }
     });
-  }
-
-  function addExistingImageItem(relativePath) {
-    var col = document.createElement('div');
-    col.className = 'col-6 col-md-3 image-item border rounded';
-    var rel = String(relativePath || '').replace(/^\/+/, '');
-    var url = baseUrl + 'public/images/' + rel;
-    var escapedRel = rel.replace(/"/g, '&quot;');
-    col.setAttribute('data-rel', rel);
-
-    col.innerHTML =
-      '<div class="border rounded p-2 h-100">' +
-      '<div class="d-flex justify-content-between align-items-center mb-2">' +
-      '<span class="badge bg-primary badge-main-existing d-none">Chính</span>' +
-      '<button type="button" class="btn btn-sm btn-outline-primary btn-set-main-existing">Đặt ảnh chính</button>' +
-      '</div>' +
-      '<img src="' + url + '" alt="Product image" class="w-100" style="height:100px;object-fit:cover;border-radius:6px;">' +
-      '<input type="hidden" name="existing_images[]" value="' + escapedRel + '">' +
-      '<button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-remove-existing">Xóa ảnh</button>' +
-      '</div>';
-    existingContainer.appendChild(col);
   }
 
   function renderNewImagePreview(fileList) {
@@ -243,37 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function bindRemoveExisting() {
-    existingContainer.querySelectorAll('.btn-remove-existing').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var item = btn.closest('.image-item');
-        var removedRel = item ? normalizeRel(item.getAttribute('data-rel') || '') : '';
-        if (item) item.remove();
-
-        if (removedRel !== '' && normalizeRel(inputMainImage.value) === removedRel) {
-          inputMainImage.value = '';
-          var firstRemaining = existingContainer.querySelector('.image-item');
-          if (firstRemaining) {
-            inputMainImage.value = normalizeRel(firstRemaining.getAttribute('data-rel') || '');
-          }
-        }
-
-        if (existingContainer.children.length === 0) {
-          existingSection.classList.add('d-none');
-        }
-
-        refreshMainIndicators();
-      });
-    });
-
-    existingContainer.querySelectorAll('.btn-set-main-existing').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var item = btn.closest('.image-item');
-        if (!item) return;
-        var rel = normalizeRel(item.getAttribute('data-rel') || '');
-        if (rel === '') return;
-        setMainExisting(rel);
-      });
-    });
+    // Existing images are now managed via the color-image table; this function is no longer used.
   }
 
   function bindNewMainButtons() {
@@ -302,6 +240,8 @@ document.addEventListener('DOMContentLoaded', function () {
     inputAcceleration.value = '';
     inputMaxSpeed.value = '';
     inputBattery.value = '';
+    if (inputDepositAmount) inputDepositAmount.value = '15000000';
+    if (inputDepositNonRefundable) inputDepositNonRefundable.value = '1';
     if (inputExteriorColorsRaw) inputExteriorColorsRaw.value = '';
     inputIsActive.checked = true;
     inputImages.value = '';
@@ -309,8 +249,11 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMainNewIndex.value = '';
     slugTouched = false;
     currentEditingFamily = '';
-    clearExistingImages();
     clearNewImagesPreview();
+    // clear any existing color-image table rows left from previous edits
+    try {
+      renderColorImageTable({ images: [], exterior_colors: [] });
+    } catch (e) {}
   }
 
   function fillFormForEdit(product) {
@@ -327,9 +270,13 @@ document.addEventListener('DOMContentLoaded', function () {
     inputAcceleration.value = product.acceleration || '';
     inputMaxSpeed.value = product.max_speed || '';
     inputBattery.value = product.battery || '';
+    if (inputDepositAmount) inputDepositAmount.value = String(product.deposit_amount || 15000000);
+    if (inputDepositNonRefundable) inputDepositNonRefundable.value = '1';
     if (inputExteriorColorsRaw) {
       inputExteriorColorsRaw.value = colorRowsToTextarea(product.exterior_colors || []);
     }
+    // render table editor for existing images
+    renderColorImageTable(product);
     inputIsActive.checked = Number(product.is_active || 0) === 1;
     inputImages.value = '';
     inputMainImage.value = '';
@@ -337,16 +284,156 @@ document.addEventListener('DOMContentLoaded', function () {
     slugTouched = true;
     currentEditingFamily = getFamilyFromProduct(product);
 
-    clearExistingImages();
-    if (Array.isArray(product.images) && product.images.length > 0) {
-      existingSection.classList.remove('d-none');
-      product.images.forEach(addExistingImageItem);
-      inputMainImage.value = normalizeRel(product.images[0] || '');
-      bindRemoveExisting();
-    }
+    // existing images are managed via the color-image table now
+    // ensure textarea and main image are synced from the table
+    serializeTableToTextarea();
 
     clearNewImagesPreview();
     refreshMainIndicators();
+  }
+
+  function renderColorImageTable(product) {
+    var table = document.getElementById('colorImageTable');
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+
+    var images = Array.isArray(product.images) ? product.images : [];
+    var colors = Array.isArray(product.exterior_colors) ? product.exterior_colors : [];
+
+    // Show placeholder if no images
+    if (images.length === 0) {
+      var emptyTr = document.createElement('tr');
+      emptyTr.innerHTML = '<td colspan="7" class="text-center text-muted py-3"><em>Sản phẩm này chưa có ảnh. Hãy tải ảnh mới ở trên.</em></td>';
+      tbody.appendChild(emptyTr);
+      return;
+    }
+
+    // map by basename to prefill
+    var colorMap = {};
+    colors.forEach(function (r) {
+      if (r && typeof r === 'object' && r.code) {
+        colorMap[(r.image || '').replace(/^\/+/, '')] = r;
+      }
+    });
+
+    images.forEach(function (img, idx) {
+      var rel = String(img || '').replace(/^\/+/, '');
+      var filename = rel.split('/').pop() || rel;
+      var existing = colorMap[rel] || {};
+      var surchargeValue = Number(existing.surcharge || 0);
+      var codeValue = String(existing.code || filename.split('.')[0] || '').trim().toUpperCase();
+
+      var tr = document.createElement('tr');
+
+      tr.innerHTML =
+        '<td><img src="' + (window.VF_PRODUCT_MODAL_BASE_URL || '') + 'public/images/' + rel + '" alt="" class="img-fluid" style="height:40px;object-fit:cover;border-radius:4px"></td>' +
+        '<td class="align-middle"><div class="text-truncate" style="max-width:180px">' + escapeHtml(filename) + '</div><input type="hidden" class="color-table-code" value="' + escapeHtml(codeValue) + '"></td>' +
+        '<td class="align-middle"><input type="text" class="form-control form-control-sm color-table-name" placeholder="VD: Xanh dương" value="' + escapeHtml(existing.name || '') + '"></td>' +
+        '<td class="align-middle"><input type="text" class="form-control form-control-sm color-table-hex" placeholder="VD: #0000FF" value="' + escapeHtml(existing.hex || '') + '"></td>' +
+        '<td class="align-middle"><input type="number" min="0" step="1000" class="form-control form-control-sm color-table-surcharge" placeholder="VD: 5000000" value="' + (surchargeValue > 0 ? String(Math.max(0, Math.floor(surchargeValue))) : '') + '"></td>' +
+        '<td class="align-middle text-center">' +
+          '<input type="radio" name="modal_default_image" class="form-check-input" value="' + escapeHtml(rel) + '" ' + (existing.isDefault || idx === 0 ? 'checked' : '') + '>' +
+        '</td>' +
+        '<td class="align-middle"><input type="hidden" name="existing_images[]" value="' + escapeHtml(rel) + '"><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">Xóa</button></td>';
+
+      // store rel on row
+      tr.setAttribute('data-rel', rel);
+
+      tbody.appendChild(tr);
+    });
+
+    // bind remove
+    tbody.querySelectorAll('.btn-remove-row').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tr = btn.closest('tr');
+        if (tr) tr.remove();
+      });
+    });
+  }
+
+  function autoMatchTableCodes() {
+    var table = document.getElementById('colorImageTable');
+    if (!table) return;
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      var rel = tr.getAttribute('data-rel') || '';
+      var filename = rel.split('/').pop() || rel;
+      var basename = filename.split('.')[0] || '';
+      var codeInput = tr.querySelector('.color-table-code');
+      if (codeInput && (!codeInput.value || codeInput.value.trim() === '')) {
+        codeInput.value = basename.toUpperCase();
+      }
+      var hexInput = tr.querySelector('.color-table-hex');
+      if (hexInput && (!hexInput.value || hexInput.value.trim() === '')) {
+        // leave blank — user may fill
+      }
+    });
+  }
+
+  function serializeTableToTextarea() {
+    if (!inputExteriorColorsRaw) return;
+    var table = document.getElementById('colorImageTable');
+    if (!table) return;
+    var lines = [];
+    var missingNames = [];
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      var rel = tr.getAttribute('data-rel') || '';
+      var code = (tr.querySelector('.color-table-code') || {}).value || '';
+      var name = (tr.querySelector('.color-table-name') || {}).value || '';
+      var hex = (tr.querySelector('.color-table-hex') || {}).value || '';
+      var surcharge = (tr.querySelector('.color-table-surcharge') || {}).value || '';
+      code = String(code || '').trim().toUpperCase();
+      name = String(name || '').trim();
+      hex = String(hex || '').trim();
+      surcharge = String(surcharge || '').trim();
+      if (!code || !name) {
+        if (code && !name) {
+          missingNames.push(code);
+        }
+        return;
+      }
+      var parts = [code, name];
+      if (rel) parts.push(rel);
+      if (hex) parts.push(hex);
+      if (surcharge !== '') parts.push(surcharge.replace(/\D+/g, ''));
+      lines.push(parts.join('|'));
+    });
+    
+    
+    inputExteriorColorsRaw.value = lines.join('\n');
+    // set main image from checked radio in the table (if any)
+    try {
+      var checked = document.querySelector('input[name="modal_default_image"]:checked');
+      if (checked && checked.value) {
+        inputMainImage.value = String(checked.value || '').replace(/^\/+/, '');
+        inputMainNewIndex.value = '';
+      } else if (lines.length === 0) {
+        inputMainImage.value = '';
+      } else {
+        // fallback: first existing_images[] value present in table
+        var firstRel = (table.querySelector('input[name="existing_images[]"]') || {}).value || '';
+        if (firstRel) inputMainImage.value = String(firstRel).replace(/^\/+/, '');
+      }
+    } catch (e) {}
+    return true;
+  }
+
+  // wire auto-match and sync buttons
+  var btnAuto = document.getElementById('btnAutoMatchColors');
+  if (btnAuto) btnAuto.addEventListener('click', function () { 
+    autoMatchTableCodes(); 
+  });
+
+  // ensure table serialized before submit
+  var modalForm = document.getElementById('productModalForm');
+  if (modalForm) {
+    modalForm.addEventListener('submit', function (e) {
+      var result = serializeTableToTextarea();
+      if (result === false) {
+        e.preventDefault();
+        return false;
+      }
+    });
   }
 
   if (openCreateBtn) {

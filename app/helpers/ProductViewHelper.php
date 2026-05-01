@@ -25,6 +25,11 @@ class ProductViewHelper
             return $imgRel;
         }
 
+        $imgRel = str_replace('\\', '/', $imgRel);
+        if (preg_match('~(?:^|[A-Za-z]:)?(?:.*/)?public/images/(.+)$~i', $imgRel, $match)) {
+            $imgRel = (string)$match[1];
+        }
+
         $imgRel = ltrim($imgRel, '/');
 
         if (strpos($imgRel, '/') !== false) {

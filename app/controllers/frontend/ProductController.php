@@ -163,8 +163,27 @@ class ProductController
             $selectedColor = [
                 'code' => strtoupper(trim((string)($exteriorColors[0]['code'] ?? ''))),
                 'name' => trim((string)($exteriorColors[0]['name'] ?? '')),
+                'surcharge' => max(0, (int)($exteriorColors[0]['surcharge'] ?? 0)),
             ];
         }
+
+        if ($selectedColor !== null) {
+            $selectedCodeForMatch = strtoupper(trim((string)($selectedColor['code'] ?? '')));
+            foreach ($exteriorColors as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+
+                $code = strtoupper(trim((string)($row['code'] ?? '')));
+                if ($code !== '' && $code === $selectedCodeForMatch) {
+                    $selectedColor['surcharge'] = max(0, (int)($row['surcharge'] ?? 0));
+                    break;
+                }
+            }
+        }
+
+        $depositAmount = max(0, (int)($specs['deposit_amount'] ?? 15000000));
+        $depositNonRefundable = !empty($specs['deposit_non_refundable']) ? 1 : 0;
 
         $selectedColorCode = strtoupper(trim((string)($selectedColor['code'] ?? '')));
         $buildCheckoutUrl = static function (int $productId, string $colorCode = ''): string {
@@ -266,6 +285,12 @@ class ProductController
                     header('Location: ' . BASE_URL . 'products/checkout/' . $switchProductId);
                     exit;
                 }
+            } elseif ($switchProductId > 0 && $switchProductId === $id) {
+                // clicking the currently active product should not submit the form —
+                // redirect to the same page (GET) to avoid triggering validation.
+                unset($_SESSION['checkout_old']);
+                header('Location: ' . BASE_URL . 'products/checkout/' . $id);
+                exit;
             }
 
             $formData = [
@@ -360,10 +385,13 @@ class ProductController
                 'color' => [
                     'code' => (string)($selectedColor['code'] ?? ''),
                     'name' => (string)($selectedColor['name'] ?? ''),
+                    'surcharge' => max(0, (int)($selectedColor['surcharge'] ?? 0)),
                 ],
                 'variant_name' => (string)$formData['variant_name'],
                 'interior_code' => (string)$formData['interior_code'],
-                'deposit_amount' => 15000000,
+                'deposit_amount' => $depositAmount + max(0, (int)($selectedColor['surcharge'] ?? 0)),
+                'deposit_base_amount' => $depositAmount,
+                'deposit_non_refundable' => $depositNonRefundable,
                 'payment_status' => 'pending_verify',
                 'payment_verified_at' => null,
             ];
@@ -389,6 +417,7 @@ class ProductController
                 'variantName' => (string)$formData['variant_name'],
                 'carPrice' => (float)($selectedVariant['price'] ?? ($product['price'] ?? 0)),
                 'exteriorColor' => (string)($selectedColor['name'] ?? $selectedColorCode),
+                'colorSurcharge' => max(0, (int)($selectedColor['surcharge'] ?? 0)),
                 'interiorColor' => (string)$selectedInteriorName,
                 'customerName' => (string)$formData['full_name'],
                 'phone' => (string)$formData['phone'],
@@ -397,7 +426,9 @@ class ProductController
                 'province' => (string)$formData['province'],
                 'showroom' => (string)$formData['showroom'],
                 'payMethod' => (string)$formData['pay_method'],
-                'depositAmount' => 15000000,
+                'depositAmount' => $depositAmount + max(0, (int)($selectedColor['surcharge'] ?? 0)),
+                'depositBaseAmount' => $depositAmount,
+                'depositNonRefundable' => $depositNonRefundable,
                 'paymentStatus' => 'pending_verify',
                 'orderDate' => date('d/m/Y H:i'),
             ];

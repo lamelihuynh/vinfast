@@ -21,7 +21,7 @@ $facebook = (string)($settings['facebook_url'] ?? '');
      FOOTER (Tailwind)
      - Contact info đọc từ site_settings
 ========================================================== -->
-<footer class="mt-12 border-t border-slate-200 bg-slate-950 text-slate-200">
+<footer class="border-t border-slate-200 bg-slate-950 text-slate-200">
   <div class="mx-auto max-w-6xl px-4 py-10">
     <div class="grid gap-8 md:grid-cols-12">
       <!-- ===== Brand ===== -->

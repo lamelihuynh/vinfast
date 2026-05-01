@@ -2,7 +2,6 @@
   <div class="mb-6 flex flex-wrap gap-x-8 gap-y-2 border-b border-slate-200" role="tablist" aria-label="Thông tin sản phẩm">
     <button type="button" class="vf-pd-tab-btn is-active border-0 border-b-2 border-transparent bg-transparent px-0 pb-3 text-[14px] font-medium text-slate-500 transition hover:text-vfNavy" data-tab="mota">Mô tả chi tiết</button>
     <button type="button" class="vf-pd-tab-btn border-0 border-b-2 border-transparent bg-transparent px-0 pb-3 text-[14px] font-medium text-slate-500 transition hover:text-vfNavy" data-tab="thongso">Thông số kỹ thuật</button>
-    <button type="button" class="vf-pd-tab-btn border-0 border-b-2 border-transparent bg-transparent px-0 pb-3 text-[14px] font-medium text-slate-500 transition hover:text-vfNavy" data-tab="danhgia">Đánh giá (<?= (int)$reviewCount ?>)</button>
   </div>
 
   <div>

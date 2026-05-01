@@ -1,5 +1,5 @@
 ﻿<?php
-$product = is_array($product ?? null) ? $product : [];
+$product = isset($product) && is_array($product) ? $product : [];
 $productId = (int)($product['id'] ?? 0);
 $productName = (string)($product['name'] ?? 'VinFast');
 $descriptionText = trim((string)($product['description'] ?? ''));
@@ -160,6 +160,7 @@ foreach ($exteriorColorsRaw as $row) {
         'name' => $name,
         'hex' => preg_match('/^#?[A-F0-9]{3,6}$/i', $hex) ? ('#' . ltrim($hex, '#')) : '',
         'image' => $imageUrl,
+        'surcharge' => max(0, (int)($row['surcharge'] ?? 0)),
     ];
 }
 
@@ -266,14 +267,6 @@ if (empty($specRows)) {
     ];
 }
 
-$reviewCount = (int)($specs['review_count'] ?? 48);
-
-$reviewItems = [
-    ['name' => 'Nguyễn Minh Khang', 'date' => '12/03/2026', 'stars' => 5, 'body' => 'Xe tăng tốc tốt, vận hành mượt và tiết kiệm chi phí so với xe xăng trước đây.'],
-    ['name' => 'Trần Bảo Anh', 'date' => '01/03/2026', 'stars' => 5, 'body' => 'Không gian nội thất rộng rãi, nhiều công nghệ an toàn và hỗ trợ lái rất hữu ích.'],
-    ['name' => 'Lê Đức Nam', 'date' => '21/02/2026', 'stars' => 4, 'body' => 'Phù hợp đi phố và đi tỉnh, trạm sạc ngày càng nhiều nên yên tâm sử dụng.'],
-    ['name' => 'Phạm Thu Hà', 'date' => '16/02/2026', 'stars' => 5, 'body' => 'Thiết kế đẹp, màn hình dễ dùng, dịch vụ hậu mãi tốt và hỗ trợ nhanh.'],
-];
 
 $priceText = number_format((float)($product['price'] ?? 0), 0, ',', '.');
 

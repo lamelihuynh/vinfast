@@ -104,6 +104,8 @@ class ProductAdminController
                 'acceleration' => (string)($specs['acceleration'] ?? ''),
                 'max_speed' => (string)($specs['max_speed'] ?? ''),
                 'battery' => (string)($specs['battery'] ?? ''),
+                'deposit_amount' => max(0, (int)($specs['deposit_amount'] ?? 15000000)),
+                'deposit_non_refundable' => !empty($specs['deposit_non_refundable']) ? 1 : 0,
                 'exterior_colors' => is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [],
                 'images' => array_values($localImages),
                 'family' => $this->extractImageFamily((string)($p['slug'] ?? '')),
@@ -158,6 +160,7 @@ class ProductAdminController
         }
 
         $existingImages = $this->collectExistingImages($_POST['existing_images'] ?? []);
+        $newImages = [];
 
         try {
             $imageSubdir = $this->resolveImageFamilyFromPayload($payload, is_array($existing) ? $existing : []);
@@ -256,6 +259,8 @@ class ProductAdminController
             'acceleration' => trim((string)($_POST['acceleration'] ?? '')),
             'max_speed' => trim((string)($_POST['max_speed'] ?? '')),
             'battery' => trim((string)($_POST['battery'] ?? '')),
+            'deposit_amount' => max(0, (int)($_POST['deposit_amount'] ?? 15000000)),
+            'deposit_non_refundable' => isset($_POST['deposit_non_refundable']) ? 1 : 0,
             'exterior_colors_raw' => trim((string)($_POST['exterior_colors_raw'] ?? '')),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
         ];
@@ -292,6 +297,8 @@ class ProductAdminController
             'acceleration' => $payload['acceleration'],
             'max_speed' => $payload['max_speed'],
             'battery' => $payload['battery'],
+            'deposit_amount' => max(0, (int)($payload['deposit_amount'] ?? 15000000)),
+            'deposit_non_refundable' => 1,
         ];
 
         $exteriorColors = $this->parseExteriorColors($payload['exterior_colors_raw'] ?? '');
@@ -311,6 +318,10 @@ class ProductAdminController
 
             if (is_array($v)) {
                 return !empty($v);
+            }
+
+            if (is_int($v) || is_float($v) || is_bool($v)) {
+                return true;
             }
 
             return false;
@@ -344,9 +355,10 @@ class ProductAdminController
             $name = '';
             $image = '';
             $hex = '';
+            $surcharge = 0;
 
-            if (preg_match('/\b([A-Za-z0-9_-]+\.(?:webp|jpg|jpeg|png))\b/i', $line, $mImage)) {
-                $image = trim((string)$mImage[1]);
+            if (preg_match('/(?:^|[\s|])((?:[A-Za-z]:)?[^|]+\.(?:webp|jpg|jpeg|png))\b/i', $line, $mImage)) {
+                $image = $this->normalizeColorImagePath((string)$mImage[1]);
                 $basename = pathinfo($image, PATHINFO_FILENAME);
                 if (is_string($basename) && $basename !== '') {
                     $code = strtoupper($basename);
@@ -385,7 +397,12 @@ class ProductAdminController
                     }
 
                     if ($image === '' && preg_match('/(?:^|\/)[A-Za-z0-9._-]+\.(?:webp|jpg|jpeg|png)$/i', $token)) {
-                        $image = $token;
+                        $image = $this->normalizeColorImagePath($token);
+                        continue;
+                    }
+
+                    if ($surcharge <= 0 && preg_match('/^[0-9][0-9.,]*$/', $token)) {
+                        $surcharge = max(0, (int)preg_replace('/\D+/', '', $token));
                     }
                 }
             }
@@ -418,16 +435,35 @@ class ProductAdminController
             ];
 
             if ($image !== '') {
-                $row['image'] = ltrim($image, '/');
+                $row['image'] = $this->normalizeColorImagePath($image);
             }
             if ($hex !== '') {
                 $row['hex'] = $hex;
+            }
+            if ($surcharge > 0) {
+                $row['surcharge'] = $surcharge;
             }
 
             $out[strtoupper($code)] = $row;
         }
 
         return array_values($out);
+    }
+
+    private function normalizeColorImagePath(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        $path = str_replace('\\', '/', $path);
+
+        if (preg_match('~(?:^|[A-Za-z]:)?(?:.*/)?public/images/(.+)$~i', $path, $match)) {
+            return ltrim((string)$match[1], '/');
+        }
+
+        return ltrim($path, '/');
     }
 
     private function collectExistingImages($existingImagesRaw): array

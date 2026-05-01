@@ -1,7 +1,21 @@
+<?php
+$currentStep = isset($currentStep) ? (int)$currentStep : 1;
+$productName = isset($productName) ? (string)$productName : 'VinFast';
+$productId = isset($productId) ? (int)$productId : 0;
+$selectedInteriorCode = isset($selectedInteriorCode) ? (string)$selectedInteriorCode : '';
+$selectedInteriorName = isset($selectedInteriorName) ? (string)$selectedInteriorName : '';
+$colorCode = isset($colorCode) ? (string)$colorCode : '';
+$colorName = isset($colorName) ? (string)$colorName : '';
+$selectedColorSurcharge = isset($selectedColorSurcharge) ? (int)$selectedColorSurcharge : 0;
+$variantChoices = isset($variantChoices) && is_array($variantChoices) ? $variantChoices : [];
+$variantSwitchChoices = isset($variantSwitchChoices) && is_array($variantSwitchChoices) ? $variantSwitchChoices : [];
+$selectedVariant = isset($selectedVariant) && is_array($selectedVariant) ? $selectedVariant : [];
+$selectedVariantName = isset($selectedVariantName) ? (string)$selectedVariantName : '';
+?>
 <section data-step-panel="1" class="space-y-4<?= $currentStep === 1 ? '' : ' hidden' ?>">
     <div>
         <h2 class="mb-1 text-[15px] font-bold text-slate-900">Bước 1 - Lựa chọn cấu hình</h2>
-        <p class="m-0 text-[12px] leading-relaxed text-slate-500">Xin mời Quý khách chọn phiên bản, ngoại thất và nội thất xe trước khi qua bước nhập thông tin.</p>
+        <p class="m-0 text-[12px] leading-relaxed text-slate-500">Xin mời Quý khách chọn phiên bản, ngoại thất xe trước khi qua bước nhập thông tin.</p>
     </div>
 
     <input type="hidden" name="variant_name" value="<?= htmlspecialchars((string)($selectedVariant['name'] ?? $productName)) ?>" data-variant-input>
@@ -70,61 +84,33 @@
                     }
                     ?>
                     <label class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 p-0.5 transition <?= $isChecked ? 'border-vfNavy shadow-[0_0_0_2px_rgba(20,100,244,0.22)]' : 'border-slate-200 hover:border-slate-300' ?>">
-                        <input type="radio" name="color_code" value="<?= htmlspecialchars((string)$choice['code']) ?>" class="sr-only" data-color-radio data-color-name="<?= htmlspecialchars((string)$choice['name']) ?>" data-color-image="<?= htmlspecialchars((string)($choice['imageUrl'] ?? '')) ?>" <?= $isChecked ? 'checked' : '' ?>>
+                        <input type="radio" name="color_code" value="<?= htmlspecialchars((string)$choice['code']) ?>" class="sr-only" data-color-radio data-color-name="<?= htmlspecialchars((string)$choice['name']) ?>" data-color-image="<?= htmlspecialchars((string)($choice['imageUrl'] ?? '')) ?>" data-color-surcharge="<?= (int)($choice['surcharge'] ?? 0) ?>" <?= $isChecked ? 'checked' : '' ?>>
                         <span class="inline-block h-6 w-6 rounded-full border border-slate-300" <?= $dotStyle ?>></span>
                     </label>
                 <?php endforeach; ?>
             </div>
+            <p class="mt-2 text-[11px] text-slate-500">Phụ thu màu sẽ được cộng vào số tiền đặt cọc ở bước xác nhận.</p>
         <?php else: ?>
             <p class="m-0 text-[12px] text-slate-500">Mẫu xe hiện chưa có danh sách màu cấu hình trong dữ liệu sản phẩm.</p>
         <?php endif; ?>
     </div>
 
-    <?php if (!empty($interiorChoices)): ?>
-        <div class="rounded-xl border border-slate-100 p-4">
-            <div class="mb-2 flex items-center justify-between gap-2">
-                <p class="m-0 text-[12px] font-semibold text-slate-800">Nội thất</p>
-                <p class="m-0 text-[11px] text-slate-500" data-selected-interior><?= htmlspecialchars($selectedInteriorName) ?></p>
-            </div>
-
-            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Màu nội thất">
-                <?php foreach ($interiorChoices as $choice): ?>
-                    <?php
-                    $isChecked = strtoupper((string)$choice['code']) === strtoupper($selectedInteriorCode);
-                    $dotStyle = '';
-                    if (!empty($choice['hex']) && preg_match('/^#?[A-F0-9]{3,6}$/i', (string)$choice['hex'])) {
-                        $dotStyle = 'style="background:' . htmlspecialchars('#' . ltrim((string)$choice['hex'], '#')) . '"';
-                    }
-                    ?>
-                    <label class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 p-0.5 transition <?= $isChecked ? 'border-vfNavy shadow-[0_0_0_2px_rgba(20,100,244,0.22)]' : 'border-slate-200 hover:border-slate-300' ?>">
-                        <input type="radio" value="<?= htmlspecialchars((string)$choice['code']) ?>" class="sr-only" data-interior-radio data-interior-name="<?= htmlspecialchars((string)$choice['name']) ?>" <?= $isChecked ? 'checked' : '' ?>>
-                        <span class="inline-block h-6 w-6 rounded-full border border-slate-300" <?= $dotStyle ?>></span>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    <?php endif; ?>
 
     <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
-        <div class="space-y-2 border-b border-slate-200 pb-3">
-            <div class="flex items-center justify-between gap-2 text-[12px]">
-                <span class="text-slate-500">Dự toán trả góp</span>
-                <a href="<?= BASE_URL ?>contact" class="font-semibold text-blue-600 no-underline hover:underline">Chi tiết</a>
-            </div>
-            <div class="flex items-center justify-between gap-2 text-[12px]">
-                <span class="text-slate-500">Dự toán chi phí lăn bánh</span>
-                <a href="<?= BASE_URL ?>contact" class="font-semibold text-blue-600 no-underline hover:underline">Chi tiết</a>
-            </div>
-        </div>
-
-        <div class="mt-3 flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2">
             <span class="text-[12px] font-semibold text-slate-700">Giá xe kèm pin</span>
             <span class="text-[14px] font-bold text-slate-900" data-selected-variant-price><?= htmlspecialchars(number_format((float)($selectedVariant['price'] ?? 0), 0, ',', '.')) ?> VNĐ</span>
         </div>
     </div>
+        <div class="rounded-xl border border-slate-100 bg-white p-4 hidden" data-selected-color-surcharge-wrap>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-[12px] font-semibold text-slate-700">Phụ thu màu</span>
+                <span class="text-[14px] font-bold text-slate-900" data-summary-color-surcharge><?= htmlspecialchars(number_format((float)($selectedColorSurcharge ?? 0), 0, ',', '.')) ?> VNĐ</span>
+            </div>
+        </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <a href="<?= BASE_URL ?>products/detail/<?= (int)$productId ?>" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-[13px] font-semibold text-slate-700 no-underline transition hover:bg-slate-100">Quay lại chi tiết</a>
-        <button type="button" data-step-next="2" class="inline-flex items-center justify-center rounded-lg border border-vfNavy bg-vfNavy px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-90">Tiếp tục nhập thông tin</button>
-    </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <a href="<?= BASE_URL ?>products/detail/<?= (int)$productId ?>" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-[13px] font-semibold text-slate-700 no-underline transition hover:bg-slate-100">Quay lại chi tiết</a>
+            <button type="button" data-step-next="2" class="inline-flex items-center justify-center rounded-lg border border-vfNavy bg-vfNavy px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-90">Tiếp tục nhập thông tin</button>
+        </div>
 </section>

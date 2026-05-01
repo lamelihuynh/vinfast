@@ -1,10 +1,10 @@
 <?php
-$product = is_array($product ?? null) ? $product : [];
-$selectedColor = is_array($selectedColor ?? null) ? $selectedColor : null;
-$provinces = is_array($provinces ?? null) ? $provinces : [];
-$showrooms = is_array($showrooms ?? null) ? $showrooms : [];
-$formData = is_array($formData ?? null) ? $formData : [];
-$switchProducts = is_array($switchProducts ?? null) ? $switchProducts : [];
+$product = isset($product) && is_array($product) ? $product : [];
+$selectedColor = isset($selectedColor) && is_array($selectedColor) ? $selectedColor : [];
+$provinces = isset($provinces) && is_array($provinces) ? $provinces : [];
+$showrooms = isset($showrooms) && is_array($showrooms) ? $showrooms : [];
+$formData = isset($formData) && is_array($formData) ? $formData : [];
+$switchProducts = isset($switchProducts) && is_array($switchProducts) ? $switchProducts : [];
 
 $productId = (int)($product['id'] ?? 0);
 $productName = (string)($product['name'] ?? 'VinFast');
@@ -190,6 +190,7 @@ foreach ($rawExteriorColors as $row) {
         'name' => $name,
         'hex' => $hex,
         'image' => trim((string)($row['image'] ?? '')),
+        'surcharge' => max(0, (int)($row['surcharge'] ?? 0)),
     ];
 }
 
@@ -385,6 +386,10 @@ if ($selectedVariantName === '') {
     $selectedVariantName = (string)($variantChoices[0]['name'] ?? $productName);
 }
 
+$depositAmount = max(0, (int)($specs['deposit_amount'] ?? 15000000));
+$depositNonRefundable = !empty($specs['deposit_non_refundable']) ? 1 : 0;
+$selectedColorSurcharge = max(0, (int)($selectedColor['surcharge'] ?? 0));
+
 $selectedVariant = $variantChoices[0];
 foreach ($variantChoices as $variantRow) {
     if (strcasecmp((string)($variantRow['name'] ?? ''), $selectedVariantName) === 0) {
@@ -420,9 +425,9 @@ $checkoutJsVersion = AssetHelper::getVersion('public/js/frontend/checkout.js');
 $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . htmlspecialchars($checkoutJsVersion) . '"></script>';
 ?>
 
-<section class="min-h-[65vh] bg-slate-50 py-8">
+<section class="min-h-screen bg-slate-50 py-8">
     <div class="mx-auto w-full max-w-6xl px-4 lg:px-6">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-start" id="vfCheckoutRoot" data-step="<?= (int)$currentStep ?>" data-showrooms='<?= htmlspecialchars(json_encode($showrooms, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>' data-current-color='<?= htmlspecialchars($colorName !== '' ? $colorName : $colorCode) ?>'>
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start" id="vfCheckoutRoot" data-step="<?= (int)$currentStep ?>" data-showrooms='<?= htmlspecialchars(json_encode($showrooms, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>' data-current-color='<?= htmlspecialchars($colorName !== '' ? $colorName : $colorCode) ?>' data-deposit-amount="<?= (int)$depositAmount ?>" data-deposit-non-refundable="<?= (int)$depositNonRefundable ?>" data-color-surcharge="<?= (int)$selectedColorSurcharge ?>">
             <div class="min-w-0 flex-1">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div class="grid grid-cols-1 lg:grid-cols-[132px_1fr]">
@@ -480,7 +485,7 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                 </div>
             </div>
 
-            <div class="w-full lg:w-[340px] lg:flex-shrink-0">
+            <div class="w-full lg:w-[400px] lg:flex-shrink-0">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div class="border-b border-slate-100 px-4 pt-4">
                         <div class="flex items-center gap-2 pb-3">

@@ -1,6 +1,9 @@
 <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
+            <?php if (!isset($cats) || !is_array($cats)) {
+                $cats = [];
+            } ?>
             <form method="POST" action="<?= ADMIN_URL ?>products/save" enctype="multipart/form-data" id="productModalForm" class="d-flex flex-column" style="max-height: calc(100vh - 3.5rem);">
                 <div class="modal-header">
                     <h5 class="modal-title" id="productModalTitle">Chỉnh sửa sản phẩm</h5>
@@ -65,11 +68,14 @@
                             <input type="text" class="form-control" name="battery" id="modal_battery">
                         </div>
 
-                        <div class="col-12">
-                            <label class="form-label">Màu ngoại thất (mỗi dòng 1 màu)</label>
-                            <textarea class="form-control" rows="5" name="exterior_colors_raw" id="modal_exterior_colors_raw" placeholder="CE18|Infinity Blanc|#E5E5E5&#10;CE1V|Zenith Grey|#8B9284&#10;CE2Q|Crimson Red|uploads/products/CE2Q.webp|#8A1C2B"></textarea>
-                            <small class="text-muted">Nhập nhanh: MA_MAU|TEN_MAU|#HEX. Nếu có ảnh riêng theo màu: MA_MAU|TEN_MAU|uploads/products/CE18.webp|#HEX</small>
+                        <div class="col-md-6">
+                            <label class="form-label">Số tiền đặt cọc (VND)</label>
+                            <input type="number" min="0" step="1000" class="form-control" name="deposit_amount" id="modal_deposit_amount" value="15000000">
                         </div>
+
+
+                        <!-- Hidden field for exterior colors (auto-filled from table by JS) -->
+                        <input type="hidden" name="exterior_colors_raw" id="modal_exterior_colors_raw" value="">
 
                         <div class="col-12">
                             <label class="form-label">Tải ảnh mới</label>
@@ -77,14 +83,33 @@
                             <small class="text-muted">JPG/PNG/WebP, tối đa 2MB mỗi ảnh. Hãy chọn 1 ảnh chính để hiển thị ưu tiên.</small>
                         </div>
 
+                        <!-- Table editor for existing images -> color mapping (srtdash-style) -->
+                        <div class="col-12 mt-3">
+                            <h6 class="mb-2">Bảng ảnh & gán màu</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover" id="colorImageTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-12">Ảnh</th>
+                                            <th>Filename</th>
+                                            <th>Tên màu <span class="text-danger">*</span></th>
+                                            <th>HEX</th>
+                                            <th>Phụ thu</th>
+                                            <th class="w-12">Mặc định</th>
+                                            <th class="w-12">Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAutoMatchColors">Auto-match từ filename</button>
+                            </div>
+                        </div>
+
                         <div class="col-12 d-none" id="newImagesSection">
                             <label class="form-label">Xem trước ảnh mới</label>
                             <div class="row g-2" id="newImagesContainer"></div>
-                        </div>
-
-                        <div class="col-12 d-none" id="existingImagesSection">
-                            <label class="form-label">Ảnh hiện tại</label>
-                            <div class="row g-2" id="existingImagesContainer"></div>
                         </div>
 
                         <div class="col-12">

@@ -58,11 +58,6 @@
                 <option value="">Chọn showroom</option>
             </select>
         </div>
-
-        <div class="sm:col-span-2">
-            <label class="mb-1 block text-[12px] font-semibold text-slate-700">Tư vấn bán hàng</label>
-            <input type="text" name="salesperson" value="<?= htmlspecialchars((string)$formData['salesperson']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="Nhập tên tư vấn (nếu có)">
-        </div>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
