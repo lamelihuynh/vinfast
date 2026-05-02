@@ -87,27 +87,40 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE TABLE IF NOT EXISTS news (
   id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  author_id        INT UNSIGNED NOT NULL,
   title            VARCHAR(300) NOT NULL,
   slug             VARCHAR(320) NOT NULL UNIQUE,
   body             LONGTEXT     NOT NULL,
-  thumbnail        VARCHAR(255) DEFAULT NULL,
-  meta_title       VARCHAR(300) DEFAULT NULL,
-  meta_description VARCHAR(500) DEFAULT NULL,
+  catalog          ENUM("Công ty", "Ô tô điện", "Xe máy điện"),
+  views            INT DEFAULT 0,
   created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+  news_state       ENUM("Hiển thị", "Ẩn") NOT NULL DEFAULT("Hiển thị")
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS news_tags (
+  news_id         INT UNSIGNED AUTO_INCREMENT,
+  tags            VARCHAR(50) NOT NULL,
+  PRIMARY KEY(news_id, tags),
+  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS news_img_info (
+  news_id         INT UNSIGNED AUTO_INCREMENT,
+  img_link        VARCHAR(300),
+  img_des         VARCHAR(300) NOT NULL,
+  PRIMARY KEY(news_id, img_link, img_des),
+  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS comments (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id     INT UNSIGNED NOT NULL,
-  news_id     INT UNSIGNED DEFAULT NULL,
   product_id  INT UNSIGNED DEFAULT NULL,
+  rating      TINYINT NOT NULL DEFAULT 0,
   body        TEXT         NOT NULL,
+  helpful_count INT NOT NULL DEFAULT 0,
   is_approved TINYINT(1)   NOT NULL DEFAULT 0,
   created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
-  FOREIGN KEY (news_id)    REFERENCES news(id)     ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
