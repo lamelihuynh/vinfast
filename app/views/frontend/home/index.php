@@ -89,9 +89,12 @@ function vf_product_range(array $p): string
                     <p class="inline-flex rounded-full bg-[#FFB81C] px-3 py-1 text-xs font-semibold text-[#0b233f]">VINFAST</p>
                     <h1 class="mt-3 text-4xl font-bold leading-tight text-white sm:text-5xl">Kiến tạo<br>tương lai xanh</h1>
                     <p class="mt-3 text-sm text-white/80 sm:text-base"><?= htmlspecialchars($tagline) ?></p>
-                    <div class="mt-6 flex gap-3">
+                    <div class="mt-6 flex flex-wrap gap-3">
                         <a href="<?= BASE_URL ?>products" class="rounded-md bg-[#FFB81C] px-5 py-2.5 text-sm font-semibold text-[#0b233f]">XEM NGAY</a>
                         <a href="<?= BASE_URL ?>contact" class="rounded-md border border-white/40 px-5 py-2.5 text-sm font-semibold text-white">TƯ VẤN</a>
+                        <a href="<?= BASE_URL ?>contact?tab=test-drive" class="rounded-md border border-[#FFB81C] px-5 py-2.5 text-sm font-semibold text-[#FFB81C] hover:bg-[#FFB81C] hover:text-[#0b233f] transition-colors">
+                            <i class="fa-solid fa-car-side mr-1"></i> ĐĂNG KÝ LÁI THỬ
+                        </a>
                     </div>
                 </div>
             </div>
