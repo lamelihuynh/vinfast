@@ -12,22 +12,22 @@
 class News
 {
     public const CATALOGS = ['Công ty', 'Ô tô điện', 'Xe máy điện'];
-    public const STATES   = ['Hiển thị', 'Ẩn'];
- 
+    public const STATES = ['Hiển thị', 'Ẩn'];
+
     public static function count(string $q = '', string $catalog = '', string $state = 'Hiển thị'): int
     {
         global $pdo;
- 
+
         $conditions = [];
-        $params     = [];
- 
+        $params = [];
+
         if ($q !== '') {
             $like = '%' . $q . '%';
             $conditions[] = '(n.title LIKE :q OR t.tags LIKE :q2)';
-            $params[':q']  = $like;
+            $params[':q'] = $like;
             $params[':q2'] = $like;
         }
- 
+
         if ($catalog !== '' && in_array($catalog, self::CATALOGS, true)) {
             $conditions[] = 'n.catalog = :catalog';
             $params[':catalog'] = $catalog;
@@ -37,9 +37,9 @@ class News
             $conditions[] = 'n.news_state = :state';
             $params[':state'] = $state;
         }
- 
+
         $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
- 
+
         $stmt = $pdo->prepare(
             "SELECT COUNT(DISTINCT n.id)
                FROM news n
@@ -47,31 +47,31 @@ class News
              $where"
         );
         $stmt->execute($params);
- 
+
         return (int) $stmt->fetchColumn();
     }
- 
+
     public static function getAll(
-        int    $page,
-        int    $perPage,
-        string $q       = '',
+        int $page,
+        int $perPage,
+        string $q = '',
         string $catalog = '',
-        string $sort    = 'latest',
-        string $state   = 'Hiển thị'
+        string $sort = 'latest',
+        string $state = 'Hiển thị'
     ): array {
         global $pdo;
- 
-        $offset     = ($page - 1) * $perPage;
+
+        $offset = ($page - 1) * $perPage;
         $conditions = [];
-        $params     = [];
- 
+        $params = [];
+
         if ($q !== '') {
             $like = '%' . $q . '%';
             $conditions[] = '(n.title LIKE :q OR t.tags LIKE :q2)';
-            $params[':q']  = $like;
+            $params[':q'] = $like;
             $params[':q2'] = $like;
         }
- 
+
         if ($catalog !== '' && in_array($catalog, self::CATALOGS, true)) {
             $conditions[] = 'n.catalog = :catalog';
             $params[':catalog'] = $catalog;
@@ -81,10 +81,10 @@ class News
             $conditions[] = 'n.news_state = :state';
             $params[':state'] = $state;
         }
- 
-        $where   = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+        $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
         $orderBy = ($sort === 'popular') ? 'n.views DESC' : 'n.created_at DESC';
- 
+
         $stmt = $pdo->prepare(
             "SELECT DISTINCT n.id
                FROM news n
@@ -95,17 +95,18 @@ class News
         );
         $params[':lim'] = $perPage;
         $params[':off'] = $offset;
- 
+
         foreach ($params as $key => $val) {
             $type = in_array($key, [':lim', ':off'], true) ? PDO::PARAM_INT : PDO::PARAM_STR;
             $stmt->bindValue($key, $val, $type);
         }
         $stmt->execute();
         $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
- 
-        if (empty($ids)) return [];
- 
-        $in   = implode(',', array_fill(0, count($ids), '?'));
+
+        if (empty($ids))
+            return [];
+
+        $in = implode(',', array_fill(0, count($ids), '?'));
         $rows = $pdo->prepare(
             "SELECT n.id, n.title, n.slug, n.catalog, n.views, n.news_state, n.created_at, 
                     MIN(i.img_link) as thumbnail 
@@ -117,20 +118,20 @@ class News
         );
         $rows->execute($ids);
         $articles = $rows->fetchAll(PDO::FETCH_ASSOC);
- 
+
         $tags = self::fetchTagsByIds($ids);
         foreach ($articles as &$a) {
             $a['tags'] = $tags[$a['id']] ?? [];
         }
         unset($a);
- 
+
         return $articles;
     }
- 
+
     public static function getBySlug(string $slug, string $state = 'Hiển thị', bool $incrementView = true): ?array
     {
         global $pdo;
-        
+
         $where = 'WHERE slug = :slug';
         $params = [':slug' => $slug];
 
@@ -138,7 +139,7 @@ class News
             $where .= ' AND news_state = :state';
             $params[':state'] = $state;
         }
- 
+
         $stmt = $pdo->prepare(
             "SELECT id, title, slug, body, catalog, news_state, views, created_at
                FROM news
@@ -147,20 +148,21 @@ class News
         );
         $stmt->execute($params);
         $article = $stmt->fetch(PDO::FETCH_ASSOC);
- 
-        if (!$article) return null;
- 
+
+        if (!$article)
+            return null;
+
         $id = (int) $article['id'];
- 
+
         if ($incrementView) {
             $pdo->prepare('UPDATE news SET views = views + 1 WHERE id = :id')
                 ->execute([':id' => $id]);
             $article['views'] = $article['views'] + 1;
         }
- 
-        $article['tags']   = self::fetchTagsByIds([$id])[$id]   ?? [];
+
+        $article['tags'] = self::fetchTagsByIds([$id])[$id] ?? [];
         $article['images'] = self::fetchImagesByIds([$id])[$id] ?? [];
- 
+
         return $article;
     }
 
@@ -168,30 +170,30 @@ class News
     {
         global $pdo;
         $limit = max(1, min(12, $limit));
-        
+
         $where = '';
-        if ($state !== '' && in_array($state, self::STATES, true)) {
-            $where = 'WHERE news_state = :state';
-        }
- 
+        // if ($state !== '' && in_array($state, self::STATES, true)) {
+        //     $where = 'WHERE news_state = :state';
+        // }
+
         $stmt = $pdo->prepare(
-            "SELECT id, title, slug, catalog, news_state, views, created_at
+            "SELECT *
                FROM news
              $where
            ORDER BY created_at DESC
               LIMIT :limit"
         );
-        
+
         if ($where !== '') {
             $stmt->bindValue(':state', $state, PDO::PARAM_STR);
         }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        
+
         $stmt->execute();
- 
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
- 
+
     public static function getById(int $id): ?array
     {
         global $pdo;
@@ -200,58 +202,59 @@ class News
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
- 
+
     public static function create(array $data, array $tags = [], array $images = []): int
     {
         global $pdo;
-        
+
         $state = in_array($data['news_state'] ?? '', self::STATES, true) ? $data['news_state'] : 'Hiển thị';
- 
+
         $stmt = $pdo->prepare(
             'INSERT INTO news (title, slug, body, catalog, news_state)
              VALUES (:title, :slug, :body, :catalog, :news_state)'
         );
         $stmt->execute([
-            ':title'      => $data['title'],
-            ':slug'       => $data['slug'],
-            ':body'       => $data['body'],
-            ':catalog'    => $data['catalog'] ?? null,
+            ':title' => $data['title'],
+            ':slug' => $data['slug'],
+            ':body' => $data['body'],
+            ':catalog' => $data['catalog'] ?? null,
             ':news_state' => $state,
         ]);
- 
+
         $id = (int) $pdo->lastInsertId();
-        if ($id === 0) return 0;
- 
+        if ($id === 0)
+            return 0;
+
         self::syncTags($id, $tags);
         self::syncImages($id, $images);
- 
+
         return $id;
     }
 
     public static function isSlugExists(string $slug, int $excludeId = 0): bool
     {
         global $pdo;
-        
+
         $sql = "SELECT COUNT(*) FROM news WHERE slug = :slug";
         $params = [':slug' => $slug];
-        
+
         if ($excludeId > 0) {
             $sql .= " AND id != :id";
             $params[':id'] = $excludeId;
         }
-        
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        
+
         return (int) $stmt->fetchColumn() > 0;
     }
- 
+
     public static function update(int $id, array $data, array $tags = [], array $images = []): bool
     {
         global $pdo;
-        
+
         $state = in_array($data['news_state'] ?? '', self::STATES, true) ? $data['news_state'] : 'Hiển thị';
- 
+
         $stmt = $pdo->prepare(
             'UPDATE news
                 SET title      = :title,
@@ -262,79 +265,82 @@ class News
               WHERE id = :id'
         );
         $ok = $stmt->execute([
-            ':title'      => $data['title'],
-            ':slug'       => $data['slug'],
-            ':body'       => $data['body'],
-            ':catalog'    => $data['catalog'] ?? null,
+            ':title' => $data['title'],
+            ':slug' => $data['slug'],
+            ':body' => $data['body'],
+            ':catalog' => $data['catalog'] ?? null,
             ':news_state' => $state,
-            ':id'         => $id,
+            ':id' => $id,
         ]);
- 
+
         if ($ok) {
             self::syncTags($id, $tags);
             self::syncImages($id, $images);
         }
- 
+
         return $ok;
     }
- 
+
     public static function delete(int $id): bool
     {
         global $pdo;
- 
+
         self::syncTags($id, []);
         self::syncImages($id, []);
- 
+
         $stmt = $pdo->prepare('DELETE FROM news WHERE id = :id');
         return $stmt->execute([':id' => $id]);
     }
- 
+
     private static function fetchTagsByIds(array $ids): array
     {
         global $pdo;
-        if (empty($ids)) return [];
- 
-        $in   = implode(',', array_fill(0, count($ids), '?'));
+        if (empty($ids))
+            return [];
+
+        $in = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $pdo->prepare("SELECT news_id, tags FROM news_tags WHERE news_id IN ($in)");
         $stmt->execute($ids);
- 
+
         $result = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $result[$row['news_id']][] = $row['tags'];
         }
         return $result;
     }
- 
+
     private static function fetchImagesByIds(array $ids): array
     {
         global $pdo;
-        if (empty($ids)) return [];
- 
-        $in   = implode(',', array_fill(0, count($ids), '?'));
+        if (empty($ids))
+            return [];
+
+        $in = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $pdo->prepare(
             "SELECT news_id, img_link, img_des FROM news_img_info WHERE news_id IN ($in)"
         );
         $stmt->execute($ids);
- 
+
         $result = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $result[$row['news_id']][] = [
                 'img_link' => $row['img_link'],
-                'img_des'  => $row['img_des'],
+                'img_des' => $row['img_des'],
             ];
         }
         return $result;
     }
- 
+
     private static function syncTags(int $newsId, array $tags): void
     {
         global $pdo;
- 
+
         $pdo->prepare('DELETE FROM news_tags WHERE news_id = :id')
             ->execute([':id' => $newsId]);
- 
-        if (empty($tags)) return;
- 
+
+        if (empty($tags))
+            return;
+
         $stmt = $pdo->prepare(
             'INSERT IGNORE INTO news_tags (news_id, tags) VALUES (:news_id, :tag)'
         );
@@ -345,28 +351,29 @@ class News
             }
         }
     }
- 
+
     private static function syncImages(int $newsId, array $images): void
     {
         global $pdo;
- 
+
         $pdo->prepare('DELETE FROM news_img_info WHERE news_id = :id')
             ->execute([':id' => $newsId]);
- 
-        if (empty($images)) return;
- 
+
+        if (empty($images))
+            return;
+
         $stmt = $pdo->prepare(
             'INSERT INTO news_img_info (news_id, img_link, img_des)
              VALUES (:news_id, :img_link, :img_des)'
         );
         foreach ($images as $img) {
             $link = trim((string) ($img['img_link'] ?? ''));
-            $des  = trim((string) ($img['img_des']  ?? ''));
+            $des = trim((string) ($img['img_des'] ?? ''));
             if ($link !== '' && $des !== '') {
                 $stmt->execute([
-                    ':news_id'  => $newsId,
+                    ':news_id' => $newsId,
                     ':img_link' => $link,
-                    ':img_des'  => $des,
+                    ':img_des' => $des,
                 ]);
             }
         }

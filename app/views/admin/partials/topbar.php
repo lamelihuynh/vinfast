@@ -50,6 +50,11 @@ if (strpos($requestPath, '/admin/products') !== false) {
           </div>
         </li>
         <li>
+          <a href="<?= BASE_URL ?>" class="btn btn-sm btn-outline-primary">
+            <i class="ti-home me-1"></i>Trang chủ
+          </a>
+        </li>
+        <li>
           <a href="<?= BASE_URL ?>auth/logout" class="btn btn-sm btn-outline-secondary">
             <i class="ti-power-off me-1"></i>Đăng xuất
           </a>

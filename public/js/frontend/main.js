@@ -87,24 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (mobileClose) mobileClose.addEventListener("click", closeMobilePanel);
   if (mobileOverlay) mobileOverlay.addEventListener("click", closeMobilePanel);
 
-  const langButtons = [
-    document.getElementById("vfLangToggle"),
-    document.getElementById("vfLangToggleMain"),
-  ].filter(Boolean);
-  let lang = "VI";
 
-  const setLang = (next) => {
-    lang = next;
-    const topLabel = document.getElementById("vfLangLabel");
-    if (topLabel) topLabel.textContent = lang;
-    const mainLabel = document.querySelector("#vfLangToggleMain .vf-lang-toggle__label");
-    if (mainLabel) mainLabel.textContent = lang;
-  };
-
-  langButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setLang(lang === "VI" ? "EN" : "VI");
-    });
-  });
 
 });

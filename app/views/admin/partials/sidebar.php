@@ -34,6 +34,9 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
     <div class="menu-inner">
       <nav>
         <ul class="metismenu" id="menu">
+          <li>
+            <a href="<?= BASE_URL ?>"><i class="ti-home"></i><span>Trở về trang chủ</span></a>
+          </li>
           <li class="<?= $isDashboardGroup ? 'active' : '' ?>">
             <a href="javascript:void(0)" aria-expanded="<?= $isDashboardGroup ? 'true' : 'false' ?>">
               <i class="ti-dashboard"></i><span>dashboard</span>

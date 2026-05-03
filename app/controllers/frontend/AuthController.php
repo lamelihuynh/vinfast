@@ -158,7 +158,7 @@ class AuthController
     private function redirectByRole(): void
     {
         if (Auth::isAdmin()) {
-            header('Location: ' . ADMIN_URL . 'products');
+            header('Location: ' . ADMIN_URL . 'dashboard');
             exit;
         }
 

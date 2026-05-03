@@ -10,14 +10,7 @@
     </form>
 
     <div class="ml-auto flex items-center gap-3">
-      <button type="button" id="vfLangToggleMain" class="hidden md:inline-flex items-center gap-1 text-slate-600 hover:text-vfNavy text-[12px]">
-        <i class="fa-solid fa-globe"></i><span class="vf-lang-toggle__label">VI</span>
-      </button>
 
-      <button type="button" class="relative w-8 h-8 rounded-full border border-slate-200 text-slate-600 hover:text-vfNavy transition">
-        <i class="fa-regular fa-bell"></i>
-        <span class="absolute -top-1 -right-1 w-[15px] h-[15px] rounded-full bg-red-500 text-white text-[9px] font-bold inline-flex items-center justify-center">1</span>
-      </button>
 
       <?php if ($isLoggedIn): ?>
         <div class="relative" id="vfUserMenu">
