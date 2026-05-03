@@ -4,6 +4,12 @@
  * app/views/admin/orders/partials/table.php
  * Expects: $orders, $typeMap, $labelByStatus, $badgeByStatus, $extractPhone, $extractOrderDetail
  */
+$orders = $orders ?? [];
+$typeMap = $typeMap ?? [];
+$labelByStatus = $labelByStatus ?? function($v) { return $v; };
+$badgeByStatus = $badgeByStatus ?? function($v) { return $v; };
+$extractPhone = $extractPhone ?? function($v) { return ''; };
+$extractOrderDetail = $extractOrderDetail ?? function($v) { return []; };
 ?>
 <div class="row">
     <div class="col-12">

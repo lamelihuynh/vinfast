@@ -21,14 +21,12 @@
     <div class="pt-3 border-t border-white/10">
       <p class="text-white/40 text-[10px] tracking-[1px] mb-2 uppercase">Dịch vụ nhanh</p>
       <div class="grid grid-cols-2 gap-2">
-        <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= BASE_URL ?>products">Dự toán lăn bánh</a>
         <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= BASE_URL ?>contact">Chính sách</a>
         <a class="rounded-md border border-white/10 px-3 py-2 text-white/80 text-[12px]" href="<?= BASE_URL ?>contact">Hotline hỗ trợ</a>
       </div>
     </div>
 
     <div class="pt-2 flex gap-2">
-      <a class="flex-1 text-center rounded-md border border-vfGold text-vfGold py-2 text-[12px] font-semibold" href="<?= BASE_URL ?>products">Dự toán chi phí</a>
       <a class="flex-1 text-center rounded-md bg-vfGold text-white py-2 text-[12px] font-semibold" href="<?= BASE_URL ?>contact">Lái thử xe</a>
     </div>
 

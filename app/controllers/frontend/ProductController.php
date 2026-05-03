@@ -242,6 +242,42 @@ class ProductController
             'Hồ Chí Minh' => ['VinFast HCM - Quận 7', 'VinFast HCM - Bình Thạnh', 'VinFast HCM - Thủ Đức'],
             'Đà Nẵng' => ['VinFast Đà Nẵng - Nguyễn Văn Linh'],
             'Hải Phòng' => ['VinFast Hải Phòng - Lê Hồng Phong'],
+            'Cần Thơ' => ['VinFast Cần Thơ - Nguyễn Văn Cừ'],
+            'An Giang' => ['VinFast An Giang - Châu Đốc'],
+            'Bà Rịa - Vũng Tàu' => ['VinFast Vũng Tàu - Lê Hồng Phong'],
+            'Bắc Giang' => ['VinFast Bắc Giang - Nguyễn Văn Cừ'],
+            'Bắc Ninh' => ['VinFast Bắc Ninh - Lý Thái Tổ'],
+            'Bình Định' => ['VinFast Bình Định - Nguyễn Thái Học'],
+            'Bình Dương' => ['VinFast Bình Dương - Thủ Dầu Một'],
+            'Bình Phước' => ['VinFast Bình Phước - Đồng Xoài'],
+            'Bình Thuận' => ['VinFast Bình Thuận - Phan Thiết'],
+            'Cà Mau' => ['VinFast Cà Mau - Nguyễn Hữu Thọ'],
+            'Đắk Lắk' => ['VinFast Đắk Lắk - Buôn Ma Thuột'],
+            'Đồng Nai' => ['VinFast Đồng Nai - Biên Hòa'],
+            'Đồng Tháp' => ['VinFast Đồng Tháp - Cao Lãnh'],
+            'Gia Lai' => ['VinFast Gia Lai - Pleiku'],
+            'Hà Nam' => ['VinFast Hà Nam - Phủ Lý'],
+            'Hà Tĩnh' => ['VinFast Hà Tĩnh - TP Hà Tĩnh'],
+            'Hải Dương' => ['VinFast Hải Dương - Nguyễn Lương Bằng'],
+            'Hậu Giang' => ['VinFast Hậu Giang - Vị Thanh'],
+            'Khánh Hòa' => ['VinFast Khánh Hòa - Nha Trang'],
+            'Kiên Giang' => ['VinFast Kiên Giang - Rạch Giá'],
+            'Lâm Đồng' => ['VinFast Lâm Đồng - Đà Lạt'],
+            'Long An' => ['VinFast Long An - Tân An'],
+            'Nam Định' => ['VinFast Nam Định - Trần Hưng Đạo'],
+            'Nghệ An' => ['VinFast Nghệ An - Vinh'],
+            'Ninh Bình' => ['VinFast Ninh Bình - Trần Hưng Đạo'],
+            'Phú Thọ' => ['VinFast Phú Thọ - Việt Trì'],
+            'Quảng Bình' => ['VinFast Quảng Bình - Đồng Hới'],
+            'Quảng Nam' => ['VinFast Quảng Nam - Tam Kỳ'],
+            'Quảng Ninh' => ['VinFast Quảng Ninh - Hạ Long'],
+            'Quảng Trị' => ['VinFast Quảng Trị - Đông Hà'],
+            'Sóc Trăng' => ['VinFast Sóc Trăng - Sóc Trăng'],
+            'Thanh Hóa' => ['VinFast Thanh Hóa - Thanh Hóa'],
+            'Thừa Thiên Huế' => ['VinFast Thừa Thiên Huế - Huế'],
+            'Tiền Giang' => ['VinFast Tiền Giang - Mỹ Tho'],
+            'Vĩnh Long' => ['VinFast Vĩnh Long - Vĩnh Long'],
+            'Vĩnh Phúc' => ['VinFast Vĩnh Phúc - Vĩnh Yên'],
         ];
 
         $defaultName = '';
@@ -255,7 +291,8 @@ class ProductController
         }
 
         $checkoutOld = is_array($_SESSION['checkout_old'] ?? null) ? $_SESSION['checkout_old'] : [];
-        unset($_SESSION['checkout_old']);
+        // Keep session until form is fully submitted
+        // Don't unset here - session will be cleared after successful payment on step 3
 
         $formData = [
             'owner_type' => (string)($checkoutOld['owner_type'] ?? 'ca-nhan'),
@@ -415,10 +452,10 @@ class ProductController
                 'orderDbId' => (int)$created,
                 'carName' => (string)($product['name'] ?? ''),
                 'variantName' => (string)$formData['variant_name'],
-                'carPrice' => (float)($selectedVariant['price'] ?? ($product['price'] ?? 0)),
+                'carPrice' => (float)($product['price'] ?? 0),
                 'exteriorColor' => (string)($selectedColor['name'] ?? $selectedColorCode),
                 'colorSurcharge' => max(0, (int)($selectedColor['surcharge'] ?? 0)),
-                'interiorColor' => (string)$selectedInteriorName,
+                'interiorColor' => (string)$formData['interior_code'],
                 'customerName' => (string)$formData['full_name'],
                 'phone' => (string)$formData['phone'],
                 'email' => (string)$formData['email'],

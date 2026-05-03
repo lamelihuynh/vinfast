@@ -24,24 +24,18 @@
 $ordersRaw = $orders ?? [];
 $orders = is_iterable($ordersRaw) ? $ordersRaw : [];
 
-$statusMap = [
-  'pending' => ['label' => 'Cho xu ly', 'class' => 'bg-yellow-100 text-yellow-800'],
-  'confirmed' => ['label' => 'Da xac nhan', 'class' => 'bg-blue-100 text-blue-800'],
-  'done' => ['label' => 'Hoan tat', 'class' => 'bg-green-100 text-green-800'],
-  'cancelled' => ['label' => 'Da huy', 'class' => 'bg-red-100 text-red-800'],
-];
 
 $typeMap = [
-  'deposit' => 'Dat coc',
-  'test_drive' => 'Lai thu',
+  'deposit' => 'Đặt cọc',
+  'test_drive' => 'Lái thử',
 ];
 
 $paymentStatusMap = [
-  'unpaid' => ['label' => 'Chua thanh toan', 'class' => 'bg-slate-100 text-slate-700'],
-  'pending_verify' => ['label' => 'Cho xac nhan TT', 'class' => 'bg-blue-100 text-blue-800'],
-  'paid' => ['label' => 'Da nhan coc', 'class' => 'bg-green-100 text-green-800'],
-  'failed' => ['label' => 'TT that bai', 'class' => 'bg-red-100 text-red-800'],
-  'refunded' => ['label' => 'Da hoan tien', 'class' => 'bg-purple-100 text-purple-800'],
+  'unpaid' => ['label' => 'Chưa thanh toán', 'class' => 'bg-slate-100 text-slate-700'],
+  'pending_verify' => ['label' => 'Cho xác nhận TT', 'class' => 'bg-blue-100 text-blue-800'],
+  'paid' => ['label' => 'Đã nhận cọc', 'class' => 'bg-green-100 text-green-800'],
+  'failed' => ['label' => 'TT thất bại', 'class' => 'bg-red-100 text-red-800'],
+  'refunded' => ['label' => 'Đã hoàn tiền', 'class' => 'bg-purple-100 text-purple-800'],
 ];
 
 $extractDepositAmount = static function ($note): float {
@@ -89,13 +83,13 @@ $extractPaymentStatus = static function ($note): string {
         <table class="min-w-full divide-y divide-slate-200">
           <thead class="bg-slate-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Ma don</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">San pham</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Loai</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Tien coc</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Thanh toan</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Trang thai</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Ngay tao</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Mã đơn</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Sản phẩm</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Loại</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Tiền cọc</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Thanh toán</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Trạng thái</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Ngày tạo</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -109,7 +103,6 @@ $extractPaymentStatus = static function ($note): string {
                 $id = (int)($order['id'] ?? 0);
                 $orderCode = 'VF-ORD-' . str_pad((string)$id, 6, '0', STR_PAD_LEFT);
                 $status = trim((string)($order['status'] ?? 'pending'));
-                $statusItem = $statusMap[$status] ?? ['label' => $status, 'class' => 'bg-slate-100 text-slate-700'];
                 $depositAmount = $extractDepositAmount($order['note'] ?? null);
                 $paymentStatus = $extractPaymentStatus($order['note'] ?? null);
                 $paymentItem = $paymentStatusMap[$paymentStatus] ?? ['label' => $paymentStatus, 'class' => 'bg-slate-100 text-slate-700'];

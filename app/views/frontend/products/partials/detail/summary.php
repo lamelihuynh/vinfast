@@ -14,9 +14,6 @@ $productId = isset($productId) ? (int)$productId : 0;
 			<p class="mb-1 text-[11px] font-semibold uppercase tracking-[1px] text-amber-600"><?= htmlspecialchars(strtoupper($categoryText)) ?></p>
 			<h1 class="m-0 text-2xl font-bold leading-tight text-slate-900 lg:text-[28px]"><?= htmlspecialchars($productName) ?></h1>
 		</div>
-		<button type="button" class="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-blue-200 hover:text-blue-600" aria-label="Chia sẻ">
-			<i class="fa-solid fa-share-nodes"></i>
-		</button>
 	</div>
 
 
@@ -67,9 +64,8 @@ $productId = isset($productId) ? (int)$productId : 0;
 	</div>
 
 	<div class="mb-6 rounded-xl border border-slate-100 bg-slate-50 p-4">
-		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+		<div class="grid grid-cols-1 gap-3">
 			<a id="vfPdCheckoutBtn" href="<?= BASE_URL ?>products/checkout/<?= (int)$productId ?>" class="vf-pd-checkout-link inline-flex items-center justify-center rounded-lg border-2 border-vfNavy bg-vfNavy px-4 py-3 text-center text-[13px] font-bold tracking-[0.3px] text-white no-underline transition hover:border-vfNavy/90 hover:bg-vfNavy/90">ĐẶT CỌC NGAY</a>
-			<a href="<?= BASE_URL ?>contact" class="inline-flex items-center justify-center rounded-lg border-2 border-vfNavy bg-white px-4 py-3 text-center text-[13px] font-bold tracking-[0.3px] text-vfNavy no-underline transition hover:bg-vfNavy hover:text-white">DỰ TOÁN LĂN BÁNH</a>
 		</div>
 	</div>
 

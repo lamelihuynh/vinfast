@@ -1,4 +1,5 @@
 <?php
+$p = $p ?? [];
 $images = is_array($p['images'] ?? null) ? $p['images'] : [];
 $imgUrl = ProductViewHelper::thumbUrl($p);
 
