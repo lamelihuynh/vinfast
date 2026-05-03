@@ -74,7 +74,87 @@
     });
   }
 
+  function saveStep2DataToSession(callback) {
+    var ownerTypeRadio = form.querySelector('[name="owner_type"]:checked');
+    var payMethodRadio = form.querySelector('[name="pay_method"]:checked');
+    var csrfToken = form.querySelector('[name="_csrf"]') ? form.querySelector('[name="_csrf"]').value : '';
+    
+    var step2Data = {
+      _csrf: csrfToken,
+      owner_type: ownerTypeRadio ? ownerTypeRadio.value : 'ca-nhan',
+      full_name: form.querySelector('[name="full_name"]') ? form.querySelector('[name="full_name"]').value : '',
+      phone: form.querySelector('[name="phone"]') ? form.querySelector('[name="phone"]').value : '',
+      email: form.querySelector('[name="email"]') ? form.querySelector('[name="email"]').value : '',
+      cccd: form.querySelector('[name="cccd"]') ? form.querySelector('[name="cccd"]').value : '',
+      province: form.querySelector('[name="province"]') ? form.querySelector('[name="province"]').value : '',
+      showroom: form.querySelector('[name="showroom"]') ? form.querySelector('[name="showroom"]').value : '',
+      salesperson: form.querySelector('[name="salesperson"]') ? form.querySelector('[name="salesperson"]').value : '',
+      voucher: form.querySelector('[name="voucher"]') ? form.querySelector('[name="voucher"]').value : '',
+      variant_name: form.querySelector('[name="variant_name"]') ? form.querySelector('[name="variant_name"]').value : '',
+      interior_code: form.querySelector('[name="interior_code"]') ? form.querySelector('[name="interior_code"]').value : '',
+      pay_method: payMethodRadio ? payMethodRadio.value : 'card-intl',
+      agree_terms: form.querySelector('[name="agree_terms"]:checked') ? '1' : '',
+    };
+
+    console.log('Saving step2 data:', step2Data);
+
+    var request = new XMLHttpRequest();
+    request.open('POST', window.location.pathname + '?save_checkout_step2=1', true);
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.onload = function() {
+      console.log('Step2 data saved. Response:', request.responseText);
+      // Update step 3 display with latest form data
+      updateStep3Display(step2Data);
+      // Call callback after data is saved
+      if (typeof callback === 'function') {
+        callback();
+      }
+    };
+    request.onerror = function() {
+      console.log('Error saving step2 data');
+      // Still proceed even if AJAX fails
+      if (typeof callback === 'function') {
+        callback();
+      }
+    };
+    request.send(JSON.stringify(step2Data));
+  }
+
+  function updateStep3Display(data) {
+    var summaryName = form.querySelector('[data-summary-name]');
+    var summaryPhone = form.querySelector('[data-summary-phone]');
+    var summaryEmail = form.querySelector('[data-summary-email]');
+    var summaryCccd = form.querySelector('[data-summary-cccd]');
+    var summaryProvince = form.querySelector('[data-summary-province]');
+    var summaryShowroom = form.querySelector('[data-summary-showroom]');
+
+    if (summaryName) summaryName.textContent = data.full_name || '';
+    if (summaryPhone) summaryPhone.textContent = data.phone || '';
+    if (summaryEmail) summaryEmail.textContent = data.email || '';
+    if (summaryCccd) summaryCccd.textContent = data.cccd || '';
+    if (summaryProvince) summaryProvince.textContent = data.province || '';
+    if (summaryShowroom) summaryShowroom.textContent = data.showroom || '';
+  }
+
+  function clearStep2Errors() {
+    var errorElements = form.querySelectorAll('[data-error]');
+    errorElements.forEach(function (elem) {
+      elem.classList.add('hidden');
+      elem.textContent = '';
+    });
+  }
+
+  function showFieldError(fieldName, message) {
+    var errorElement = form.querySelector('[data-error="' + fieldName + '"]');
+    if (!errorElement) return;
+    errorElement.textContent = message;
+    errorElement.classList.remove('hidden');
+  }
+
   function validateStep2() {
+    clearStep2Errors();
+    
+    var hasError = false;
     var requiredFields = ['full_name', 'phone', 'email', 'province', 'showroom'];
 
     for (var i = 0; i < requiredFields.length; i += 1) {
@@ -84,12 +164,47 @@
 
       var value = String(input.value || '').trim();
       if (!value) {
-        input.focus();
-        return false;
+        showFieldError(name, 'Vui lòng điền trường này');
+        hasError = true;
+        continue;
+      }
+
+      // Validate phone: exactly 10 digits
+      if (name === 'phone') {
+        if (!/^[0-9]{10}$/.test(value)) {
+          showFieldError(name, 'Số điện thoại phải là 10 chữ số');
+          hasError = true;
+        }
+      }
+
+      // Validate email format
+      if (name === 'email') {
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          showFieldError(name, 'Email không hợp lệ');
+          hasError = true;
+        }
       }
     }
 
-    return true;
+    // Validate CCCD if filled: exactly 12 digits
+    var cccdInput = form.querySelector('[name="cccd"]');
+    if (cccdInput) {
+      var cccdValue = String(cccdInput.value || '').trim();
+      if (cccdValue && !/^[0-9]{12}$/.test(cccdValue)) {
+        showFieldError('cccd', 'Số CCCD phải là 12 chữ số');
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
+      var firstError = form.querySelector('[data-error]:not(.hidden)');
+      if (firstError) {
+        firstError.closest('div').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    return !hasError;
   }
 
   function populateShowrooms(selectedShowroom) {
@@ -239,7 +354,15 @@
       }
 
       syncSelectedColor();
-      setStep(target);
+      
+      // Save step 2 data to session before moving to step 3
+      if (step === 2 && target === 3) {
+        saveStep2DataToSession(function() {
+          setStep(target);
+        });
+      } else {
+        setStep(target);
+      }
     });
   });
 
@@ -256,7 +379,15 @@
       if (target === 3 && !validateStep2()) {
         return;
       }
-      setStep(target);
+      
+      // Save step 2 data before moving to step 3 from tabs
+      if (step === 2 && target === 3) {
+        saveStep2DataToSession(function() {
+          setStep(target);
+        });
+      } else {
+        setStep(target);
+      }
     });
   });
 

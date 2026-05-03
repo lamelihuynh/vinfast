@@ -5,7 +5,7 @@ $productName = (string)($product['name'] ?? 'VinFast');
 $descriptionText = trim((string)($product['description'] ?? ''));
 
 if ($descriptionText === '') {
-    $descriptionText = 'Mẫu xe điện VinFast được tối ưu cho nhu cầu di chuyển hiện đại, kết hợp thiết kế thời thượng, vận hành êm ái và hệ sinh thái thông minh.';
+    $descriptionText = 'VinFast - Thương hiệu xe điện hàng đầu Việt Nam, mang đến trải nghiệm lái xe đỉnh cao với thiết kế hiện đại, công nghệ tiên tiến và hiệu suất vượt trội. Khám phá dòng sản phẩm đa dạng từ sedan, SUV đến xe máy điện, tất cả đều được trang bị pin LFP an toàn và bền bỉ. VinFast cam kết mang lại sự hài lòng tối đa cho khách hàng với dịch vụ hậu mãi chuyên nghiệp và mạng lưới trạm sạc rộng khắp. Hãy cùng VinFast hướng tới tương lai xanh và bền vững ngay hôm nay!';
 }
 
 $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
@@ -208,11 +208,8 @@ $categoryText = (string)($specs['category'] ?? ($specs['segment'] ?? 'Xe điện
 $powerText = (string)($specs['power'] ?? ($specs['motor_power'] ?? ($specs['max_power'] ?? 'N/A')));
 $rangeText = (string)($specs['range'] ?? ($specs['driving_range'] ?? 'N/A'));
 $batteryText = (string)($specs['battery'] ?? 'N/A');
-$stats = [
-    ['icon' => 'fa-solid fa-bolt', 'val' => $powerText, 'label' => 'Công suất'],
-    ['icon' => 'fa-solid fa-battery-three-quarters', 'val' => $batteryText, 'label' => 'Pin'],
-    ['icon' => 'fa-solid fa-battery-three-quarters', 'val' => $rangeText, 'label' => 'Phạm vi'],
-];
+$accelerationText = (string)($specs['acceleration'] ?? 'N/A');
+$maxSpeedText = (string)($specs['max_speed'] ?? 'N/A');
 
 $featureList = [];
 if (isset($specs['features']) && is_array($specs['features'])) {
@@ -225,15 +222,27 @@ if (isset($specs['features']) && is_array($specs['features'])) {
 
 if (empty($featureList)) {
     $featureList = [
-        'Bảo hành 10 năm hoặc 200,000km',
-        'Hệ thống hỗ trợ lái ADAS tiên tiến',
-        'Màn hình giải trí trung tâm kích thước lớn',
-        'Hỗ trợ cứu hộ 24/7 toàn quốc',
-        'Hệ sinh thái ứng dụng VinFast thông minh',
+        'Thiết kế hiện đại, sang trọng',
+        'Động cơ điện mạnh mẽ, vận hành êm ái',
+        'Phạm vi di chuyển lên đến 500 km',
+        'Hệ thống pin LFP an toàn, bền bỉ',
+        'Công nghệ sạc nhanh, tiện lợi',
     ];
 }
 
-$excludeKeys = ['features', 'variants', 'exterior_colors', 'interior_colors', 'images'];
+$excludeKeys = ['features', 'variants', 'exterior_colors', 'interior_colors', 'images', 'deposit_amount', 'deposit_non_refundable'];
+
+$specTranslations = [
+    'range' => 'Phạm vi di chuyển',
+    'driving_range' => 'Phạm vi di chuyển',
+    'power' => 'Công suất',
+    'motor_power' => 'Công suất',
+    'max_power' => 'Công suất tối đa',
+    'battery' => 'Dung lượng pin',
+    'acceleration' => 'Tăng tốc (0-100km/h)',
+    'max speed' => 'Vận tốc tối đa',
+];
+
 $specRows = [];
 
 foreach ($specs as $k => $v) {
@@ -251,19 +260,23 @@ foreach ($specs as $k => $v) {
         continue;
     }
 
+    $labelLower = strtolower(str_replace('_', ' ', $label));
+    $displayLabel = $specTranslations[$labelLower] ?? ucfirst(str_replace('_', ' ', $label));
+
     $specRows[] = [
-        'label' => ucfirst(str_replace('_', ' ', $label)),
+        'label' => $displayLabel,
         'value' => $value
     ];
 }
 
 if (empty($specRows)) {
     $specRows = [
-        ['label' => 'Loại pin', 'value' => 'LFP (Lithium Iron Phosphate)'],
-        ['label' => 'Dung lượng pin', 'value' => '75.3 kWh'],
-        ['label' => 'Hệ dẫn động', 'value' => 'AWD (4 bánh)'],
-        ['label' => 'Sạc nhanh DC', 'value' => '150 kW'],
-        ['label' => 'Số chỗ ngồi', 'value' => '5 chỗ'],
+        ['label' => 'Phân khúc', 'value' => $categoryText],
+        ['label' => 'Công suất', 'value' => $powerText],
+        ['label' => 'Phạm vi di chuyển', 'value' => $rangeText],
+        ['label' => 'Dung lượng pin', 'value' => $batteryText],
+        ['label' => 'Tăng tốc (0-100km/h)', 'value' => $accelerationText],
+        ['label' => 'Vận tốc tối đa', 'value' => $maxSpeedText],
     ];
 }
 
@@ -278,7 +291,7 @@ $productsCssVersion = AssetHelper::getVersion('public/css/frontend/products.css'
 
 <section id="vfProductDetail" class="min-h-screen bg-white">
     <div class="mx-auto w-full max-w-[1200px] px-4 pb-6 pt-3 lg:px-6 lg:pt-4">
-        <nav class="mb-4 flex items-center gap-2 text-[12px] text-slate-400" aria-label="Breadcrumb">
+        <nav class="mb-2 flex items-center gap-2 text-[12px] text-slate-400" aria-label="Breadcrumb">
             <a href="<?= BASE_URL ?>products" class="text-slate-500 no-underline hover:text-blue-600">Sản phẩm</a>
             <i class="fa-solid fa-chevron-right text-[10px]"></i>
             <span class="text-slate-700"><?= htmlspecialchars($productName) ?></span>

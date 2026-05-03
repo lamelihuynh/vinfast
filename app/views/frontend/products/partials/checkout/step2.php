@@ -1,3 +1,8 @@
+<?php
+$currentStep = $currentStep ?? 2;
+$formData = $formData ?? [];
+$provinces = $provinces ?? [];
+?>
 <section data-step-panel="2" class="space-y-4<?= $currentStep === 2 ? '' : ' hidden' ?>">
     <div>
         <h2 class="mb-1 text-[15px] font-bold text-slate-900">Bước 2 - Thông tin khách hàng</h2>
@@ -24,22 +29,35 @@
 
         <div>
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Số điện thoại <span class="text-red-500">*</span></label>
-            <input type="tel" name="phone" value="<?= htmlspecialchars((string)$formData['phone']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="09xxxxxxxx" required>
+            <input type="tel" name="phone"
+                maxlength="10"
+                pattern="[0-9]{10}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10)"
+                value="<?= htmlspecialchars((string)$formData['phone']) ?>"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500"
+                placeholder="09xxxxxxxx" required>
+            <p data-error="phone" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
         <div>
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Email <span class="text-red-500">*</span></label>
-            <input type="email" name="email" value="<?= htmlspecialchars((string)$formData['email']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="example@gmail.com" required>
+            <input type="email" name="email"
+                value="<?= htmlspecialchars((string)($formData['email'] ?? '')) ?>"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500"
+                placeholder="example@gmail.com" required>
+            <p data-error="email" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
         <div>
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Số CCCD</label>
-            <input type="text" name="cccd" value="<?= htmlspecialchars((string)$formData['cccd']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="Nhập số CCCD">
-        </div>
-
-        <div>
-            <label class="mb-1 block text-[12px] font-semibold text-slate-700">Mã ưu đãi</label>
-            <input type="text" name="voucher" value="<?= htmlspecialchars((string)$formData['voucher']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="Nhập mã E-voucher">
+            <input type="text" name="cccd"
+                maxlength="12"
+                pattern="[0-9]{12}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 12)"
+                value="<?= htmlspecialchars((string)($formData['cccd'] ?? '')) ?>"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500"
+                placeholder="Nhập 12 số CCCD">
+            <p data-error="cccd" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
         <div>
