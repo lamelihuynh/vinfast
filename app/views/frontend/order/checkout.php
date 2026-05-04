@@ -324,6 +324,10 @@ foreach ($switchProductsUi as $item) {
     if (!empty($item['isCurrent']) || (int)($item['id'] ?? 0) === $productId) {
         $modelGroups[$key]['representative'] = $item;
     }
+
+    if (count($modelGroups[$key]['items']) >= 12) {
+        // keep the group sized reasonably
+    }
 }
 
 $currentModelKey = '';
@@ -441,7 +445,7 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                     <div class="grid grid-cols-1 lg:grid-cols-[132px_1fr]">
 
                         <!-- MODEL LIST -->
-                        <div class="border-b lg:border-b-0 lg:border-r p-3 bg-white">
+                        <div class="border-b lg:border-b-0 lg;border-r p-3 bg-white">
                             <p class="mb-2 text-[10px] font-semibold uppercase text-slate-500">Dòng xe</p>
 
                             <div class="space-y-2">
@@ -529,14 +533,14 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                     <!-- FORM -->
                     <div class="p-4">
                         <form id="<?= $checkoutFormId ?>" method="post"
-                            action="<?= BASE_URL ?>products/checkout/<?= $productId ?>">
+                            action="<?= BASE_URL ?>order/checkout/<?= $productId ?>">
 
                             <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
                             <input type="hidden" name="step" value="<?= (int)$currentStep ?>" data-step-input>
 
-                            <?php include ROOT . '/app/views/frontend/products/partials/checkout/step1.php'; ?>
-                            <?php include ROOT . '/app/views/frontend/products/partials/checkout/step2.php'; ?>
-                            <?php include ROOT . '/app/views/frontend/products/partials/checkout/step3.php'; ?>
+                            <?php include ROOT . '/app/views/frontend/order/partials/checkout/step1.php'; ?>
+                            <?php include ROOT . '/app/views/frontend/order/partials/checkout/step2.php'; ?>
+                            <?php include ROOT . '/app/views/frontend/order/partials/checkout/step3.php'; ?>
 
                         </form>
                     </div>

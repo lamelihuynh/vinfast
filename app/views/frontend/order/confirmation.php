@@ -83,7 +83,7 @@ $scripts = '';
             <?php if ($payMethod === 'transfer'): ?>
                 <div class="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
                     <i class="fa-regular fa-clock text-[13px] text-yellow-400"></i>
-                    <span class="text-white/70" style="font-size: 11px;">Vui lòng hoàn thành chuyển khoản trong </span>
+                    <span class="text-white/70" style="font-size: 11px; font-weight: 600;">Vui lòng hoàn thành chuyển khoản trong </span>
                     <span class="font-mono" data-countdown="1800" style="font-size: 12px; font-weight: 700; color: #60a5fa;">30:00</span>
                 </div>
             <?php endif; ?>
@@ -202,9 +202,6 @@ $scripts = '';
                     <div class="px-5 py-4">
                         <p class="text-[#1a2240]" style="font-size: 13px; font-weight: 600;"><?= htmlspecialchars($showroom !== '' ? $showroom : '—') ?></p>
                         <p class="mt-1 text-gray-500" style="font-size: 11px;"><?= htmlspecialchars($province !== '' ? $province : '—') ?></p>
-                        <a href="<?= BASE_URL ?>contact" class="mt-3 inline-flex items-center gap-1 text-[#1a6fe0] hover:underline" style="font-size: 11px; font-weight: 500;">
-                            <i class="fa-solid fa-map-pin text-[11px]"></i> Xem bản đồ
-                        </a>
                     </div>
                 </div>
 
@@ -222,29 +219,11 @@ $scripts = '';
                     </div>
                 </div>
 
-                <div class="flex items-center gap-4 rounded-xl border px-5 py-4" style="background: #F0FDF4; border-color: #BBF7D0;">
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full" style="background: #22c55e; color: white;">
-                        <i class="fa-solid fa-phone text-[16px]"></i>
-                    </div>
-                    <div>
-                        <p class="text-green-800" style="font-size: 11px; font-weight: 600;">Cần hỗ trợ? Gọi ngay Hotline</p>
-                        <p class="text-green-700" style="font-size: 16px; font-weight: 800;">1900 23 23 89</p>
-                        <p class="text-green-600" style="font-size: 10px;">Thứ 2 – Chủ nhật · 7:00 – 22:00</p>
-                    </div>
-                </div>
             </div>
         </div>
 
-        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button type="button" class="flex-1 rounded-xl border-2 border-[#1a2240] py-3 text-[#1a2240] transition hover:bg-[#1a2240] hover:text-white" style="font-size: 13px; font-weight: 700;" data-print-confirm>
-                <i class="fa-solid fa-download mr-2"></i>
-                TẢI XÁC NHẬN (PDF)
-            </button>
-            <button type="button" class="flex-1 rounded-xl border-2 border-gray-300 py-3 text-gray-600 transition hover:border-[#1a6fe0] hover:text-[#1a6fe0]" style="font-size: 13px; font-weight: 700;" data-share-confirm>
-                <i class="fa-solid fa-share-nodes mr-2"></i>
-                <span data-share-label>CHIA SẺ</span>
-            </button>
-            <a href="<?= BASE_URL ?>" class="flex-1 rounded-xl bg-[#1a2240] py-3 text-center text-white transition hover:bg-[#233060]" style="font-size: 13px; font-weight: 700;">
+        <div class="mt-6">
+            <a href="<?= BASE_URL ?>" class="w-full inline-block rounded-xl bg-[#1a2240] py-3 text-center text-white transition hover:bg-[#233060]" style="font-size: 13px; font-weight: 700;">
                 <i class="fa-solid fa-house mr-2"></i>
                 VỀ TRANG CHỦ
             </a>
@@ -287,24 +266,6 @@ $scripts = '';
             }, 1000);
         }
 
-        var shareBtn = document.querySelector('[data-share-confirm]');
-        var shareLabel = document.querySelector('[data-share-label]');
-        if (shareBtn && shareLabel) {
-            shareBtn.addEventListener('click', function() {
-                shareLabel.textContent = 'ĐÃ CHIA SẺ!';
-                setTimeout(function() {
-                    shareLabel.textContent = 'CHIA SẺ';
-                }, 2000);
-            });
-        }
-
-        var printBtn = document.querySelector('[data-print-confirm]');
-        if (printBtn) {
-            printBtn.addEventListener('click', function() {
-                try {
-                    window.print();
-                } catch (e) {}
-            });
-        }
+        // print/share buttons removed — no client handlers required
     })();
 </script>

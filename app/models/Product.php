@@ -235,6 +235,83 @@ class Product
         return 0;
     }
 
+    private static function extractModelKey(string $text): string
+    {
+        $value = strtolower(trim($text));
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/(?:^|[-_])vf(?:-?mpv)?-?([3-9])(?:[-_]|$)/i', $value, $familyMatch)) {
+            return 'vf' . $familyMatch[1];
+        }
+
+        $normalized = preg_replace('/[^a-z0-9]+/i', '-', $value);
+        $normalized = trim((string)$normalized, '-');
+        if ($normalized === '') {
+            return '';
+        }
+
+        if (strpos($normalized, 'vinfast-') === 0) {
+            $normalized = substr($normalized, 8);
+        }
+
+        $normalized = trim((string)$normalized, '-');
+        if ($normalized === '') {
+            return '';
+        }
+
+        $parts = explode('-', $normalized);
+        $family = strtolower(trim((string)($parts[0] ?? '')));
+        if (!preg_match('/^[a-z0-9]+$/', $family)) {
+            return '';
+        }
+
+        return $family;
+    }
+
+    public static function getSwitchProducts(int $categoryId = 0, int $limit = 12, int $rawLimit = 30): array
+    {
+        $switchProductsRaw = $categoryId > 0
+            ? self::getByCategory($categoryId, 1, $rawLimit)
+            : self::getAll(1, $rawLimit);
+
+        if (empty($switchProductsRaw)) {
+            $switchProductsRaw = self::getAll(1, $rawLimit);
+        }
+
+        $switchProducts = [];
+        foreach ($switchProductsRaw as $switchItem) {
+            if (!is_array($switchItem)) {
+                continue;
+            }
+
+            $switchId = (int)($switchItem['id'] ?? 0);
+            if ($switchId <= 0) {
+                continue;
+            }
+
+            $switchImages = is_array($switchItem['images'] ?? null) ? $switchItem['images'] : [];
+            $switchSlug = (string)($switchItem['slug'] ?? '');
+            $switchName = (string)($switchItem['name'] ?? 'VinFast');
+            $switchProducts[] = [
+                'id' => $switchId,
+                'name' => $switchName,
+                'slug' => $switchSlug,
+                'model_key' => self::extractModelKey($switchSlug !== '' ? $switchSlug : $switchName),
+                'price' => (float)($switchItem['price'] ?? 0),
+                'image' => is_string($switchImages[0] ?? null) ? (string)$switchImages[0] : '',
+                'is_current' => false,
+            ];
+
+            if (count($switchProducts) >= $limit) {
+                break;
+            }
+        }
+
+        return $switchProducts;
+    }
+
     public static function getAdminList(array $filters = [], int $page = 1, int $perPage = 10): array
     {
         global $pdo;

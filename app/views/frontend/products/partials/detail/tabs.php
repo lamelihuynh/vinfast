@@ -14,7 +14,7 @@ $specRows = isset($specRows) && is_array($specRows) ? $specRows : [];
       <div class="space-y-4 text-[14px] leading-8 text-slate-600">
         <p><?= nl2br(htmlspecialchars($descriptionText)) ?></p>
       </div>
-      <a href="<?= BASE_URL ?>products/checkout/<?= (int)$productId ?><?= !empty($defaultColor['code']) ? ('?color=' . urlencode((string)$defaultColor['code'])) : '' ?>" data-checkout-base="<?= BASE_URL ?>products/checkout/<?= (int)$productId ?>" class="vf-pd-checkout-link mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-vfNavy no-underline transition hover:text-vfNavy/80">
+      <a href="<?= BASE_URL ?>order/checkout/<?= (int)$productId ?><?= !empty($defaultColor['code']) ? ('?color=' . urlencode((string)$defaultColor['code'])) : '' ?>" data-checkout-base="<?= BASE_URL ?>order/checkout/<?= (int)$productId ?>" class="vf-pd-checkout-link mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-vfNavy no-underline transition hover:text-vfNavy/80">
         Đặt cọc ngay để nhận xe sớm nhất
         <i class="fa-solid fa-chevron-right"></i>
       </a>
