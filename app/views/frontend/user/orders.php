@@ -5,7 +5,7 @@
  * Owner  : All members (common)
  * Title  : My Orders
  *
- * Purpose: Table of the member's deposit/test-drive orders: product name, order type, status badge, date.
+ * Purpose: Orders page in the shared profile shell.
  *
  * Variables available (set by controller via View::render):
  *   $orders (array)
@@ -24,117 +24,61 @@
 $ordersRaw = $orders ?? [];
 $orders = is_iterable($ordersRaw) ? $ordersRaw : [];
 
-
-$typeMap = [
-  'deposit' => 'Đặt cọc',
-  'test_drive' => 'Lái thử',
-];
-
-$paymentStatusMap = [
-  'unpaid' => ['label' => 'Chưa thanh toán', 'class' => 'bg-slate-100 text-slate-700'],
-  'pending_verify' => ['label' => 'Cho xác nhận TT', 'class' => 'bg-blue-100 text-blue-800'],
-  'paid' => ['label' => 'Đã nhận cọc', 'class' => 'bg-green-100 text-green-800'],
-  'failed' => ['label' => 'TT thất bại', 'class' => 'bg-red-100 text-red-800'],
-  'refunded' => ['label' => 'Đã hoàn tiền', 'class' => 'bg-purple-100 text-purple-800'],
-];
-
-$extractDepositAmount = static function ($note): float {
-  $raw = trim((string)$note);
-  if ($raw === '') {
-    return 0;
-  }
-
-  $decoded = json_decode($raw, true);
-  if (!is_array($decoded)) {
-    return 0;
-  }
-
-  return (float)($decoded['deposit_amount'] ?? 0);
-};
-
-$extractPaymentStatus = static function ($note): string {
-  $raw = trim((string)$note);
-  if ($raw === '') {
-    return 'pending_verify';
-  }
-
-  $decoded = json_decode($raw, true);
-  if (!is_array($decoded)) {
-    return 'pending_verify';
-  }
-
-  $status = trim((string)($decoded['payment_status'] ?? 'pending_verify'));
-  return $status !== '' ? $status : 'pending_verify';
-};
+$userData = null;
+if (Auth::check()) {
+  $userData = (new User())->findById((int)Auth::id());
+}
 ?>
 
-<section class="py-6 bg-slate-50 min-h-[60vh]">
-  <div class="container">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-900 mb-1">Lich su don hang</h1>
-        <p class="text-sm text-slate-500 mb-0">Trang thai don duoc cap nhat theo xu ly tai trang admin.</p>
-      </div>
-      <a href="<?= BASE_URL ?>products" class="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Tiep tuc dat xe</a>
-    </div>
+<section class="min-h-screen bg-[#F5F6F8] py-6">
+  <div class="mx-auto w-full max-w-6xl px-4 lg:px-6">
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1a2240] via-[#233060] to-[#1a2240] px-6 py-10 text-white shadow-lg lg:px-10">
+      <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#c8a22e]/10"></div>
+      <div class="absolute -bottom-12 left-10 h-40 w-40 rounded-full bg-white/5"></div>
+      <div class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">
+          <p class="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Tài khoản</p>
+          <h1 class="mb-3 text-3xl font-extrabold tracking-[-0.03em] lg:text-4xl">Đơn hàng của tôi</h1>
+          <p class="mb-0 max-w-xl text-sm leading-6 text-white/70">Theo dõi lịch sử đặt cọc và trạng thái xử lý trong cùng một không gian quản lý với hồ sơ cá nhân.</p>
+        </div>
 
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Mã đơn</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Sản phẩm</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Loại</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Tiền cọc</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Thanh toán</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Trạng thái</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Ngày tạo</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <?php if (empty($orders)): ?>
-              <tr>
-                <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500">Ban chua co don hang nao.</td>
-              </tr>
-            <?php else: ?>
-              <?php foreach ($orders as $order): ?>
-                <?php
-                $id = (int)($order['id'] ?? 0);
-                $orderCode = 'VF-ORD-' . str_pad((string)$id, 6, '0', STR_PAD_LEFT);
-                $status = trim((string)($order['status'] ?? 'pending'));
-                $depositAmount = $extractDepositAmount($order['note'] ?? null);
-                $paymentStatus = $extractPaymentStatus($order['note'] ?? null);
-                $paymentItem = $paymentStatusMap[$paymentStatus] ?? ['label' => $paymentStatus, 'class' => 'bg-slate-100 text-slate-700'];
-                ?>
-                <tr>
-                  <td class="px-4 py-3 text-sm font-medium text-slate-900"><?= htmlspecialchars($orderCode) ?></td>
-                  <td class="px-4 py-3 text-sm text-slate-700"><?= htmlspecialchars((string)($order['product_name'] ?? '')) ?></td>
-                  <td class="px-4 py-3 text-sm text-slate-700"><?= htmlspecialchars($typeMap[(string)($order['type'] ?? '')] ?? (string)($order['type'] ?? '')) ?></td>
-                  <td class="px-4 py-3 text-sm text-slate-700">
-                    <?= $depositAmount > 0 ? htmlspecialchars(number_format($depositAmount, 0, ',', '.') . ' VND') : '--' ?>
-                  </td>
-                  <td class="px-4 py-3 text-sm">
-                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= htmlspecialchars($paymentItem['class']) ?>">
-                      <?= htmlspecialchars((string)$paymentItem['label']) ?>
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-sm">
-                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= htmlspecialchars($statusItem['class']) ?>">
-                      <?= htmlspecialchars((string)$statusItem['label']) ?>
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-sm text-slate-500">
-                    <?= htmlspecialchars(!empty($order['created_at']) ? date('d/m/Y H:i', strtotime((string)$order['created_at'])) : '--') ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </tbody>
-        </table>
+        <div class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
+          <?php $avatarFallback = 'data:image/svg+xml;utf8,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="#1a2240"/><circle cx="48" cy="38" r="18" fill="#e2e8f0"/><path d="M20 80c5-14 16-22 28-22s23 8 28 22" fill="#e2e8f0"/></svg>'); ?>
+          <img src="<?= htmlspecialchars((string)($userData['avatar'] ?? $avatarFallback)) ?>" alt="User Avatar" class="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/25">
+          <div>
+            <div class="text-lg font-bold"><?= htmlspecialchars((string)($userData['name'] ?? 'Người dùng')) ?></div>
+            <div class="text-sm text-white/65"><?= htmlspecialchars((string)($userData['email'] ?? '')) ?></div>
+            <div class="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">Quản lý đơn đặt cọc</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <?php include ROOT . '/app/views/frontend/partials/pagination.php'; ?>
+    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
+      <aside class="space-y-4">
+        <?php include ROOT . '/app/views/frontend/user/partials/profile-card.php'; ?>
+        <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <?php $active = 'orders';
+          include ROOT . '/app/views/frontend/user/partials/sidebar.php'; ?>
+        </div>
+      </aside>
+
+      <main class="space-y-4">
+        <div class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+          <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Lịch sử đơn hàng</h2>
+              <p class="mt-1 text-sm text-slate-500">Trạng thái đơn hàng sẽ được cập nhật theo xử lý phía quản trị.</p>
+            </div>
+            <a href="<?= BASE_URL ?>products" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Tiếp tục đặt xe</a>
+          </div>
+          <div class="px-6 py-6">
+            <?php include ROOT . '/app/views/frontend/user/partials/orders-list.php'; ?>
+          </div>
+        </div>
+
+        <?php include ROOT . '/app/views/frontend/partials/pagination.php'; ?>
+      </main>
+    </div>
   </div>
 </section>
