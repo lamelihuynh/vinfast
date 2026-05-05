@@ -4,6 +4,8 @@
  * app/views/admin/orders/partials/filters.php
  * Expects: $status, $q
  */
+$status = trim((string)($status ?? 'all'));
+$q = trim((string)($q ?? ''));
 ?>
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <h5 class="mb-0">Quản lý đơn hàng</h5>

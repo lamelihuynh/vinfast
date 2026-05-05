@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  var baseUrl = (window.VF_PRODUCT_MODAL_BASE_URL || '').toString();
   var modalApi = bootstrap.Modal.getOrCreateInstance(modalEl);
 
   var titleEl = document.getElementById('productModalTitle');
@@ -40,10 +39,26 @@ document.addEventListener('DOMContentLoaded', function () {
   var newSection = document.getElementById('newImagesSection');
   var newContainer = document.getElementById('newImagesContainer');
   var openCreateBtn = document.getElementById('openCreateProductBtn');
+  var btnOpenCreateCategory = document.getElementById('btnOpenCreateCategory');
+  var createCategoryModalEl = document.getElementById('createCategoryModal');
+  var createCategoryForm = document.getElementById('createCategoryForm');
+  var createCategoryName = document.getElementById('createCategoryName');
+  var createCategoryFeedback = document.getElementById('createCategoryFeedback');
+  var createCategorySubmitBtn = document.getElementById('createCategorySubmitBtn');
+  var createCategoryModalApi = createCategoryModalEl ? bootstrap.Modal.getOrCreateInstance(createCategoryModalEl) : null;
+  var btnOpenDeleteCategory = document.getElementById('btnOpenDeleteCategory');
+  var deleteCategoryModalEl = document.getElementById('deleteCategoryModal');
+  var deleteCategoryForm = document.getElementById('deleteCategoryForm');
+  var deleteCategoryNameEl = document.getElementById('deleteCategoryName');
+  var deleteCategoryIdInput = document.getElementById('deleteCategoryId');
+  var deleteCategoryFeedback = document.getElementById('deleteCategoryFeedback');
+  var deleteCategorySubmitBtn = document.getElementById('deleteCategorySubmitBtn');
+  var deleteCategoryModalApi = deleteCategoryModalEl ? bootstrap.Modal.getOrCreateInstance(deleteCategoryModalEl) : null;
+  var returnToProductAfterCreate = false;
+  var returnToProductAfterDelete = false;
   var newImageObjectUrls = [];
 
   var slugTouched = false;
-  var currentEditingFamily = '';
 
   function colorRowsToTextarea(rows) {
     if (!Array.isArray(rows)) return '';
@@ -86,6 +101,30 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/^-+|-+$/g, '');
   }
 
+  function showCategoryFeedback(message, isError) {
+    if (!createCategoryFeedback) return;
+    createCategoryFeedback.classList.remove('d-none', 'text-danger', 'text-success');
+    createCategoryFeedback.classList.add(isError ? 'text-danger' : 'text-success');
+    createCategoryFeedback.textContent = message || '';
+  }
+
+  function upsertCategoryOption(category) {
+    if (!inputCategory || !category || !category.id) return;
+
+    var id = String(category.id);
+    var name = String(category.name || '').trim();
+    if (!name) return;
+
+    var existing = inputCategory.querySelector('option[value="' + id + '"]');
+    if (!existing) {
+      existing = document.createElement('option');
+      existing.value = id;
+      inputCategory.appendChild(existing);
+    }
+    existing.textContent = name;
+    inputCategory.value = id;
+  }
+
   function extractFamily(text) {
     var value = String(text || '').toLowerCase().trim();
     if (!value) return '';
@@ -105,11 +144,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var family = normalized.split('-')[0] || '';
     return /^[a-z0-9]+$/.test(family) ? family : '';
-  }
-
-  function getFamilyFromProduct(product) {
-    if (!product || typeof product !== 'object') return '';
-    return String(product.family || extractFamily(product.slug || product.name || '') || '').toLowerCase();
   }
 
   function clearNewImagesPreview() {
@@ -137,24 +171,18 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/'/g, '&#39;');
   }
 
-  function normalizeRel(path) {
-    return String(path || '').replace(/^\/+/, '');
-  }
-
-  function setMainExisting(rel) {
-    inputMainImage.value = normalizeRel(rel);
-    inputMainNewIndex.value = '';
-    refreshMainIndicators();
-  }
-
-  function setMainNew(index) {
-    inputMainNewIndex.value = String(index);
-    inputMainImage.value = '';
+  function setMainImage(rel, newIndex) {
+    if (newIndex !== undefined && newIndex !== null) {
+      inputMainNewIndex.value = String(newIndex);
+      inputMainImage.value = '';
+    } else {
+      inputMainImage.value = String(rel || '').replace(/^\/+/, '');
+      inputMainNewIndex.value = '';
+    }
     refreshMainIndicators();
   }
 
   function refreshMainIndicators() {
-    var currentMainRel = normalizeRel(inputMainImage.value);
     var currentMainNewIndex = inputMainNewIndex.value;
 
     // Only handle new image preview section (existing images are in the table)
@@ -210,18 +238,13 @@ document.addEventListener('DOMContentLoaded', function () {
     bindNewMainButtons();
   }
 
-  function bindRemoveExisting() {
-    // Existing images are now managed via the color-image table; this function is no longer used.
-  }
-
   function bindNewMainButtons() {
     newContainer.querySelectorAll('.btn-set-main-new').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var item = btn.closest('.new-image-item');
         if (!item) return;
         var idx = Number(item.getAttribute('data-new-index') || -1);
-        if (idx < 0) return;
-        setMainNew(idx);
+        if (idx >= 0) setMainImage(null, idx);
       });
     });
   }
@@ -248,12 +271,8 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMainImage.value = '';
     inputMainNewIndex.value = '';
     slugTouched = false;
-    currentEditingFamily = '';
     clearNewImagesPreview();
-    // clear any existing color-image table rows left from previous edits
-    try {
-      renderColorImageTable({ images: [], exterior_colors: [] });
-    } catch (e) {}
+    renderColorImageTable({ images: [], exterior_colors: [] });
   }
 
   function fillFormForEdit(product) {
@@ -282,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMainImage.value = '';
     inputMainNewIndex.value = '';
     slugTouched = true;
-    currentEditingFamily = getFamilyFromProduct(product);
 
     // existing images are managed via the color-image table now
     // ensure textarea and main image are synced from the table
@@ -363,10 +381,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (codeInput && (!codeInput.value || codeInput.value.trim() === '')) {
         codeInput.value = basename.toUpperCase();
       }
-      var hexInput = tr.querySelector('.color-table-hex');
-      if (hexInput && (!hexInput.value || hexInput.value.trim() === '')) {
-        // leave blank — user may fill
-      }
     });
   }
 
@@ -375,7 +389,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var table = document.getElementById('colorImageTable');
     if (!table) return;
     var lines = [];
-    var missingNames = [];
     table.querySelectorAll('tbody tr').forEach(function (tr) {
       var rel = tr.getAttribute('data-rel') || '';
       var code = (tr.querySelector('.color-table-code') || {}).value || '';
@@ -387,9 +400,6 @@ document.addEventListener('DOMContentLoaded', function () {
       hex = String(hex || '').trim();
       surcharge = String(surcharge || '').trim();
       if (!code || !name) {
-        if (code && !name) {
-          missingNames.push(code);
-        }
         return;
       }
       var parts = [code, name];
@@ -402,19 +412,17 @@ document.addEventListener('DOMContentLoaded', function () {
     
     inputExteriorColorsRaw.value = lines.join('\n');
     // set main image from checked radio in the table (if any)
-    try {
-      var checked = document.querySelector('input[name="modal_default_image"]:checked');
-      if (checked && checked.value) {
-        inputMainImage.value = String(checked.value || '').replace(/^\/+/, '');
-        inputMainNewIndex.value = '';
-      } else if (lines.length === 0) {
-        inputMainImage.value = '';
-      } else {
-        // fallback: first existing_images[] value present in table
-        var firstRel = (table.querySelector('input[name="existing_images[]"]') || {}).value || '';
-        if (firstRel) inputMainImage.value = String(firstRel).replace(/^\/+/, '');
-      }
-    } catch (e) {}
+    var checked = document.querySelector('input[name="modal_default_image"]:checked');
+    if (checked && checked.value) {
+      inputMainImage.value = String(checked.value || '').replace(/^\/+/, '');
+      inputMainNewIndex.value = '';
+    } else if (lines.length === 0) {
+      inputMainImage.value = '';
+    } else {
+      // fallback: first existing_images[] value present in table
+      var firstRel = (table.querySelector('input[name="existing_images[]"]') || {}).value || '';
+      if (firstRel) inputMainImage.value = String(firstRel).replace(/^\/+/, '');
+    }
     return true;
   }
 
@@ -427,12 +435,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // ensure table serialized before submit
   var modalForm = document.getElementById('productModalForm');
   if (modalForm) {
-    modalForm.addEventListener('submit', function (e) {
-      var result = serializeTableToTextarea();
-      if (result === false) {
-        e.preventDefault();
-        return false;
-      }
+    modalForm.addEventListener('submit', function () {
+      serializeTableToTextarea();
     });
   }
 
@@ -441,6 +445,214 @@ document.addEventListener('DOMContentLoaded', function () {
       resetFormForCreate();
       modalApi.show();
     });
+  }
+
+  if (btnOpenCreateCategory && createCategoryModalApi && createCategoryForm) {
+    btnOpenCreateCategory.addEventListener('click', function () {
+      returnToProductAfterCreate = true;
+      createCategoryForm.reset();
+      if (createCategoryFeedback) {
+        createCategoryFeedback.classList.add('d-none');
+        createCategoryFeedback.textContent = '';
+      }
+
+      // Prefer deterministic open to avoid relying only on hidden event timing.
+      createCategoryModalApi.show();
+      modalApi.hide();
+    });
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+      if (returnToProductAfterCreate && createCategoryModalApi && createCategoryModalEl && !createCategoryModalEl.classList.contains('show')) {
+        createCategoryModalApi.show();
+      }
+      if (returnToProductAfterDelete && deleteCategoryModalApi && deleteCategoryModalEl && !deleteCategoryModalEl.classList.contains('show')) {
+        deleteCategoryModalApi.show();
+      }
+    });
+
+    createCategoryModalEl.addEventListener('shown.bs.modal', function () {
+      if (createCategoryName) {
+        createCategoryName.focus();
+      }
+    });
+
+    createCategoryModalEl.addEventListener('hidden.bs.modal', function () {
+      if (returnToProductAfterCreate) {
+        returnToProductAfterCreate = false;
+        modalApi.show();
+      }
+    });
+
+    createCategoryForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var name = String((createCategoryName && createCategoryName.value) || '').trim();
+      if (!name) {
+        showCategoryFeedback('Vui lòng nhập tên danh mục.', true);
+        return;
+      }
+
+      var csrfInput = modalEl.querySelector('input[name="_csrf"]');
+      var csrf = csrfInput ? csrfInput.value : '';
+      if (!csrf) {
+        showCategoryFeedback('Thiếu CSRF token.', true);
+        return;
+      }
+
+      if (createCategorySubmitBtn) {
+        createCategorySubmitBtn.disabled = true;
+      }
+      showCategoryFeedback('Đang lưu danh mục...', false);
+
+      var payload = new URLSearchParams();
+      payload.set('name', name);
+      payload.set('_csrf', csrf);
+
+      fetch(window.VF_ADMIN_URL + 'products/createcategory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: payload.toString()
+      })
+        .then(function (res) {
+          return res.json().catch(function () {
+            return {
+              ok: false,
+              message: 'Phản hồi không hợp lệ từ máy chủ.'
+            };
+          });
+        })
+        .then(function (data) {
+          if (!data || !data.ok || !data.category) {
+            showCategoryFeedback((data && data.message) || 'Không thể thêm danh mục.', true);
+            return;
+          }
+
+          upsertCategoryOption(data.category);
+          showCategoryFeedback((data && data.message) || 'Đã thêm danh mục.', false);
+          createCategoryModalApi.hide();
+        })
+        .catch(function () {
+          showCategoryFeedback('Lỗi kết nối khi thêm danh mục.', true);
+        })
+        .finally(function () {
+          if (createCategorySubmitBtn) {
+            createCategorySubmitBtn.disabled = false;
+          }
+        });
+    });
+
+    if (btnOpenDeleteCategory && deleteCategoryModalApi && deleteCategoryForm) {
+      btnOpenDeleteCategory.addEventListener('click', function () {
+        var selected = (inputCategory && inputCategory.options[inputCategory.selectedIndex]) || null;
+        var id = selected ? selected.value : '';
+        var name = selected ? selected.textContent : '';
+        if (!id) {
+          if (createCategoryFeedback) {
+            createCategoryFeedback.classList.remove('d-none');
+            createCategoryFeedback.classList.add('text-danger');
+            createCategoryFeedback.textContent = 'Vui lòng chọn danh mục trước khi xóa.';
+          }
+          return;
+        }
+
+        if (deleteCategoryNameEl) deleteCategoryNameEl.textContent = name || '';
+        if (deleteCategoryIdInput) deleteCategoryIdInput.value = String(id || '0');
+
+        // open delete modal deterministically
+        deleteCategoryModalApi.show();
+        modalApi.hide();
+        returnToProductAfterDelete = true;
+      });
+
+      deleteCategoryModalEl.addEventListener('hidden.bs.modal', function () {
+        if (returnToProductAfterDelete) {
+          returnToProductAfterDelete = false;
+          modalApi.show();
+        }
+      });
+
+      deleteCategoryForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var id = String((deleteCategoryIdInput && deleteCategoryIdInput.value) || '').trim();
+        if (!id || Number(id) <= 0) {
+          if (deleteCategoryFeedback) {
+            deleteCategoryFeedback.classList.remove('d-none');
+            deleteCategoryFeedback.classList.add('text-danger');
+            deleteCategoryFeedback.textContent = 'ID danh mục không hợp lệ.';
+          }
+          return;
+        }
+
+        var csrfInput = modalEl.querySelector('input[name="_csrf"]');
+        var csrf = csrfInput ? csrfInput.value : '';
+        if (!csrf) {
+          if (deleteCategoryFeedback) {
+            deleteCategoryFeedback.classList.remove('d-none');
+            deleteCategoryFeedback.classList.add('text-danger');
+            deleteCategoryFeedback.textContent = 'Thiếu CSRF token.';
+          }
+          return;
+        }
+
+        if (deleteCategorySubmitBtn) deleteCategorySubmitBtn.disabled = true;
+        if (deleteCategoryFeedback) {
+          deleteCategoryFeedback.classList.remove('d-none');
+          deleteCategoryFeedback.classList.remove('text-danger');
+          deleteCategoryFeedback.classList.add('text-muted');
+          deleteCategoryFeedback.textContent = 'Đang xóa...';
+        }
+
+        var payload = new URLSearchParams();
+        payload.set('id', id);
+        payload.set('_csrf', csrf);
+
+        fetch(window.VF_ADMIN_URL + 'products/deletecategory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: payload.toString()
+        })
+          .then(function (res) {
+            return res.json().catch(function () { return { ok: false, message: 'Phản hồi không hợp lệ.' }; });
+          })
+          .then(function (data) {
+            if (data && data.ok) {
+              // remove option
+              var opt = inputCategory.querySelector('option[value="' + id + '"]');
+              if (opt) opt.remove();
+              inputCategory.value = '';
+              if (deleteCategoryFeedback) {
+                deleteCategoryFeedback.classList.remove('text-danger');
+                deleteCategoryFeedback.classList.add('text-success');
+                deleteCategoryFeedback.textContent = (data.message || 'Đã xóa danh mục.');
+              }
+              deleteCategoryModalApi.hide();
+              return;
+            }
+
+            if (deleteCategoryFeedback) {
+              deleteCategoryFeedback.classList.remove('text-muted');
+              deleteCategoryFeedback.classList.add('text-danger');
+              deleteCategoryFeedback.textContent = (data && data.message) || 'Không thể xóa danh mục.';
+            }
+          })
+          .catch(function () {
+            if (deleteCategoryFeedback) {
+              deleteCategoryFeedback.classList.remove('text-muted');
+              deleteCategoryFeedback.classList.add('text-danger');
+              deleteCategoryFeedback.textContent = 'Lỗi kết nối khi xóa danh mục.';
+            }
+          })
+          .finally(function () {
+            if (deleteCategorySubmitBtn) deleteCategorySubmitBtn.disabled = false;
+          });
+      });
+    }
   }
 
   if (inputSlug) {

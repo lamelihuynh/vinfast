@@ -33,6 +33,10 @@ class ProductController
             $filters['category_id'] = $cat;
         }
 
+        if ($range !== 'all') {
+            $filters['range'] = $range;
+        }
+
         // Convert price range to VND values
         if ($price !== 'all') {
             switch ($price) {
@@ -55,21 +59,9 @@ class ProductController
 
         $filters['sort'] = $sort;
 
-        $products = Product::filterAll($filters);
-
-        if ($range !== 'all') {
-            $products = array_values(array_filter($products, function (array $p) use ($range): bool {
-                $km = Product::extractRangeKm($p['specs'] ?? []);
-                if ($range === 'lt200') return $km > 0 && $km < 200;
-                if ($range === '200-400') return $km >= 200 && $km <= 400;
-                if ($range === 'gt400') return $km > 400;
-                return true;
-            }));
-        }
-
-        $total = count($products);
+        $total = Product::countFiltered($filters);
         $pg = new Pagination($total, $page, $pp);
-        $products = array_slice($products, $pg->offset(), $pg->limit());
+        $products = Product::filterPaginated($filters, $pg->current, $pg->perPage);
 
         $query = [];
         if ($q !== '') $query['q'] = $q;

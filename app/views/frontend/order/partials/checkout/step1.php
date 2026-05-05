@@ -34,6 +34,7 @@ $selectedVariantName = isset($selectedVariantName) ? (string)$selectedVariantNam
                         type="submit"
                         name="switch_product_id"
                         value="<?= $variantProductId ?>"
+                        formnovalidate
                         data-switch-product
                         data-switch-product-quick
                         class="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition <?= $isVariantActive ? 'border-vfNavy bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50' ?>">

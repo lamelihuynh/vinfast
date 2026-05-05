@@ -78,12 +78,9 @@
                                         </button>
                                     </li>
                                     <li>
-                                        <form method="POST" action="<?= ADMIN_URL ?>products/delete/<?= (int)$p['id'] ?>" class="d-inline">
-                                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                                            <button type="submit" class="btn btn-link text-danger p-0" data-confirm="Bạn có chắc muốn xóa sản phẩm này?" title="Xóa">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-link text-danger p-0 btn-delete-product" data-id="<?= (int)$p['id'] ?>" data-name="<?= htmlspecialchars((string)$p['name']) ?>" title="Xóa">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
                                     </li>
                                 </ul>
                             </td>

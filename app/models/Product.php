@@ -43,6 +43,18 @@ class Product
             $params[':price_max'] = (float)$filters['price_max'];
         }
 
+        if (!empty($filters['range']) && $filters['range'] !== 'all') {
+            $rangeExpr = "CAST(REGEXP_SUBSTR(JSON_UNQUOTE(JSON_EXTRACT(specs, '$.range')), '[0-9]+(\\.[0-9]+)?') AS DECIMAL(10,2))";
+
+            if ($filters['range'] === 'lt200') {
+                $where[] = "($rangeExpr > 0 AND $rangeExpr < 200)";
+            } elseif ($filters['range'] === '200-400') {
+                $where[] = "($rangeExpr >= 200 AND $rangeExpr <= 400)";
+            } elseif ($filters['range'] === 'gt400') {
+                $where[] = "$rangeExpr > 400";
+            }
+        }
+
         return [implode(' AND ', $where), $params];
     }
 
@@ -175,13 +187,36 @@ class Product
     }
     public static function filter(array $filters = [], int $page = 1, int $perPage = 10): array
     {
+        return self::filterPaginated($filters, $page, $perPage);
+    }
+
+    public static function filterPaginated(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
         global $pdo;
+
         $page = max(1, $page);
+        $perPage = max(1, $perPage);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $items = self::filterAll($filters);
+        [$whereClause, $params] = self::buildCatalogFilters($filters);
 
-        return array_slice($items, $offset, $perPage);
+        $sort = $filters['sort'] ?? 'default';
+        $orderBy = 'created_at DESC';
+        if ($sort === 'price_asc') {
+            $orderBy = 'price ASC';
+        } elseif ($sort === 'price_desc') {
+            $orderBy = 'price DESC';
+        }
+
+        $sql = "SELECT * FROM products WHERE $whereClause ORDER BY $orderBy LIMIT :limit OFFSET :offset";
+
+        $stmt = $pdo->prepare($sql);
+        self::bindNamedParams($stmt, $params);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
     public static function filterAll(array $filters = []): array

@@ -15,10 +15,10 @@ $status = trim((string)($order['status'] ?? 'pending'));
 $createdAt = trim((string)($order['created_at'] ?? ''));
 
 $statusMap = [
-    'pending' => ['label' => 'Cho xu ly', 'badge' => 'badge-warning'],
-    'confirmed' => ['label' => 'Da xac nhan', 'badge' => 'badge-info'],
-    'done' => ['label' => 'Hoan tat', 'badge' => 'badge-success'],
-    'cancelled' => ['label' => 'Da huy', 'badge' => 'badge-danger'],
+    'pending' => ['label' => 'Chờ xử lý', 'badge' => 'badge-warning'],
+    'confirmed' => ['label' => 'Đã xác nhận', 'badge' => 'badge-info'],
+    'done' => ['label' => 'Hoàn tất', 'badge' => 'badge-success'],
+    'cancelled' => ['label' => 'Đã hủy', 'badge' => 'badge-danger'],
 ];
 
 $labelByStatus = static function (string $value) use ($statusMap): string {
@@ -42,9 +42,9 @@ $showroom = trim((string)($note['showroom'] ?? ''));
 $payMethod = trim((string)($note['pay_method'] ?? ''));
 
 $payMethodMap = [
-    'card-intl' => 'The quoc te',
-    'card-domestic' => 'The ATM / Internet Banking',
-    'transfer' => 'Chuyen khoan ngan hang',
+    'card-intl' => 'Thẻ quốc tế',
+    'card-domestic' => 'Thẻ ATM / Internet Banking',
+    'transfer' => 'Chuyển khoản ngân hàng',
 ];
 ?>
 
@@ -60,7 +60,7 @@ $payMethodMap = [
     <div class="col-xl-8">
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-body">
-                <h6 class="mb-3">Thong tin don</h6>
+                <h6 class="mb-3">Thông tin đơn hàng</h6>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="small text-muted">Khách hàng</div>

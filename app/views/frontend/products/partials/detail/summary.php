@@ -69,17 +69,7 @@ $productId = isset($productId) ? (int)$productId : 0;
 		</div>
 	</div>
 
-	<div class="mb-2 rounded-xl border border-slate-100 bg-slate-50 p-4">
-		<h4 class="mb-3 text-[13px] font-bold text-slate-900">Điểm nổi bật</h4>
-		<ul class="m-0 flex list-none flex-col gap-2 p-0">
-			<?php foreach ($featureList as $f): ?>
-				<li class="flex items-start gap-2 text-[13px] leading-5 text-slate-600">
-					<i class="fa-solid fa-circle-check mt-0.5 text-green-500"></i>
-					<span><?= htmlspecialchars($f) ?></span>
-				</li>
-			<?php endforeach; ?>
-		</ul>
-	</div>
+	<!-- Removed static 'Điểm nổi bật' feature list per request -->
 
 	<div class="vf-pd-mobile-cta md:hidden">
 		<div class="vf-pd-mobile-cta-inner">

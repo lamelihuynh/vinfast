@@ -38,7 +38,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Trạng thái</div>
-                        <span class="badge text-black" data-detail="statusBadge">--</span>
+                        <span class="badge bg-secondary text-white" data-detail="statusBadge">--</span>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Tỉnh/Thành</div>
@@ -54,7 +54,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Trạng thái thanh toán</div>
-                        <span class="badge text-black" data-detail="paymentStatusBadge">--</span>
+                        <span class="badge bg-secondary text-white" data-detail="paymentStatusBadge">--</span>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Tiền cọc</div>
@@ -99,18 +99,18 @@
         }
 
         var statusClassMap = {
-            pending: 'badge-warning',
-            confirmed: 'badge-info',
-            done: 'badge-success',
-            cancelled: 'badge-danger'
+            pending: 'bg-warning text-dark',
+            confirmed: 'bg-info text-dark',
+            done: 'bg-success text-white',
+            cancelled: 'bg-danger text-white'
         };
 
         var paymentClassMap = {
-            unpaid: 'badge-secondary',
-            pending_verify: 'badge-primary',
-            paid: 'badge-success',
-            failed: 'badge-danger',
-            refunded: 'badge-info'
+            unpaid: 'bg-secondary text-white',
+            pending_verify: 'bg-primary text-white',
+            paid: 'bg-success text-white',
+            failed: 'bg-danger text-white',
+            refunded: 'bg-info text-dark'
         };
 
         var emptyValue = '--';
@@ -152,13 +152,13 @@
 
             var badgeEl = modal.querySelector('[data-detail="statusBadge"]');
             if (badgeEl) {
-                badgeEl.className = 'badge ' + (statusClassMap[order.statusRaw] || 'badge-secondary');
+                badgeEl.className = 'badge ' + (statusClassMap[order.statusRaw] || 'bg-secondary text-white');
                 badgeEl.textContent = order.status || emptyValue;
             }
 
             var paymentBadgeEl = modal.querySelector('[data-detail="paymentStatusBadge"]');
             if (paymentBadgeEl) {
-                paymentBadgeEl.className = 'badge text-black ' + (paymentClassMap[order.paymentStatusRaw] || 'badge-secondary');
+                paymentBadgeEl.className = 'badge ' + (paymentClassMap[order.paymentStatusRaw] || 'bg-secondary text-white');
                 paymentBadgeEl.textContent = order.paymentStatus || emptyValue;
             }
 
