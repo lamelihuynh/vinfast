@@ -1,7 +1,8 @@
 <div class="bg-white/95 backdrop-blur-md border-b border-slate-100">
   <div class="w-full px-4 lg:px-6 xl:px-8 py-3 flex items-center gap-4">
     <a href="<?= BASE_URL ?>" class="flex items-center flex-shrink-0">
-      <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast" class="h-9 w-auto">
+      <?php $navLogo = SiteSetting::imageUrl(SiteSetting::all()['logo'] ?? '', 'public/images/logo/vinfast-logo.png'); ?>
+      <img src="<?= htmlspecialchars($navLogo) ?>" alt="VinFast" class="h-9 w-auto">
     </a>
 
     <form action="<?= BASE_URL ?>products" method="get" class="hidden md:flex flex-1 max-w-xl mx-auto border border-slate-200 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-vfNavy/20 focus-within:border-vfNavy transition">

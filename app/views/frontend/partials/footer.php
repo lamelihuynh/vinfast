@@ -10,7 +10,7 @@
 <?php
 // Footer dùng SiteSetting để admin chỉnh nhanh.
 $settings = SiteSetting::all();
-$logoUrl = SiteSetting::imageUrl($settings['logo'] ?? '', 'public/images/logo/logo_footer.png');
+$logoUrl = SiteSetting::imageUrl($settings['logo'] ?? '', 'public/images/logo/vinfast-logo.png');
 $address = (string)($settings['address'] ?? '');
 $phone = (string)($settings['phone'] ?? '');
 $email = (string)($settings['email'] ?? '');

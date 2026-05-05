@@ -151,23 +151,30 @@ $isTestDriveTab = $tab === 'test-drive';
     transform: scale(0.98);
   }
   .vf-btn-submit--gold {
-    background: #FFB81C;
+    background: linear-gradient(135deg, #FFB81C 0%, #f59e0b 100%);
     color: #0b233f;
+    box-shadow: 0 4px 15px rgba(255, 184, 28, 0.4);
   }
   .vf-btn-submit--gold:hover {
-    background: #e6a519;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 6px 20px rgba(255, 184, 28, 0.6);
+    transform: translateY(-2px);
   }
 </style>
 
 <section class="bg-white">
   <div class="mx-auto max-w-6xl px-4 py-10 sm:py-14">
     <!-- ===== Heading ===== -->
-    <div class="mb-10">
-      <p class="text-sm font-semibold tracking-wide text-vfGold">LIÊN HỆ</p>
-      <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+    <div class="mb-12 text-center">
+      <div class="inline-flex items-center justify-center gap-2 mb-3">
+        <span class="h-1 w-8 bg-[#FFB81C] rounded-full"></span>
+        <p class="text-sm font-bold tracking-widest text-[#FFB81C] uppercase">LIÊN HỆ VỚI CHÚNG TÔI</p>
+        <span class="h-1 w-8 bg-[#FFB81C] rounded-full"></span>
+      </div>
+      <h1 class="mt-2 text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#0b233f] to-[#1a4a82] sm:text-5xl drop-shadow-sm">
         Gửi yêu cầu hỗ trợ
       </h1>
-      <p class="mt-3 max-w-2xl text-slate-600">
+      <p class="mt-4 max-w-2xl mx-auto text-base text-slate-600">
         Bạn có câu hỏi về sản phẩm, chính sách hoặc dịch vụ? Hãy để lại thông tin, VinFast sẽ liên hệ sớm.
       </p>
     </div>
@@ -199,11 +206,11 @@ $isTestDriveTab = $tab === 'test-drive';
 
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label class="vf-form-label" for="c_name">Họ và tên</label>
+                    <label class="vf-form-label" for="c_name">Họ và tên <span class="text-red-500">*</span></label>
                     <input id="c_name" name="name" required class="vf-form-input" placeholder="VD: Nguyễn Văn A" />
                   </div>
                   <div>
-                    <label class="vf-form-label" for="c_email">Email</label>
+                    <label class="vf-form-label" for="c_email">Email <span class="text-red-500">*</span></label>
                     <input id="c_email" name="email" type="email" required class="vf-form-input" placeholder="vd: example@gmail.com" />
                   </div>
                 </div>
@@ -214,7 +221,7 @@ $isTestDriveTab = $tab === 'test-drive';
                 </div>
 
                 <div>
-                  <label class="vf-form-label" for="c_message">Nội dung</label>
+                  <label class="vf-form-label" for="c_message">Nội dung <span class="text-red-500">*</span></label>
                   <textarea id="c_message" name="message" rows="5" required class="vf-form-textarea" placeholder="Bạn cần hỗ trợ vấn đề gì?"></textarea>
                 </div>
 
@@ -248,8 +255,8 @@ $isTestDriveTab = $tab === 'test-drive';
                 </div>
 
                 <div>
-                  <label class="vf-form-label" for="td_product">Dòng xe quan tâm</label>
-                  <select id="td_product" name="product_id" class="vf-form-select">
+                  <label class="vf-form-label" for="td_product">Dòng xe quan tâm <span class="text-red-500">*</span></label>
+                  <select id="td_product" name="product_id" required class="vf-form-select">
                     <option value="">-- Chọn dòng xe --</option>
                     <?php foreach ($products as $p): ?>
                       <option value="<?= (int)($p['id'] ?? 0) ?>"><?= htmlspecialchars((string)($p['name'] ?? '')) ?></option>
@@ -276,8 +283,8 @@ $isTestDriveTab = $tab === 'test-drive';
                 </div>
 
                 <div>
-                  <label class="vf-form-label" for="td_date">Ngày mong muốn lái thử</label>
-                  <input id="td_date" name="preferred_date" type="date" class="vf-form-input" />
+                  <label class="vf-form-label" for="td_date">Ngày mong muốn lái thử <span class="text-red-500">*</span></label>
+                  <input id="td_date" name="preferred_date" type="date" required class="vf-form-input" />
                 </div>
 
                 <div>
@@ -305,22 +312,43 @@ $isTestDriveTab = $tab === 'test-drive';
           </p>
 
           <div class="mt-6 space-y-4 text-sm">
-            <div class="rounded-xl bg-white p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Địa chỉ</p>
-              <p class="mt-1 text-slate-900"><?= htmlspecialchars($address ?: 'Chưa cập nhật') ?></p>
-              <a class="mt-2 inline-block text-vfNavy hover:underline" href="<?= htmlspecialchars($mapUrl) ?>" target="_blank" rel="noreferrer">
-                Xem trên bản đồ
+            <div class="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-[#0b233f] transition-colors group-hover:bg-[#0b233f] group-hover:text-white">
+                  <i class="fa-solid fa-location-dot"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Địa chỉ</p>
+                  <p class="mt-1 font-medium text-slate-900"><?= htmlspecialchars($address ?: 'Chưa cập nhật') ?></p>
+                </div>
+              </div>
+              <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#0b233f] hover:text-[#FFB81C] transition-colors" href="<?= htmlspecialchars($mapUrl) ?>" target="_blank" rel="noreferrer">
+                Xem trên bản đồ <i class="fa-solid fa-arrow-right-long"></i>
               </a>
             </div>
 
-            <div class="rounded-xl bg-white p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Điện thoại</p>
-              <p class="mt-1 text-slate-900"><?= htmlspecialchars($phone ?: 'Chưa cập nhật') ?></p>
+            <div class="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-[#0b233f] transition-colors group-hover:bg-[#0b233f] group-hover:text-white">
+                  <i class="fa-solid fa-phone"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Điện thoại</p>
+                  <p class="mt-1 font-medium text-slate-900"><?= htmlspecialchars($phone ?: 'Chưa cập nhật') ?></p>
+                </div>
+              </div>
             </div>
 
-            <div class="rounded-xl bg-white p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</p>
-              <p class="mt-1 text-slate-900"><?= htmlspecialchars($email ?: 'Chưa cập nhật') ?></p>
+            <div class="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-[#0b233f] transition-colors group-hover:bg-[#0b233f] group-hover:text-white">
+                  <i class="fa-solid fa-envelope"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Email</p>
+                  <p class="mt-1 font-medium text-slate-900"><?= htmlspecialchars($email ?: 'Chưa cập nhật') ?></p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
