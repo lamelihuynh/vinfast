@@ -27,7 +27,7 @@ define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
 require_once ROOT . '/config/database.php';
 
 // Auto-load helpers (always needed)
-foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelper', 'ProductViewHelper'] as $h) {
+foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelper', 'ProductViewHelper', 'CheckoutViewHelper'] as $h) {
     require_once ROOT . "/app/helpers/{$h}.php";
 }
 
