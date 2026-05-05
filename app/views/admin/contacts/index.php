@@ -106,19 +106,24 @@ function vf_testdrive_btn_class(string $status): string
 
 <div class="row">
   <div class="col-12">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h4 class="mb-0"><?= $isContacts ? 'Customer Messages' : 'Test Drive Registrations' ?></h4>
-      <span class="text-muted small">Total: <?= htmlspecialchars((string)($pg->total ?? 0)) ?></span>
-    </div>
+    <!-- Srtdash Card Header Style -->
+    <div class="card mb-4 mt-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h4 class="header-title mb-0"><i class="ti-email"></i> Quản lý Liên hệ & Lái thử</h4>
+          <span class="badge badge-primary px-3 py-2">Tổng số: <?= htmlspecialchars((string)($pg->total ?? 0)) ?></span>
+        </div>
 
-    <!-- Tab Navigation -->
-    <div class="vf-admin-tabs">
-      <a href="<?= ADMIN_URL ?>contacts?section=contacts" class="<?= $isContacts ? 'active' : '' ?>">
-        <i class="fa-regular fa-envelope mr-1"></i> Liên hệ
-      </a>
-      <a href="<?= ADMIN_URL ?>contacts?section=test-drives" class="<?= $isTestDrives ? 'active' : '' ?>">
-        <i class="fa-solid fa-car mr-1"></i> Đăng ký lái thử
-      </a>
+        <!-- Tab Navigation - Srtdash Style -->
+        <div class="vf-admin-tabs">
+          <a href="<?= ADMIN_URL ?>contacts?section=contacts" class="<?= $isContacts ? 'active' : '' ?>">
+            <i class="ti-comment-alt mr-2"></i>Tin nhắn khách hàng
+          </a>
+          <a href="<?= ADMIN_URL ?>contacts?section=test-drives" class="<?= $isTestDrives ? 'active' : '' ?>">
+            <i class="ti-car mr-2"></i>Đăng ký lái thử xe
+          </a>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -127,18 +132,18 @@ function vf_testdrive_btn_class(string $status): string
           <?php if ($isContacts): ?>
             <!-- ===== Contacts Table ===== -->
             <table class="table table-hover align-middle">
-              <thead>
+              <thead class="bg-light">
                 <tr>
-                  <th style="width: 140px;">Status</th>
-                  <th>Sender</th>
-                  <th>Message</th>
-                  <th style="width: 170px;">Created</th>
-                  <th style="width: 260px;" class="text-end">Actions</th>
+                  <th style="width: 140px;"><i class="ti-info-alt"></i> Trạng thái</th>
+                  <th><i class="ti-user"></i> Người gửi</th>
+                  <th><i class="ti-comment"></i> Nội dung</th>
+                  <th style="width: 170px;"><i class="ti-time"></i> Ngày tạo</th>
+                  <th style="width: 260px;" class="text-end">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 <?php if (empty($items)): ?>
-                  <tr><td colspan="5" class="text-center text-muted py-4">No messages.</td></tr>
+                  <tr><td colspan="5" class="text-center text-muted py-5">Chưa có tin nhắn nào.</td></tr>
                 <?php else: ?>
                   <?php foreach ($items as $m): ?>
                     <tr>
@@ -163,22 +168,30 @@ function vf_testdrive_btn_class(string $status): string
                         <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
                       </td>
                       <td class="text-end">
-                        <form class="d-inline" action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
-                          <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                          <input type="hidden" name="status" value="read">
-                          <button class="btn btn-sm btn-outline-secondary" type="submit">Mark read</button>
-                        </form>
+                        <div class="d-flex justify-content-end gap-1">
+                          <form action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
+                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <input type="hidden" name="status" value="read">
+                            <button class="btn btn-sm btn-outline-secondary" type="submit" title="Mark as read">
+                              <i class="fa-regular fa-eye"></i>
+                            </button>
+                          </form>
 
-                        <form class="d-inline" action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
-                          <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                          <input type="hidden" name="status" value="replied">
-                          <button class="btn btn-sm btn-outline-success" type="submit">Mark replied</button>
-                        </form>
+                          <form action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
+                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <input type="hidden" name="status" value="replied">
+                            <button class="btn btn-sm btn-outline-success" type="submit" title="Mark as replied">
+                              <i class="fa-solid fa-reply"></i>
+                            </button>
+                          </form>
 
-                        <form class="d-inline" action="<?= ADMIN_URL ?>contacts/delete/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Delete this message?');">
-                          <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                          <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                        </form>
+                          <form action="<?= ADMIN_URL ?>contacts/delete/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Delete this message?');">
+                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
+                              <i class="fa-solid fa-trash"></i>
+                            </button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   <?php endforeach; ?>
@@ -189,20 +202,20 @@ function vf_testdrive_btn_class(string $status): string
           <?php else: ?>
             <!-- ===== Test Drives Table ===== -->
             <table class="table table-hover align-middle">
-              <thead>
+              <thead class="bg-light">
                 <tr>
-                  <th style="width: 120px;">Status</th>
-                  <th>Registrant</th>
-                  <th>Vehicle</th>
-                  <th>Location</th>
-                  <th style="width: 120px;">Preferred Date</th>
-                  <th style="width: 170px;">Created</th>
-                  <th style="width: 300px;" class="text-end">Actions</th>
+                  <th style="width: 120px;"><i class="ti-info-alt"></i> Trạng thái</th>
+                  <th><i class="ti-user"></i> Người đăng ký</th>
+                  <th><i class="ti-car"></i> Phương tiện</th>
+                  <th><i class="ti-location-pin"></i> Địa điểm</th>
+                  <th style="width: 120px;"><i class="ti-calendar"></i> Ngày hẹn</th>
+                  <th style="width: 170px;"><i class="ti-time"></i> Ngày tạo</th>
+                  <th style="width: 300px;" class="text-end">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 <?php if (empty($items)): ?>
-                  <tr><td colspan="7" class="text-center text-muted py-4">No test drive registrations.</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-5">Chưa có đăng ký lái thử nào.</td></tr>
                 <?php else: ?>
                   <?php foreach ($items as $m): ?>
                     <tr>
@@ -230,22 +243,28 @@ function vf_testdrive_btn_class(string $status): string
                         <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
                       </td>
                       <td class="text-end">
-                        <?php
-                          $currentStatus = strtolower(trim((string)($m['status'] ?? 'pending')));
-                          $nextStatuses = vf_testdrive_status_next($currentStatus);
-                        ?>
-                        <?php foreach ($nextStatuses as $ns): ?>
-                          <form class="d-inline" action="<?= ADMIN_URL ?>contacts/setTestDriveStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
-                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                            <input type="hidden" name="status" value="<?= htmlspecialchars($ns) ?>">
-                            <button class="btn btn-sm <?= vf_testdrive_btn_class($ns) ?>" type="submit"><?= htmlspecialchars(vf_testdrive_action_label($ns)) ?></button>
-                          </form>
-                        <?php endforeach; ?>
+                        <div class="d-flex justify-content-end gap-1">
+                          <?php
+                            $currentStatus = strtolower(trim((string)($m['status'] ?? 'pending')));
+                            $nextStatuses = vf_testdrive_status_next($currentStatus);
+                          ?>
+                          <?php foreach ($nextStatuses as $ns): ?>
+                            <form action="<?= ADMIN_URL ?>contacts/setTestDriveStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
+                              <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                              <input type="hidden" name="status" value="<?= htmlspecialchars($ns) ?>">
+                              <button class="btn btn-sm <?= vf_testdrive_btn_class($ns) ?>" type="submit">
+                                <?= htmlspecialchars(vf_testdrive_action_label($ns)) ?>
+                              </button>
+                            </form>
+                          <?php endforeach; ?>
 
-                        <form class="d-inline" action="<?= ADMIN_URL ?>contacts/deleteTestDrive/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Delete this registration?');">
-                          <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                          <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                        </form>
+                          <form action="<?= ADMIN_URL ?>contacts/deleteTestDrive/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Delete this registration?');">
+                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
+                              <i class="fa-solid fa-trash"></i>
+                            </button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   <?php endforeach; ?>

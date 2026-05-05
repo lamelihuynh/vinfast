@@ -117,8 +117,10 @@ class ContactController {
         $v->required('name')->maxLen('name', 100);
         $v->required('email')->email('email')->maxLen('email', 150);
         $v->required('phone')->maxLen('phone', 20);
+        $v->required('product_id');
         $v->required('province');
         $v->required('showroom');
+        $v->required('preferred_date');
         $v->maxLen('note', 2000);
 
         if ($v->fails()) {
@@ -149,13 +151,17 @@ class ContactController {
             exit;
         }
 
-        if ($productId > 0) {
-            $product = Product::getById($productId);
-            if (!$product) {
-                $productId = null;
-            }
-        } else {
-            $productId = null;
+        if ($productId <= 0) {
+            $_SESSION['errors'] = ['Vui lòng chọn dòng xe bạn quan tâm.'];
+            header('Location: ' . BASE_URL . 'contact?tab=test-drive');
+            exit;
+        }
+
+        $product = Product::getById($productId);
+        if (!$product) {
+            $_SESSION['errors'] = ['Dòng xe không tồn tại.'];
+            header('Location: ' . BASE_URL . 'contact?tab=test-drive');
+            exit;
         }
 
         TestDrive::create(

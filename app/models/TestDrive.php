@@ -14,10 +14,10 @@ class TestDrive {
         string $name,
         string $email,
         string $phone,
-        ?int $productId,
-        ?string $province,
-        ?string $showroom,
-        ?string $preferredDate,
+        int $productId,
+        string $province,
+        string $showroom,
+        string $preferredDate,
         ?string $note
     ): bool {
         global $pdo;
@@ -29,11 +29,11 @@ class TestDrive {
         return $stmt->execute([
             $name,
             $email,
-            $phone !== '' ? $phone : null,
+            $phone,
             $productId,
-            $province !== '' ? $province : null,
-            $showroom !== '' ? $showroom : null,
-            $preferredDate !== '' ? $preferredDate : null,
+            $province,
+            $showroom,
+            $preferredDate,
             $note !== '' ? $note : null,
         ]);
     }

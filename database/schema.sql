@@ -6,6 +6,7 @@ SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS vinfast_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE vinfast_db;
 
+-- 1. Users & Site Basics
 CREATE TABLE IF NOT EXISTS users (
   id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name       VARCHAR(100)  NOT NULL,
@@ -33,21 +34,6 @@ CREATE TABLE IF NOT EXISTS contacts (
   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS test_drives (
-  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name           VARCHAR(100) NOT NULL,
-  email          VARCHAR(150) NOT NULL,
-  phone          VARCHAR(20)  DEFAULT NULL,
-  product_id     INT UNSIGNED DEFAULT NULL,
-  province       VARCHAR(100) DEFAULT NULL,
-  showroom       VARCHAR(200) DEFAULT NULL,
-  preferred_date DATE         DEFAULT NULL,
-  note           TEXT         DEFAULT NULL,
-  status         ENUM('pending','confirmed','cancelled','done') NOT NULL DEFAULT 'pending',
-  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
-) ENGINE=InnoDB;
-
 CREATE TABLE IF NOT EXISTS faqs (
   id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   question   VARCHAR(500) NOT NULL,
@@ -57,6 +43,7 @@ CREATE TABLE IF NOT EXISTS faqs (
   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- 2. Products & Categories
 CREATE TABLE IF NOT EXISTS categories (
   id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -75,6 +62,22 @@ CREATE TABLE IF NOT EXISTS products (
   is_active   TINYINT(1)   NOT NULL DEFAULT 1,
   created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 3. Transactions & Registrations (Depend on Users/Products)
+CREATE TABLE IF NOT EXISTS test_drives (
+  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name           VARCHAR(100) NOT NULL,
+  email          VARCHAR(150) NOT NULL,
+  phone          VARCHAR(20)  NOT NULL,
+  product_id     INT UNSIGNED NOT NULL,
+  province       VARCHAR(100) NOT NULL,
+  showroom       VARCHAR(200) NOT NULL,
+  preferred_date DATE         NOT NULL,
+  note           TEXT         DEFAULT NULL,
+  status         ENUM('pending','confirmed','cancelled','done') NOT NULL DEFAULT 'pending',
+  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS carts (
@@ -100,32 +103,6 @@ CREATE TABLE IF NOT EXISTS orders (
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS news (
-  id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  title            VARCHAR(300) NOT NULL,
-  slug             VARCHAR(320) NOT NULL UNIQUE,
-  body             LONGTEXT     NOT NULL,
-  catalog          ENUM("Công ty", "Ô tô điện", "Xe máy điện"),
-  views            INT DEFAULT 0,
-  created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  news_state       ENUM("Hiển thị", "Ẩn") NOT NULL DEFAULT("Hiển thị")
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS news_tags (
-  news_id         INT UNSIGNED AUTO_INCREMENT,
-  tags            VARCHAR(50) NOT NULL,
-  PRIMARY KEY(news_id, tags),
-  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS news_img_info (
-  news_id         INT UNSIGNED AUTO_INCREMENT,
-  img_link        VARCHAR(300),
-  img_des         VARCHAR(300) NOT NULL,
-  PRIMARY KEY(news_id, img_link, img_des),
-  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 CREATE TABLE IF NOT EXISTS comments (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id     INT UNSIGNED NOT NULL,
@@ -139,14 +116,44 @@ CREATE TABLE IF NOT EXISTS comments (
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Seed: default admin (password: Admin@123 — re-hash before production!)
+-- 4. News & Content
+CREATE TABLE IF NOT EXISTS news (
+  id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title            VARCHAR(300) NOT NULL,
+  slug             VARCHAR(320) NOT NULL UNIQUE,
+  body             LONGTEXT     NOT NULL,
+  catalog          ENUM("Công ty", "Ô tô điện", "Xe máy điện"),
+  views            INT DEFAULT 0,
+  created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  news_state       ENUM("Hiển thị", "Ẩn") NOT NULL DEFAULT("Hiển thị")
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS news_tags (
+  news_id         INT UNSIGNED,
+  tags            VARCHAR(50) NOT NULL,
+  PRIMARY KEY(news_id, tags),
+  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS news_img_info (
+  news_id         INT UNSIGNED,
+  img_link        VARCHAR(300),
+  img_des         VARCHAR(300) NOT NULL,
+  PRIMARY KEY(news_id, img_link, img_des),
+  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 5. Seed Initial Data
 INSERT IGNORE INTO users (name,email,password,role) VALUES
   ('Admin VinFast','admin@vinfast.vn',
    '$2y$10$ReplaceThisWithARealBcryptHash','admin');
 
--- Seed: categories
 INSERT IGNORE INTO categories (name,slug) VALUES
   ('Electric Motorbike','electric-motorbike'),
   ('Electric Car','electric-car');
 
--- Seed: site settings
+INSERT IGNORE INTO site_settings (`key`, value) VALUES
+('address', '627-629 Cách Mạng Tháng 8, Phường 15, Quận 10, TP. Hồ Chí Minh'),
+('phone', '1900 23 23 89'),
+('email', 'support.vn@vinfast.com'),
+('tagline', 'Cùng bạn bứt phá mọi giới hạn');
