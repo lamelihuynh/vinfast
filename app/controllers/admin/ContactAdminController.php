@@ -18,23 +18,40 @@ class ContactAdminController {
     {
         $page = max(1, (int)$page);
         $section = trim((string)($_GET['section'] ?? 'contacts'));
+        $status  = trim((string)($_GET['status'] ?? ''));
+
         if (!in_array($section, ['contacts', 'test-drives'], true)) {
             $section = 'contacts';
         }
 
         if ($section === 'test-drives') {
-            $total = TestDrive::countAll();
+            $total = TestDrive::countAll($status);
+            $counts = [
+                'all'       => TestDrive::countAll(),
+                'pending'   => TestDrive::countAll('pending'),
+                'confirmed' => TestDrive::countAll('confirmed'),
+                'done'      => TestDrive::countAll('done'),
+                'cancelled' => TestDrive::countAll('cancelled'),
+            ];
             $pg = new Pagination($total, $page, PER_PAGE);
-            $items = TestDrive::getPaginated($pg->current, $pg->perPage);
+            $items = TestDrive::getPaginated($pg->current, $pg->perPage, $status);
         } else {
-            $total = Contact::countAll();
+            $total = Contact::countAll($status);
+            $counts = [
+                'all'     => Contact::countAll(),
+                'unread'  => Contact::countAll('unread'),
+                'read'    => Contact::countAll('read'),
+                'replied' => Contact::countAll('replied'),
+            ];
             $pg = new Pagination($total, $page, PER_PAGE);
-            $items = Contact::getPaginated($pg->current, $pg->perPage);
+            $items = Contact::getPaginated($pg->current, $pg->perPage, $status);
         }
 
         SEO::set('Customer contacts');
         View::render('admin/contacts/index', [
             'section' => $section,
+            'status'  => $status,
+            'counts'  => $counts,
             'items' => $items,
             'pg' => $pg,
         ], 'admin');

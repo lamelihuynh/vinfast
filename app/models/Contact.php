@@ -21,13 +21,24 @@ class Contact
         return $stmt->execute([$name, $email, $phone !== '' ? $phone : null, $message]);
     }
 
-    public static function getPaginated(int $page = 1, int $perPage = PER_PAGE): array
+    public static function getPaginated(int $page = 1, int $perPage = PER_PAGE, ?string $status = null): array
     {
         global $pdo;
         $page = max(1, $page);
         $offset = max(0, ($page - 1) * $perPage);
 
-        $stmt = $pdo->prepare('SELECT * FROM contacts ORDER BY created_at DESC LIMIT :limit OFFSET :offset');
+        $sql = 'SELECT * FROM contacts';
+        $params = [];
+        if ($status !== null && $status !== '') {
+            $sql .= ' WHERE status = :status';
+            $params[':status'] = $status;
+        }
+        $sql .= ' ORDER BY FIELD(status, "unread", "read", "replied"), updated_at DESC, created_at DESC LIMIT :limit OFFSET :offset';
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -35,10 +46,16 @@ class Contact
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public static function countAll(): int
+    public static function countAll(?string $status = null): int
     {
         global $pdo;
-        return (int)$pdo->query('SELECT COUNT(*) FROM contacts')->fetchColumn();
+        $sql = 'SELECT COUNT(*) FROM contacts';
+        if ($status !== null && $status !== '') {
+            $stmt = $pdo->prepare($sql . ' WHERE status = ?');
+            $stmt->execute([$status]);
+            return (int)$stmt->fetchColumn();
+        }
+        return (int)$pdo->query($sql)->fetchColumn();
     }
 
     public static function setStatus(int $id, string $status): bool

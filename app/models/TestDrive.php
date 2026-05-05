@@ -38,19 +38,27 @@ class TestDrive {
         ]);
     }
 
-    public static function getPaginated(int $page = 1, int $perPage = PER_PAGE): array
+    public static function getPaginated(int $page = 1, int $perPage = PER_PAGE, ?string $status = null): array
     {
         global $pdo;
         $page = max(1, $page);
         $offset = max(0, ($page - 1) * $perPage);
 
-        $stmt = $pdo->prepare(
-            'SELECT td.*, p.name as product_name
-             FROM test_drives td
-             LEFT JOIN products p ON td.product_id = p.id
-             ORDER BY td.created_at DESC
-             LIMIT :limit OFFSET :offset'
-        );
+        $sql = 'SELECT td.*, p.name as product_name
+                FROM test_drives td
+                LEFT JOIN products p ON td.product_id = p.id';
+        $params = [];
+        if ($status !== null && $status !== '') {
+            $sql .= ' WHERE td.status = :status';
+            $params[':status'] = $status;
+        }
+        $sql .= ' ORDER BY FIELD(td.status, "pending", "confirmed", "done", "cancelled"), td.updated_at DESC, td.created_at DESC
+                 LIMIT :limit OFFSET :offset';
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -58,10 +66,16 @@ class TestDrive {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public static function countAll(): int
+    public static function countAll(?string $status = null): int
     {
         global $pdo;
-        return (int)$pdo->query('SELECT COUNT(*) FROM test_drives')->fetchColumn();
+        $sql = 'SELECT COUNT(*) FROM test_drives';
+        if ($status !== null && $status !== '') {
+            $stmt = $pdo->prepare($sql . ' WHERE status = ?');
+            $stmt->execute([$status]);
+            return (int)$stmt->fetchColumn();
+        }
+        return (int)$pdo->query($sql)->fetchColumn();
     }
 
     public static function setStatus(int $id, string $status): bool

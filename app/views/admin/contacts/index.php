@@ -102,6 +102,55 @@ function vf_testdrive_btn_class(string $status): string
   .vf-admin-tabs a.active::after {
     transform: scaleX(1);
   }
+
+  /* Stat Cards / Filter Boxes */
+  .vf-stat-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .vf-stat-card {
+    flex: 1;
+    min-width: 120px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none !important;
+    color: #475569;
+    text-align: center;
+  }
+  .vf-stat-card:hover {
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-color: #4336fb;
+    color: #4336fb;
+  }
+  .vf-stat-card.active {
+    background: #4336fb;
+    border-color: #4336fb;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(67, 54, 251, 0.25);
+  }
+  .vf-stat-card .vf-stat-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 0.125rem;
+    letter-spacing: 0.025em;
+  }
+  .vf-stat-card .vf-stat-value {
+    font-size: 1.125rem;
+    font-weight: 800;
+  }
 </style>
 
 <div class="row">
@@ -111,17 +160,60 @@ function vf_testdrive_btn_class(string $status): string
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between mb-4">
           <h4 class="header-title mb-0"><i class="ti-email"></i> Quản lý Liên hệ & Lái thử</h4>
-          <span class="badge badge-primary px-3 py-2">Tổng số: <?= htmlspecialchars((string)($pg->total ?? 0)) ?></span>
+          <span class="badge badge-primary px-3 py-2">VinFast Admin</span>
         </div>
 
         <!-- Tab Navigation - Srtdash Style -->
-        <div class="vf-admin-tabs">
+        <div class="vf-admin-tabs mb-4">
           <a href="<?= ADMIN_URL ?>contacts?section=contacts" class="<?= $isContacts ? 'active' : '' ?>">
             <i class="ti-comment-alt mr-2"></i>Tin nhắn khách hàng
           </a>
           <a href="<?= ADMIN_URL ?>contacts?section=test-drives" class="<?= $isTestDrives ? 'active' : '' ?>">
             <i class="ti-car mr-2"></i>Đăng ký lái thử xe
           </a>
+        </div>
+
+        <!-- Stat Cards Filter Boxes -->
+        <div class="vf-stat-cards">
+          <?php if ($isContacts): ?>
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=" class="vf-stat-card <?= $status === '' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Tất cả</span>
+              <span class="vf-stat-value"><?= (int)($counts['all'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=unread" class="vf-stat-card <?= $status === 'unread' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Chưa đọc</span>
+              <span class="vf-stat-value"><?= (int)($counts['unread'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=read" class="vf-stat-card <?= $status === 'read' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Đã đọc</span>
+              <span class="vf-stat-value"><?= (int)($counts['read'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=replied" class="vf-stat-card <?= $status === 'replied' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Đã phản hồi</span>
+              <span class="vf-stat-value"><?= (int)($counts['replied'] ?? 0) ?></span>
+            </a>
+          <?php else: ?>
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=" class="vf-stat-card <?= $status === '' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Tất cả</span>
+              <span class="vf-stat-value"><?= (int)($counts['all'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=pending" class="vf-stat-card <?= $status === 'pending' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Chờ duyệt</span>
+              <span class="vf-stat-value"><?= (int)($counts['pending'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=confirmed" class="vf-stat-card <?= $status === 'confirmed' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Xác nhận</span>
+              <span class="vf-stat-value"><?= (int)($counts['confirmed'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=done" class="vf-stat-card <?= $status === 'done' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Hoàn tất</span>
+              <span class="vf-stat-value"><?= (int)($counts['done'] ?? 0) ?></span>
+            </a>
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=cancelled" class="vf-stat-card <?= $status === 'cancelled' ? 'active' : '' ?>">
+              <span class="vf-stat-label">Đã hủy</span>
+              <span class="vf-stat-value"><?= (int)($counts['cancelled'] ?? 0) ?></span>
+            </a>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -138,12 +230,13 @@ function vf_testdrive_btn_class(string $status): string
                   <th><i class="ti-user"></i> Người gửi</th>
                   <th><i class="ti-comment"></i> Nội dung</th>
                   <th style="width: 170px;"><i class="ti-time"></i> Ngày tạo</th>
+                  <th style="width: 170px;"><i class="ti-time"></i> Cập nhật</th>
                   <th style="width: 260px;" class="text-end">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 <?php if (empty($items)): ?>
-                  <tr><td colspan="5" class="text-center text-muted py-5">Chưa có tin nhắn nào.</td></tr>
+                  <tr><td colspan="6" class="text-center text-muted py-5">Chưa có tin nhắn nào.</td></tr>
                 <?php else: ?>
                   <?php foreach ($items as $m): ?>
                     <tr>
@@ -166,6 +259,9 @@ function vf_testdrive_btn_class(string $status): string
                       </td>
                       <td class="text-muted small">
                         <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
+                      </td>
+                      <td class="text-muted small">
+                        <?= htmlspecialchars((string)($m['updated_at'] ?? '')) ?>
                       </td>
                       <td class="text-end">
                         <div class="d-flex justify-content-end gap-1">
@@ -210,12 +306,13 @@ function vf_testdrive_btn_class(string $status): string
                   <th><i class="ti-location-pin"></i> Địa điểm</th>
                   <th style="width: 120px;"><i class="ti-calendar"></i> Ngày hẹn</th>
                   <th style="width: 170px;"><i class="ti-time"></i> Ngày tạo</th>
+                  <th style="width: 170px;"><i class="ti-time"></i> Cập nhật</th>
                   <th style="width: 300px;" class="text-end">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 <?php if (empty($items)): ?>
-                  <tr><td colspan="7" class="text-center text-muted py-5">Chưa có đăng ký lái thử nào.</td></tr>
+                  <tr><td colspan="8" class="text-center text-muted py-5">Chưa có đăng ký lái thử nào.</td></tr>
                 <?php else: ?>
                   <?php foreach ($items as $m): ?>
                     <tr>
@@ -241,6 +338,9 @@ function vf_testdrive_btn_class(string $status): string
                       </td>
                       <td class="text-muted small">
                         <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
+                      </td>
+                      <td class="text-muted small">
+                        <?= htmlspecialchars((string)($m['updated_at'] ?? '')) ?>
                       </td>
                       <td class="text-end">
                         <div class="d-flex justify-content-end gap-1">
@@ -279,15 +379,15 @@ function vf_testdrive_btn_class(string $status): string
           <nav aria-label="Pagination">
             <ul class="pagination justify-content-center mb-0">
               <li class="page-item <?= $pg->hasPrev() ? '' : 'disabled' ?>">
-                <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= max(1, $pg->current - 1) ?>?section=<?= htmlspecialchars($section) ?>">Prev</a>
+                <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= max(1, $pg->current - 1) ?>?section=<?= htmlspecialchars($section) ?>&status=<?= htmlspecialchars($status) ?>">Prev</a>
               </li>
               <?php for ($i = 1; $i <= (int)$pg->pages; $i++): ?>
                 <li class="page-item <?= $i === (int)$pg->current ? 'active' : '' ?>">
-                  <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= $i ?>?section=<?= htmlspecialchars($section) ?>"><?= $i ?></a>
+                  <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= $i ?>?section=<?= htmlspecialchars($section) ?>&status=<?= htmlspecialchars($status) ?>"><?= $i ?></a>
                 </li>
               <?php endfor; ?>
               <li class="page-item <?= $pg->hasNext() ? '' : 'disabled' ?>">
-                <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= min((int)$pg->pages, $pg->current + 1) ?>?section=<?= htmlspecialchars($section) ?>">Next</a>
+                <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= min((int)$pg->pages, $pg->current + 1) ?>?section=<?= htmlspecialchars($section) ?>&status=<?= htmlspecialchars($status) ?>">Next</a>
               </li>
             </ul>
           </nav>

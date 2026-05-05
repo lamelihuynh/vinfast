@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   phone      VARCHAR(20)  DEFAULT NULL,
   message    TEXT         NOT NULL,
   status     ENUM('unread','read','replied') NOT NULL DEFAULT 'unread',
-  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS faqs (
@@ -77,6 +78,7 @@ CREATE TABLE IF NOT EXISTS test_drives (
   note           TEXT         DEFAULT NULL,
   status         ENUM('pending','confirmed','cancelled','done') NOT NULL DEFAULT 'pending',
   created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
