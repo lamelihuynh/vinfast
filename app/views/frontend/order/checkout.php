@@ -459,6 +459,7 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                                         name="switch_product_id"
                                         value="<?= $modelId ?>"
                                         form="<?= $checkoutFormId ?>"
+                                        formnovalidate
                                         class="w-full rounded-lg border px-2 py-2 text-left <?= $isCurrentModel ? 'border-blue-300 bg-blue-50' : 'border-slate-200 hover:bg-slate-50' ?>">
 
                                         <img src="<?= htmlspecialchars($modelItem['imageUrl'] ?: BASE_URL . 'public/images/products/default.jpg') ?>"
