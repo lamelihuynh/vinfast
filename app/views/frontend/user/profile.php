@@ -22,48 +22,46 @@
 <!-- TODO: Implement My Profile -->
 <?php
   $u = $user ?? [];
-  $avatarUrl = !empty($u['avatar']) ? BASE_URL . ltrim($u['avatar'], '/') : BASE_URL . 'public/images/author/avatar.png';
+  $avatarUrl = !empty($u['avatar']) ? BASE_URL . ltrim($u['avatar'], '/') : BASE_URL . 'public/images/avatars/default/default.jpg';
   $createdAt = !empty($u['created_at']) ? date('F Y', strtotime($u['created_at'])) : 'N/A';
   $status    = empty($u['is_locked']) ? 'Hoạt động' : 'Bị khóa';
 ?>
 
 <div class="main-content-inner" id="main-content">
     
-    <?php if (!empty($_SESSION['flash']) || !empty($_SESSION['errors'])): ?>
     <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="alert-items">
-                        <?php if (!empty($_SESSION['flash'])): ?>
-                            <div class="alert alert-success" role="alert">
-                                <strong>Thành công!</strong> <?= htmlspecialchars($_SESSION['flash']) ?>
-                            </div>
-                            <?php unset($_SESSION['flash']); ?>
-                        <?php endif; ?>
-
-                        <?php if (!empty($_SESSION['errors'])): ?>
-                            <div class="alert alert-danger" role="alert">
-                                <strong>Lỗi!</strong> Vui lòng kiểm tra lại thông tin bên dưới:
-                                <ul class="mb-0 mt-2">
-                                <?php foreach ($_SESSION['errors'] as $error): ?>
-                                    <li>- <?= htmlspecialchars($error) ?></li>
-                                <?php endforeach; ?>
-                                </ul>
-                            </div>
-                            <?php unset($_SESSION['errors']); ?>
-                        <?php endif; ?>
-                    </div>
+        <div class="col-12" id="alertContainer">
+            <?php if (!empty($_SESSION['flash'])): ?>
+                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                    <strong>Well done!</strong> <?= htmlspecialchars($_SESSION['flash']) ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-            </div>
+                <?php unset($_SESSION['flash']); ?>
+            <?php endif; ?>
+
+            <?php if (!empty($_SESSION['errors'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <strong>Oh snap!</strong> Vui lòng kiểm tra lại thông tin bên dưới:
+                    <ul class="mb-0 mt-2">
+                    <?php foreach ($_SESSION['errors'] as $error): ?>
+                        <li>- <?= htmlspecialchars($error) ?></li>
+                    <?php endforeach; ?>
+                    </ul>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <?php unset($_SESSION['errors']); ?>
+            <?php endif; ?>
         </div>
     </div>
-    <?php endif; ?>
 
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-body text-center text-white p-4" style="background: linear-gradient(135deg, #8914fe, #8063f5); border-radius: 0.375rem;">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center text-white p-4" style="background: linear-gradient(135deg, #8914fe, #8063f5); border-radius: 0.375rem;">
                     <div class="mb-3">
                         <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="User Avatar" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); object-fit: cover;">
                     </div>
@@ -115,20 +113,12 @@
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Tên người dùng</label>
                                 <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?= htmlspecialchars($u['name'] ?? '') ?>" 
-                                       pattern="^[\x20-\x7E]+$" 
-                                       title="Tên người dùng chỉ được chứa các ký tự chữ cái không dấu, số và ký tự cơ bản."
-                                       required>
-                                <div class="invalid-feedback">Tên chỉ được chứa các ký tự chữ không dấu và số.</div>
+                                       value="<?= htmlspecialchars($u['name'] ?? '') ?>">
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?= htmlspecialchars($u['email'] ?? '') ?>" 
-                                       pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                                       title="Vui lòng nhập đúng định dạng email: ten@mien.com"
-                                       required>
-                                <div class="invalid-feedback">Định dạng email không hợp lệ.</div>
+                                <input type="text" class="form-control" id="email" name="email" 
+                                       value="<?= htmlspecialchars($u['email'] ?? '') ?>">
                             </div>
                         </div>
 
@@ -155,14 +145,11 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="current" class="form-label">Mật khẩu hiện tại</label>
-                                <input type="password" class="form-control" id="current" name="current" required>
+                                <input type="password" class="form-control" id="current" name="current">
                             </div>
                             <div class="col-md-6">
                                 <label for="new_password" class="form-label">Mật khẩu mới</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password" 
-                                       pattern="^(?=.*[A-Z])(?=.*\d).{8,}$" 
-                                       title="Mật khẩu phải dài hơn 8 ký tự, có ít nhất 1 chữ cái in hoa và 1 chữ số."
-                                       required>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
                                 <div class="text-muted" style="font-size: 0.8rem; margin-top: 5px;">* Tối thiểu 8 ký tự, gồm 1 chữ in hoa và 1 chữ số.</div>
                             </div>
                         </div>
@@ -177,15 +164,112 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var forms = document.querySelectorAll('#formUpdateProfile, #formChangePassword');
-    Array.prototype.slice.call(forms).forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
+    const existingAlerts = document.querySelectorAll('#alertContainer .alert');
+    existingAlerts.forEach(alert => {
+        setTimeout(() => {
+            alert.classList.remove('show'); 
+            setTimeout(() => alert.remove(), 150); 
+        }, 5000);
+    });
+
+    function showCustomAlert(type, title, message) {
+        const container = document.getElementById('alertContainer');
+        const alertId = 'alert-' + Date.now(); 
+        
+        container.innerHTML = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
+                <strong>${title}</strong> <br>${message.replace(/\n/g, '<br>')}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close" onclick="this.parentElement.remove()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        `;
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+            const currentAlert = document.getElementById(alertId);
+            if (currentAlert) {
+                currentAlert.classList.remove('show');
+                setTimeout(() => currentAlert.remove(), 150);
             }
-            form.classList.add('was-validated');
-        }, false);
+        }, 5000);
+    }
+
+    const formProfile = document.getElementById('formUpdateProfile');
+    formProfile.addEventListener('submit', function(e) {
+        e.preventDefault();
+        let isValid = true;
+        let errors = [];
+
+        const nameInput = document.getElementById('name');
+        if (nameInput.value.trim().length < 2) {
+            isValid = false;
+            errors.push("- Tên người dùng phải có tối thiểu 2 ký tự.");
+            nameInput.classList.add('is-invalid');
+        } else {
+            nameInput.classList.remove('is-invalid');
+        }
+
+        const emailInput = document.getElementById('email');
+        const emailRegex = /^.+@.+\..+$/;
+        if (!emailRegex.test(emailInput.value.trim())) {
+            isValid = false;
+            errors.push("- Định dạng email không hợp lệ (ví dụ: ten@mien.com).");
+            emailInput.classList.add('is-invalid');
+        } else {
+            emailInput.classList.remove('is-invalid');
+        }
+
+        const avatarInput = document.getElementById('avatar');
+        if (avatarInput.files.length > 0) {
+            const file = avatarInput.files[0];
+            if (!file.type.startsWith('image/')) {
+                isValid = false;
+                errors.push("- Vui lòng chỉ chọn các tệp định dạng hình ảnh (JPG, PNG, WEBP...).");
+                avatarInput.classList.add('is-invalid');
+            } else {
+                avatarInput.classList.remove('is-invalid');
+            }
+        }
+
+        if (!isValid) {
+            showCustomAlert('danger', 'Oh snap!', errors.join('\n'));
+        } else {
+            showCustomAlert('success', 'Well done!', 'Dữ liệu hợp lệ! Đang lưu hồ sơ...');
+            setTimeout(() => formProfile.submit(), 1000);
+        }
+    });
+
+    const formPassword = document.getElementById('formChangePassword');
+    formPassword.addEventListener('submit', function(e) {
+        e.preventDefault();
+        let isValid = true;
+        let errors = [];
+
+        const currentPwd = document.getElementById('current');
+        if (currentPwd.value.trim() === '') {
+            isValid = false;
+            errors.push("- Vui lòng nhập mật khẩu hiện tại.");
+            currentPwd.classList.add('is-invalid');
+        } else {
+            currentPwd.classList.remove('is-invalid');
+        }
+
+        const newPwd = document.getElementById('new_password');
+        const pwdRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!pwdRegex.test(newPwd.value)) {
+            isValid = false;
+            errors.push("- Mật khẩu mới phải dài hơn 8 ký tự, có ít nhất 1 chữ cái in hoa và 1 chữ số.");
+            newPwd.classList.add('is-invalid');
+        } else {
+            newPwd.classList.remove('is-invalid');
+        }
+
+        if (!isValid) {
+            showCustomAlert('danger', 'Oh snap!', errors.join('\n'));
+        } else {
+            showCustomAlert('success', 'Well done!', 'Dữ liệu hợp lệ! Đang đổi mật khẩu...');
+            setTimeout(() => formPassword.submit(), 1000);
+        }
     });
 });
 </script>
