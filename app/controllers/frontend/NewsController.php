@@ -76,4 +76,29 @@ class NewsController
         http_response_code(404);
         include ROOT . '/app/views/frontend/404.php';
     }
+
+    public function subscribe(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+
+        $email = trim($_POST['email'] ?? '');
+        
+        if (!preg_match('/^.+@.+\..+$/', $email)) {
+            echo json_encode(['status' => 'error', 'message' => 'Định dạng email không hợp lệ.']);
+            exit;
+        }
+
+        global $pdo;
+        try {
+            $stmt = $pdo->prepare('INSERT INTO email (email) VALUES (:email)');
+            $stmt->execute([':email' => $email]);
+            echo json_encode(['status' => 'success']);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Lỗi lưu vào Cơ sở dữ liệu!']);
+        }
+        exit;
+    }
 }
