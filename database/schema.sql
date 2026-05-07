@@ -96,13 +96,6 @@ CREATE TABLE IF NOT EXISTS news (
   news_state       ENUM("Hiển thị", "Ẩn") NOT NULL DEFAULT("Hiển thị")
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS news_tags (
-  news_id         INT UNSIGNED AUTO_INCREMENT,
-  tags            VARCHAR(50) NOT NULL,
-  PRIMARY KEY(news_id, tags),
-  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 CREATE TABLE IF NOT EXISTS news_img_info (
   news_id         INT UNSIGNED AUTO_INCREMENT,
   img_link        VARCHAR(300),
@@ -110,6 +103,11 @@ CREATE TABLE IF NOT EXISTS news_img_info (
   PRIMARY KEY(news_id, img_link, img_des),
   FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS email {
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  email       VARCHAR(100) NOT NULL
+} ENGINE=InnoDB
 
 CREATE TABLE IF NOT EXISTS comments (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
