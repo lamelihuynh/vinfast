@@ -121,7 +121,8 @@ class ProductAdminController
             $product = Product::getByIdAdmin($id);
             if (!$product) {
                 $_SESSION['errors'] = ['Product not found.'];
-                $this->redirectIndex();
+                header('Location: ' . ADMIN_URL . 'products');
+                exit;
             }
         }
 
@@ -147,7 +148,8 @@ class ProductAdminController
 
         if ($isEdit && !$existing) {
             $_SESSION['errors'] = ['Product not found.'];
-            $this->redirectIndex();
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
         }
 
         $payload = $this->collectPayload();
@@ -156,10 +158,14 @@ class ProductAdminController
         if (!empty($errors)) {
             $_SESSION['errors'] = $errors;
             $_SESSION['old'] = $payload + ['id' => $id];
-            $this->redirectForm($id);
+            header('Location: ' . ADMIN_URL . 'products/form' . ($id > 0 ? '/' . $id : ''));
+            exit;
         }
 
-        $existingImages = $this->collectExistingImages($_POST['existing_images'] ?? []);
+        $existingImages = array_values(array_unique(array_filter(
+            array_map('trim', (array)($_POST['existing_images'] ?? [])),
+            static fn($img) => is_string($img) && $img && !preg_match('/^https?:\/\//i', $img)
+        )));
         $newImages = [];
 
         try {
@@ -168,7 +174,8 @@ class ProductAdminController
         } catch (RuntimeException $e) {
             $_SESSION['errors'] = [$e->getMessage()];
             $_SESSION['old'] = $payload + ['id' => $id, 'existing_images' => $existingImages];
-            $this->redirectForm($id);
+            header('Location: ' . ADMIN_URL . 'products/form' . ($id > 0 ? '/' . $id : ''));
+            exit;
         }
 
         $allImages = array_values(array_unique(array_merge($existingImages, $newImages)));
@@ -178,12 +185,12 @@ class ProductAdminController
         if ($isEdit) {
             $this->persistUpdate($id, is_array($existing) ? $existing : [], $payload, $allImages);
             $_SESSION['flash'] = 'Product updated successfully.';
-            $this->redirectIndex();
+        } else {
+            $this->persistCreate($payload, $allImages);
+            $_SESSION['flash'] = 'Product created successfully.';
         }
-
-        $this->persistCreate($payload, $allImages);
-        $_SESSION['flash'] = 'Product created successfully.';
-        $this->redirectIndex();
+        header('Location: ' . ADMIN_URL . 'products');
+        exit;
     }
 
     private function persistCreate(array $payload, array $allImages): void
@@ -210,13 +217,15 @@ class ProductAdminController
         $product = Product::getByIdAdmin($id);
         if (!$product) {
             $_SESSION['errors'] = ['Product not found.'];
-            $this->redirectIndex();
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
         }
 
         $next = ((int)($product['is_active'] ?? 0) === 1) ? 0 : 1;
         Product::setActive($id, $next);
         $_SESSION['flash'] = $next === 1 ? 'Product is now visible.' : 'Product is now hidden.';
-        $this->redirectIndex();
+        header('Location: ' . ADMIN_URL . 'products');
+        exit;
     }
 
     public function delete($id = 0): void
@@ -226,13 +235,15 @@ class ProductAdminController
         $product = Product::getByIdAdmin($id);
         if (!$product) {
             $_SESSION['errors'] = ['Product not found.'];
-            $this->redirectIndex();
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
         }
 
         if (Product::hasOrders($id)) {
             Product::setActive($id, 0);
             $_SESSION['errors'] = ['Product has related orders, so it was hidden instead of deleted.'];
-            $this->redirectIndex();
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
         }
 
         $images = is_array($product['images'] ?? null) ? $product['images'] : [];
@@ -243,7 +254,128 @@ class ProductAdminController
         }
 
         $_SESSION['flash'] = 'Product deleted successfully.';
-        $this->redirectIndex();
+        header('Location: ' . ADMIN_URL . 'products');
+        exit;
+    }
+
+    public function createcategory(): void
+    {
+        Auth::verifyCsrf();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $name = trim((string)($_POST['name'] ?? ''));
+        if ($name === '') {
+            http_response_code(422);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Tên danh mục là bắt buộc.',
+            ]);
+            exit;
+        }
+
+        $slugInput = trim((string)($_POST['slug'] ?? ''));
+        $slugBase = $this->slugify($slugInput, $name);
+        if ($slugBase === '') {
+            http_response_code(422);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Không thể tạo slug hợp lệ cho danh mục.',
+            ]);
+            exit;
+        }
+
+        $slug = $slugBase;
+        $suffix = 1;
+        while (Category::countBySlug($slug) > 0) {
+            $slug = $slugBase . '-' . $suffix;
+            $suffix++;
+            if ($suffix > 999) {
+                break;
+            }
+        }
+
+        try {
+            $id = Category::create($name, $slug);
+            echo json_encode([
+                'ok' => true,
+                'message' => 'Đã thêm danh mục thành công.',
+                'category' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'slug' => $slug,
+                ],
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Không thể thêm danh mục lúc này.',
+            ]);
+            exit;
+        }
+    }
+
+    public function deletecategory(): void
+    {
+        Auth::verifyCsrf();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $id = (int)($_POST['id'] ?? $_POST['category_id'] ?? 0);
+        if ($id <= 0) {
+            http_response_code(422);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Danh mục không hợp lệ.',
+            ]);
+            exit;
+        }
+
+        $category = Category::getById($id);
+        if (!$category) {
+            http_response_code(404);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Danh mục không tồn tại.',
+            ]);
+            exit;
+        }
+
+        // Prevent deleting when products are assigned
+        $productCount = Product::countByCategory($id);
+        if ($productCount > 0) {
+            http_response_code(409);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Không thể xóa danh mục vì đang có sản phẩm liên quan.',
+            ]);
+            exit;
+        }
+
+        try {
+            $deleted = Category::delete($id);
+            if ($deleted) {
+                echo json_encode([
+                    'ok' => true,
+                    'message' => 'Đã xóa danh mục.',
+                    'id' => $id,
+                ]);
+                exit;
+            }
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Không thể xóa danh mục lúc này.',
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Lỗi máy chủ khi xóa danh mục.',
+            ]);
+            exit;
+        }
     }
 
     private function collectPayload(): array
@@ -269,14 +401,13 @@ class ProductAdminController
     private function validatePayload(array $payload, int $id = 0): array
     {
         $errors = [];
-
         if ($payload['category_id'] <= 0 || !Category::getById($payload['category_id'])) {
             $errors[] = 'Please select a valid category.';
         }
-        if ($payload['name'] === '') {
+        if (!$payload['name']) {
             $errors[] = 'Product name is required.';
         }
-        if ($payload['slug'] === '') {
+        if (!$payload['slug']) {
             $errors[] = 'Slug is required.';
         }
         if ($payload['price'] <= 0) {
@@ -285,7 +416,6 @@ class ProductAdminController
         if (Product::slugExists($payload['slug'], $id > 0 ? $id : null)) {
             $errors[] = 'Slug already exists.';
         }
-
         return $errors;
     }
 
@@ -452,66 +582,39 @@ class ProductAdminController
 
     private function normalizeColorImagePath(string $path): string
     {
-        $path = trim($path);
-        if ($path === '') {
+        $path = trim(str_replace('\\', '/', $path));
+        if (!$path) {
             return '';
         }
-
-        $path = str_replace('\\', '/', $path);
-
-        if (preg_match('~(?:^|[A-Za-z]:)?(?:.*/)?public/images/(.+)$~i', $path, $match)) {
-            return ltrim((string)$match[1], '/');
-        }
-
-        return ltrim($path, '/');
-    }
-
-    private function collectExistingImages($existingImagesRaw): array
-    {
-        $out = [];
-        $source = is_array($existingImagesRaw) ? $existingImagesRaw : [];
-
-        foreach ($source as $img) {
-            if (!is_string($img)) {
-                continue;
-            }
-            $img = trim($img);
-            if ($img === '' || preg_match('/^https?:\/\//i', $img)) {
-                continue;
-            }
-            $out[] = ltrim($img, '/');
-        }
-
-        return array_values(array_unique($out));
+        return preg_match('~(?:^|[A-Za-z]:)?(?:.*/)?public/images/(.+)$~i', $path, $m)
+            ? ltrim($m[1], '/')
+            : ltrim($path, '/');
     }
 
     private function resolveMainImage(array $allImages, array $newImages): string
     {
-        $postedMain = trim((string)($_POST['main_image'] ?? ''));
-        $postedMain = ltrim($postedMain, '/');
-        if ($postedMain !== '' && in_array($postedMain, $allImages, true)) {
+        $postedMain = ltrim(trim((string)($_POST['main_image'] ?? '')), '/');
+        if ($postedMain && in_array($postedMain, $allImages, true)) {
             return $postedMain;
         }
 
-        $postedMainNewIndex = isset($_POST['main_new_index']) ? (int)$_POST['main_new_index'] : -1;
-        if ($postedMainNewIndex >= 0 && isset($newImages[$postedMainNewIndex])) {
-            $candidate = (string)$newImages[$postedMainNewIndex];
-            if ($candidate !== '' && in_array($candidate, $allImages, true)) {
+        $mainNewIndex = (int)($_POST['main_new_index'] ?? -1);
+        if ($mainNewIndex >= 0 && isset($newImages[$mainNewIndex])) {
+            $candidate = (string)$newImages[$mainNewIndex];
+            if ($candidate && in_array($candidate, $allImages, true)) {
                 return $candidate;
             }
         }
 
-        return isset($allImages[0]) ? (string)$allImages[0] : '';
+        return $allImages[0] ?? '';
     }
 
     private function prioritizeMainImage(array $allImages, string $mainImage): array
     {
         $mainImage = ltrim(trim($mainImage), '/');
-        if ($mainImage === '' || !in_array($mainImage, $allImages, true)) {
-            return $allImages;
-        }
-
-        return array_values(array_unique(array_merge([$mainImage], $allImages)));
+        return (!$mainImage || !in_array($mainImage, $allImages, true))
+            ? $allImages
+            : array_values(array_unique(array_merge([$mainImage], $allImages)));
     }
 
     private function uploadNewImages($images, string $subdir): array
@@ -521,27 +624,24 @@ class ProductAdminController
         }
 
         $uploaded = [];
-        $fileCount = count($images['name']);
+        $subPath = trim($subdir, '/') ?: 'products';
+        $subPath = $subPath !== 'products' ? 'products/' . $subPath : 'products';
 
-        for ($i = 0; $i < $fileCount; $i++) {
-            $single = [
-                'name' => $images['name'][$i] ?? '',
-                'type' => $images['type'][$i] ?? '',
-                'tmp_name' => $images['tmp_name'][$i] ?? '',
-                'error' => $images['error'][$i] ?? UPLOAD_ERR_NO_FILE,
-                'size' => $images['size'][$i] ?? 0,
-            ];
-
-            if (($single['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        foreach ($images['name'] as $i => $name) {
+            if (($images['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
                 continue;
             }
-
-            $subPath = trim($subdir, '/');
-            $subPath = $subPath !== '' ? 'products/' . $subPath : 'products';
-            $rel = Upload::image($single, $subPath, true);
-            $uploaded[] = 'uploads/' . ltrim($rel, '/');
+            $uploaded[] = 'uploads/' . ltrim(
+                Upload::image([
+                    'name' => $name,
+                    'type' => $images['type'][$i] ?? '',
+                    'tmp_name' => $images['tmp_name'][$i] ?? '',
+                    'error' => $images['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $images['size'][$i] ?? 0,
+                ], $subPath, true),
+                '/'
+            );
         }
-
         return $uploaded;
     }
 
@@ -561,32 +661,19 @@ class ProductAdminController
 
     private function resolveImageFamilyFromPayload(array $payload, array $existing = []): string
     {
-        $slugCandidates = [];
+        $candidates = array_filter([
+            strtolower(trim((string)($existing['slug'] ?? ''))),
+            strtolower(trim((string)($payload['slug'] ?? ''))),
+        ]);
 
-        if (!empty($existing['slug'])) {
-            $slugCandidates[] = strtolower(trim((string)$existing['slug']));
-        }
-        if (!empty($payload['slug'])) {
-            $slugCandidates[] = strtolower(trim((string)$payload['slug']));
-        }
-
-        foreach ($slugCandidates as $slug) {
-            if ($slug !== '' && preg_match('/^[a-z0-9-]+$/', $slug)) {
+        foreach ($candidates as $slug) {
+            if (preg_match('/^[a-z0-9-]+$/', $slug)) {
                 return $slug;
             }
         }
 
-        $familyCandidates = [];
-        if (!empty($existing['name'])) {
-            $familyCandidates[] = (string)$existing['name'];
-        }
-        if (!empty($payload['name'])) {
-            $familyCandidates[] = (string)$payload['name'];
-        }
-
-        foreach ($familyCandidates as $candidate) {
-            $family = $this->extractImageFamily($candidate);
-            if ($family !== '') {
+        foreach ([$existing['name'] ?? null, $payload['name'] ?? null] as $candidate) {
+            if ($candidate && ($family = $this->extractImageFamily((string)$candidate))) {
                 return $family;
             }
         }
@@ -597,7 +684,7 @@ class ProductAdminController
     private function extractImageFamily(string $text): string
     {
         $text = strtolower(trim($text));
-        if ($text === '') {
+        if (!$text) {
             return '';
         }
 
@@ -605,51 +692,28 @@ class ProductAdminController
             return 'vf' . $match[1];
         }
 
-        $normalized = preg_replace('/[^a-z0-9]+/i', '-', $text);
-        $normalized = trim((string)$normalized, '-');
-        if ($normalized === '') {
+        $normalized = preg_replace('/[^a-z0-9-]/i', '-', $text);
+        $normalized = trim(str_replace('vinfast-', '', $normalized), '-');
+
+        if (!$normalized) {
             return '';
         }
 
-        if (strpos($normalized, 'vinfast-') === 0) {
-            $normalized = substr($normalized, 8);
-        }
-
-        $normalized = trim((string)$normalized, '-');
-        if ($normalized === '') {
-            return '';
-        }
-
-        $parts = explode('-', $normalized);
-        $family = strtolower(trim((string)($parts[0] ?? '')));
-        if (!preg_match('/^[a-z0-9]+$/', $family)) {
-            return '';
-        }
-
-        return $family;
+        $family = strtolower(explode('-', $normalized)[0]);
+        return preg_match('/^[a-z0-9]+$/', $family) ? $family : '';
     }
 
     private function enrichExteriorColorImages(array $rows, string $family): array
     {
-        $out = [];
-
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
+        return array_map(function (array $row) use ($family): array {
+            if (!is_array($row) || ($code = strtoupper(trim((string)($row['code'] ?? '')))) === '') {
+                return $row;
             }
-
-            $code = strtoupper(trim((string)($row['code'] ?? '')));
-            if ($code !== '' && trim((string)($row['image'] ?? '')) === '') {
-                $resolved = $this->resolveColorImageInFamily($family, $code);
-                if ($resolved !== '') {
-                    $row['image'] = $resolved;
-                }
+            if (trim((string)($row['image'] ?? '')) === '' && ($resolved = $this->resolveColorImageInFamily($family, $code))) {
+                $row['image'] = $resolved;
             }
-
-            $out[] = $row;
-        }
-
-        return $out;
+            return $row;
+        }, $rows);
     }
 
     private function resolveColorImageInFamily(string $family, string $code): string
@@ -709,20 +773,6 @@ class ProductAdminController
         $raw = trim($inputSlug !== '' ? $inputSlug : $fallbackName);
         $raw = strtolower($raw);
         $slug = preg_replace('/[^a-z0-9]+/', '-', $raw);
-        $slug = trim((string)$slug, '-');
-        return $slug;
-    }
-
-    private function redirectForm(int $id = 0): void
-    {
-        $url = ADMIN_URL . 'products/form' . ($id > 0 ? '/' . $id : '');
-        header('Location: ' . $url);
-        exit;
-    }
-
-    private function redirectIndex(): void
-    {
-        header('Location: ' . ADMIN_URL . 'products');
-        exit;
+        return trim($slug, '-');
     }
 }

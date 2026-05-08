@@ -33,114 +33,272 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
 $aboutImg = SiteSetting::imageUrl($settings['about_image'] ?? '', 'public/images/banners/banner_background.png');
 ?>
 
-<div class="row">
+<div class="row mt-4">
     <div class="col-12">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0">Site settings</h4>
-            <a class="btn btn-sm btn-outline-secondary" href="<?= BASE_URL ?>" target="_blank" rel="noreferrer">View site</a>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h4 class="header-title mb-0 text-uppercase"><i class="ti-settings"></i> Cấu hình hệ thống (Site Settings)</h4>
+            <a class="btn btn-flat btn-outline-success px-4" href="<?= BASE_URL ?>" target="_blank" rel="noreferrer">
+                <i class="ti-world"></i> Xem trang chủ
+            </a>
         </div>
 
-        <div class="card">
-            <div class="card-body">
-                <form action="<?= ADMIN_URL ?>settings/save" method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+        <form action="<?= ADMIN_URL ?>settings/save" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
 
-                    <!-- =========================
-               SECTION: Branding
-          ========================== -->
-                    <h6 class="text-uppercase text-muted mb-3">Branding</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-6">
-                            <label class="form-label">Tagline (hiển thị ở banner)</label>
-                            <input class="form-control" name="tagline" value="<?= htmlspecialchars((string)($settings['tagline'] ?? '')) ?>" placeholder="VD: Boundless Together">
+            <!-- KHU VỰC BRANDING & BANNERS -->
+            <div class="card shadow-sm border-0 mb-4 mt-4">
+                <div class="card-body">
+                    <h4 class="header-title text-primary"><i class="ti-bookmark-alt"></i> Tagline & Logo</h4>
+                    <p class="text-muted font-14 mb-4">Quản lý nhận diện thương hiệu chính yếu của website.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Slogan (Tiêu đề lớn)</label>
+                            <textarea class="form-control mb-3" name="tagline" rows="2" style="font-size: 1.1rem; font-weight: bold;"><?= htmlspecialchars((string)($settings['tagline'] ?? "Kiến tạo\ntương lai xanh")) ?></textarea>
+                            
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Sub-Tagline (Mô tả phụ)</label>
+                            <textarea class="form-control" name="sub_tagline" rows="2"><?= htmlspecialchars((string)($settings['sub_tagline'] ?? 'Khám phá bộ sưu tập xe điện thông minh, sang trọng và hướng đến một tương lai bền vững cùng VinFast.')) ?></textarea>
                         </div>
-                        <div class="col-lg-6">
-                            <label class="form-label">Logo</label>
-                            <input class="form-control" type="file" name="logo" accept="image/*">
-                            <div class="mt-2">
-                                <img src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo preview" style="height:40px">
+                        <div class="col-md-6 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Logo trang web</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="logoUpload" name="logo" accept="image/*">
+                                <label class="custom-file-label" for="logoUpload">Chọn ảnh logo mới...</label>
                             </div>
-                            <small class="text-muted d-block mt-1">Nếu upload mới sẽ thay thế logo cũ (lưu vào `public/images/uploads/site/`).</small>
+                            <div class="mt-3 p-3 bg-light rounded text-center">
+                                <img src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo preview" style="max-height:50px;">
+                            </div>
+                            <small class="form-text text-muted mt-2"><i class="ti-info-alt"></i> Tải lên để thay thế logo hiện tại. Hỗ trợ định dạng PNG/JPG trong suốt.</small>
                         </div>
                     </div>
 
-                    <!-- =========================
-               SECTION: Homepage banners
-          ========================== -->
-                    <h6 class="text-uppercase text-muted mb-3">Homepage banners</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-4">
-                            <label class="form-label">Banner 1</label>
-                            <input class="form-control" type="file" name="banner_1" accept="image/*">
-                            <div class="mt-2">
-                                <img src="<?= htmlspecialchars($banner1) ?>" alt="Banner 1" class="img-fluid rounded border">
+                    <hr class="my-4">
+
+                    <h4 class="header-title text-primary"><i class="ti-gallery"></i> Homepage Banners</h4>
+                    <p class="text-muted font-14 mb-4">Thay đổi các hình ảnh slide lớn trên trang chủ. Nên sử dụng ảnh có độ phân giải cao và tỷ lệ 16:9.</p>
+
+                    <div class="row">
+                        <div class="col-lg-4 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;"><i class="ti-image mr-1"></i> Banner 1</label>
+                            <div class="custom-file mb-3">
+                                <input type="file" class="custom-file-input" id="b1" name="banner_1" accept="image/*">
+                                <label class="custom-file-label" for="b1">Chọn ảnh...</label>
+                            </div>
+                            <div class="image-preview-box rounded border p-1 bg-light">
+                                <img src="<?= htmlspecialchars($banner1) ?>" alt="Banner 1" class="img-fluid rounded">
                             </div>
                         </div>
-                        <div class="col-lg-4">
-                            <label class="form-label">Banner 2</label>
-                            <input class="form-control" type="file" name="banner_2" accept="image/*">
-                            <div class="mt-2">
-                                <img src="<?= htmlspecialchars($banner2) ?>" alt="Banner 2" class="img-fluid rounded border">
+                        <div class="col-lg-4 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;"><i class="fa fa-image mr-1"></i> Banner 2</label>
+                            <div class="custom-file mb-3">
+                                <input type="file" class="custom-file-input" id="b2" name="banner_2" accept="image/*">
+                                <label class="custom-file-label" for="b2">Chọn ảnh...</label>
+                            </div>
+                            <div class="image-preview-box rounded border p-1 bg-light">
+                                <img src="<?= htmlspecialchars($banner2) ?>" alt="Banner 2" class="img-fluid rounded">
                             </div>
                         </div>
-                        <div class="col-lg-4">
-                            <label class="form-label">Banner 3</label>
-                            <input class="form-control" type="file" name="banner_3" accept="image/*">
-                            <div class="mt-2">
-                                <img src="<?= htmlspecialchars($banner3) ?>" alt="Banner 3" class="img-fluid rounded border">
+                        <div class="col-lg-4 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;"><i class="fa fa-image mr-1"></i> Banner 3</label>
+                            <div class="custom-file mb-3">
+                                <input type="file" class="custom-file-input" id="b3" name="banner_3" accept="image/*">
+                                <label class="custom-file-label" for="b3">Chọn ảnh...</label>
+                            </div>
+                            <div class="image-preview-box rounded border p-1 bg-light">
+                                <img src="<?= htmlspecialchars($banner3) ?>" alt="Banner 3" class="img-fluid rounded">
                             </div>
                         </div>
                     </div>
-
-                    <!-- =========================
-               SECTION: Contact info
-          ========================== -->
-                    <h6 class="text-uppercase text-muted mb-3">Contact info (footer + contact page)</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-6">
-                            <label class="form-label">Address</label>
-                            <input class="form-control" name="address" value="<?= htmlspecialchars((string)($settings['address'] ?? '')) ?>">
-                        </div>
-                        <div class="col-lg-3">
-                            <label class="form-label">Phone</label>
-                            <input class="form-control" name="phone" value="<?= htmlspecialchars((string)($settings['phone'] ?? '')) ?>">
-                        </div>
-                        <div class="col-lg-3">
-                            <label class="form-label">Email</label>
-                            <input class="form-control" name="email" value="<?= htmlspecialchars((string)($settings['email'] ?? '')) ?>">
-                        </div>
-                    </div>
-
-                    <!-- =========================
-               SECTION: About + Social
-          ========================== -->
-                    <h6 class="text-uppercase text-muted mb-3">About + Social</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-8">
-                            <label class="form-label">About text</label>
-                            <textarea class="form-control" name="about_text" rows="5"><?= htmlspecialchars((string)($settings['about_text'] ?? '')) ?></textarea>
-                            <small class="text-muted">Nội dung dùng cho trang Giới thiệu hoặc các section giới thiệu sau này.</small>
-                        </div>
-                        <div class="col-lg-4">
-                            <label class="form-label">About image</label>
-                            <input class="form-control" type="file" name="about_image" accept="image/*">
-                            <div class="mt-2">
-                                <img src="<?= htmlspecialchars($aboutImg) ?>" alt="About image" class="img-fluid rounded border">
-                            </div>
-                        </div>
-
-                        <div class="col-lg-6">
-                            <label class="form-label">Facebook URL</label>
-                            <input class="form-control" name="facebook_url" value="<?= htmlspecialchars((string)($settings['facebook_url'] ?? '')) ?>" placeholder="https://facebook.com/...">
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-primary" type="submit">Save</button>
-                        <a class="btn btn-outline-secondary" href="<?= ADMIN_URL ?>settings">Reset</a>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
+
+            <!-- KHU VỰC CONTACT INFO -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h4 class="header-title text-success"><i class="ti-location-pin"></i> Thông tin liên hệ</h4>
+                    <p class="text-muted font-14 mb-4">Thông tin này sẽ hiển thị ở cuối trang (Footer) và trang Liên hệ.</p>
+
+                    <div class="row">
+                        <div class="col-lg-12 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Địa chỉ trụ sở / Showroom chính</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="ti-map-alt"></i></span>
+                                </div>
+                                <input type="text" class="form-control form-control-lg" name="address" value="<?= htmlspecialchars((string)($settings['address'] ?? 'Số 1 Đường abc, Quận 1, TP.HCM')) ?>">
+                            </div>
+                        </div>
+                        <div class="col-lg-6 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Số điện thoại Hotline</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="ti-headphone-alt"></i></span>
+                                </div>
+                                <input type="text" class="form-control form-control-lg" name="phone" value="<?= htmlspecialchars((string)($settings['phone'] ?? '1900 23 23 89')) ?>">
+                            </div>
+                        </div>
+                        <div class="col-lg-6 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Email hỗ trợ khách hàng</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="ti-email"></i></span>
+                                </div>
+                                <input type="email" class="form-control form-control-lg" name="email" value="<?= htmlspecialchars((string)($settings['email'] ?? 'support@vinfast.vn')) ?>">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KHU VỰC ABOUT & SOCIAL -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h4 class="header-title text-info"><i class="fa fa-info-circle"></i> Giới thiệu công ty</h4>
+                    <p class="text-muted font-14 mb-4">Nội dung tóm tắt hiển thị trên các trang Giới thiệu.</p>
+                    
+                    <div class="row">
+                        <div class="col-lg-8 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Đoạn văn giới thiệu (About Text)</label>
+                            <textarea class="form-control" name="about_text" rows="8"><?= htmlspecialchars((string)($settings['about_text'] ?? 'VinFast là thương hiệu ô tô Việt Nam tiên phong...')) ?></textarea>
+                        </div>
+                        <div class="col-lg-4 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Ảnh đại diện (About Image)</label>
+                            <div class="custom-file mb-3">
+                                <input type="file" class="custom-file-input" id="aboutImgUpload" name="about_image" accept="image/*">
+                                <label class="custom-file-label" for="aboutImgUpload">Chọn ảnh...</label>
+                            </div>
+                            <div class="image-preview-box rounded border p-1 bg-light text-center">
+                                <img src="<?= htmlspecialchars($aboutImg) ?>" alt="About image" class="img-fluid rounded" style="max-height: 180px; object-fit: cover;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h4 class="header-title text-info"><i class="fa fa-share-alt"></i> Mạng xã hội</h4>
+                    <div class="row">
+                        <div class="col-lg-6 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Facebook Fanpage URL</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-primary text-white"><i class="fa fa-facebook"></i></span>
+                                </div>
+                                <input type="url" class="form-control form-control-lg" name="facebook_url" value="<?= htmlspecialchars((string)($settings['facebook_url'] ?? 'https://facebook.com/VinFastAuto')) ?>">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KHU VỰC HOMEPAGE STATS -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h4 class="header-title text-warning"><i class="ti-bar-chart"></i> Thống kê nổi bật (Homepage Small Stats)</h4>
+                    <p class="text-muted font-14 mb-4">Quản lý 4 con số thống kê nhỏ xuất hiện dưới banner trang chủ.</p>
+                    
+                    <div class="row">
+                        <!-- Stat 1 -->
+                        <div class="col-md-3 form-group border-right border-light">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 1</label>
+                            <div class="mb-2">
+                                <small class="text-muted font-weight-bold text-uppercase">Giá trị (Ví dụ: 14+)</small>
+                                <input type="text" class="form-control" name="stat1_val" value="<?= htmlspecialchars((string)($settings['stat1_val'] ?? '14+')) ?>">
+                            </div>
+                            <div>
+                                <small class="text-muted font-weight-bold text-uppercase">Tiêu đề (Ví dụ: Quốc gia)</small>
+                                <input type="text" class="form-control" name="stat1_lbl" value="<?= htmlspecialchars((string)($settings['stat1_lbl'] ?? 'Quốc gia hiện diện')) ?>">
+                            </div>
+                        </div>
+
+                        <!-- Stat 2 -->
+                        <div class="col-md-3 form-group border-right border-light">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 2</label>
+                            <div class="mb-2">
+                                <small class="text-muted font-weight-bold text-uppercase">Giá trị</small>
+                                <input type="text" class="form-control" name="stat2_val" value="<?= htmlspecialchars((string)($settings['stat2_val'] ?? '150,000+')) ?>">
+                            </div>
+                            <div>
+                                <small class="text-muted font-weight-bold text-uppercase">Tiêu đề</small>
+                                <input type="text" class="form-control" name="stat2_lbl" value="<?= htmlspecialchars((string)($settings['stat2_lbl'] ?? 'Khách hàng tin dùng')) ?>">
+                            </div>
+                        </div>
+
+                        <!-- Stat 3 -->
+                        <div class="col-md-3 form-group border-right border-light">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 3</label>
+                            <div class="mb-2">
+                                <small class="text-muted font-weight-bold text-uppercase">Giá trị</small>
+                                <input type="text" class="form-control" name="stat3_val" value="<?= htmlspecialchars((string)($settings['stat3_val'] ?? '8 mẫu')) ?>">
+                            </div>
+                            <div>
+                                <small class="text-muted font-weight-bold text-uppercase">Tiêu đề</small>
+                                <input type="text" class="form-control" name="stat3_lbl" value="<?= htmlspecialchars((string)($settings['stat3_lbl'] ?? 'Xe hiện có')) ?>">
+                            </div>
+                        </div>
+
+                        <!-- Stat 4 -->
+                        <div class="col-md-3 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 4</label>
+                            <div class="mb-2">
+                                <small class="text-muted font-weight-bold text-uppercase">Giá trị</small>
+                                <input type="text" class="form-control" name="stat4_val" value="<?= htmlspecialchars((string)($settings['stat4_val'] ?? '500+')) ?>">
+                            </div>
+                            <div>
+                                <small class="text-muted font-weight-bold text-uppercase">Tiêu đề</small>
+                                <input type="text" class="form-control" name="stat4_lbl" value="<?= htmlspecialchars((string)($settings['stat4_lbl'] ?? 'Showroom toàn cầu')) ?>">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="card shadow-sm border-0 mb-5">
+                <div class="card-body d-flex gap-3 justify-content-end bg-light rounded">
+                    <a class="btn btn-flat btn-outline-secondary btn-lg px-4" href="<?= ADMIN_URL ?>settings">
+                        <i class="ti-reload"></i> Huỷ thay đổi
+                    </a>
+                    <button class="btn btn-flat btn-primary btn-lg px-5" type="submit">
+                        <i class="ti-save"></i> LƯU CẤU HÌNH
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
+
+<!-- Thêm chút CSS phụ trợ nhỏ gọn để hiển thị tên file khi chọn file mới -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.custom-file-input').forEach(function(input) {
+            input.addEventListener('change', function(e) {
+                if(e.target.files && e.target.files[0]) {
+                    var file = e.target.files[0];
+                    var fileName = file.name;
+                    
+                    // Cập nhật tên file trên label
+                    var nextSibling = e.target.nextElementSibling;
+                    if (nextSibling) {
+                        nextSibling.innerText = fileName;
+                    }
+
+                    // Tự động load ảnh lên image preview (nếu có)
+                    // Tìm container cha gần nhất
+                    var parent = e.target.closest('.form-group');
+                    if(parent) {
+                        var imgPreview = parent.querySelector('img');
+                        if(imgPreview) {
+                            var reader = new FileReader();
+                            reader.onload = function(evt) {
+                                imgPreview.src = evt.target.result;
+                                imgPreview.style.opacity = '0.5';
+                                setTimeout(function(){ imgPreview.style.opacity = '1'; }, 300);
+                            }
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                }
+            });
+        });
+    });
+</script>

@@ -43,6 +43,18 @@ class Product
             $params[':price_max'] = (float)$filters['price_max'];
         }
 
+        if (!empty($filters['range']) && $filters['range'] !== 'all') {
+            $rangeExpr = "CAST(REGEXP_SUBSTR(JSON_UNQUOTE(JSON_EXTRACT(specs, '$.range')), '[0-9]+(\\.[0-9]+)?') AS DECIMAL(10,2))";
+
+            if ($filters['range'] === 'lt200') {
+                $where[] = "($rangeExpr > 0 AND $rangeExpr < 200)";
+            } elseif ($filters['range'] === '200-400') {
+                $where[] = "($rangeExpr >= 200 AND $rangeExpr <= 400)";
+            } elseif ($filters['range'] === 'gt400') {
+                $where[] = "$rangeExpr > 400";
+            }
+        }
+
         return [implode(' AND ', $where), $params];
     }
 
@@ -175,13 +187,36 @@ class Product
     }
     public static function filter(array $filters = [], int $page = 1, int $perPage = 10): array
     {
+        return self::filterPaginated($filters, $page, $perPage);
+    }
+
+    public static function filterPaginated(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
         global $pdo;
+
         $page = max(1, $page);
+        $perPage = max(1, $perPage);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $items = self::filterAll($filters);
+        [$whereClause, $params] = self::buildCatalogFilters($filters);
 
-        return array_slice($items, $offset, $perPage);
+        $sort = $filters['sort'] ?? 'default';
+        $orderBy = 'created_at DESC';
+        if ($sort === 'price_asc') {
+            $orderBy = 'price ASC';
+        } elseif ($sort === 'price_desc') {
+            $orderBy = 'price DESC';
+        }
+
+        $sql = "SELECT * FROM products WHERE $whereClause ORDER BY $orderBy LIMIT :limit OFFSET :offset";
+
+        $stmt = $pdo->prepare($sql);
+        self::bindNamedParams($stmt, $params);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
     public static function filterAll(array $filters = []): array
@@ -233,6 +268,83 @@ class Product
             return (float)$m[1];
         }
         return 0;
+    }
+
+    private static function extractModelKey(string $text): string
+    {
+        $value = strtolower(trim($text));
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/(?:^|[-_])vf(?:-?mpv)?-?([3-9])(?:[-_]|$)/i', $value, $familyMatch)) {
+            return 'vf' . $familyMatch[1];
+        }
+
+        $normalized = preg_replace('/[^a-z0-9]+/i', '-', $value);
+        $normalized = trim((string)$normalized, '-');
+        if ($normalized === '') {
+            return '';
+        }
+
+        if (strpos($normalized, 'vinfast-') === 0) {
+            $normalized = substr($normalized, 8);
+        }
+
+        $normalized = trim((string)$normalized, '-');
+        if ($normalized === '') {
+            return '';
+        }
+
+        $parts = explode('-', $normalized);
+        $family = strtolower(trim((string)($parts[0] ?? '')));
+        if (!preg_match('/^[a-z0-9]+$/', $family)) {
+            return '';
+        }
+
+        return $family;
+    }
+
+    public static function getSwitchProducts(int $categoryId = 0, int $limit = 12, int $rawLimit = 30): array
+    {
+        $switchProductsRaw = $categoryId > 0
+            ? self::getByCategory($categoryId, 1, $rawLimit)
+            : self::getAll(1, $rawLimit);
+
+        if (empty($switchProductsRaw)) {
+            $switchProductsRaw = self::getAll(1, $rawLimit);
+        }
+
+        $switchProducts = [];
+        foreach ($switchProductsRaw as $switchItem) {
+            if (!is_array($switchItem)) {
+                continue;
+            }
+
+            $switchId = (int)($switchItem['id'] ?? 0);
+            if ($switchId <= 0) {
+                continue;
+            }
+
+            $switchImages = is_array($switchItem['images'] ?? null) ? $switchItem['images'] : [];
+            $switchSlug = (string)($switchItem['slug'] ?? '');
+            $switchName = (string)($switchItem['name'] ?? 'VinFast');
+            $switchProducts[] = [
+                'id' => $switchId,
+                'name' => $switchName,
+                'slug' => $switchSlug,
+                'model_key' => self::extractModelKey($switchSlug !== '' ? $switchSlug : $switchName),
+                'price' => (float)($switchItem['price'] ?? 0),
+                'image' => is_string($switchImages[0] ?? null) ? (string)$switchImages[0] : '',
+                'is_current' => false,
+            ];
+
+            if (count($switchProducts) >= $limit) {
+                break;
+            }
+        }
+
+        return $switchProducts;
     }
 
     public static function getAdminList(array $filters = [], int $page = 1, int $perPage = 10): array

@@ -13,7 +13,7 @@ $rangeOptions = [
     '200-400' => '200-400km',
     'gt400' => 'Trên 400km',
 ];
-
+$categories = $categories ?? [];
 $selectedCategoryName = '';
 foreach ($categories as $c) {
     if ((int)$c['id'] === $cat) {
@@ -21,6 +21,10 @@ foreach ($categories as $c) {
         break;
     }
 }
+$price = $price ?? 'all';
+$range = $range ?? 'all';
+$sort = $sort ?? 'default';
+$q = $q ?? '';
 ?>
 
 <aside id="productsSidebar" class="bg-white border-r border-slate-100 flex-shrink-0 fixed lg:sticky z-50 lg:z-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0" style="width:256px;top:0;left:0;height:100vh;overflow-y:auto;">

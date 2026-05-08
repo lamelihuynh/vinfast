@@ -1,275 +1,147 @@
 <?php
+
 /**
  * app/views/frontend/user/profile.php
  * Owner  : All members (common)
  * Title  : My Profile
- *
- * Purpose: Two-section layout: (1) Edit name, email, avatar upload — POSTs to /user/saveProfile. (2) Change password — POSTs to /user/changePassword. Both need CSRF token.
- *
- * Variables available (set by controller via View::render):
- *   $user (array)
- *
-  Assets    : (none)
- *
- * TODO: Replace the placeholder below with the actual HTML implementation.
- * -----------------------------------------------------------------------
- * Rules:
- *  - Always escape output: <?= htmlspecialchars($var) ?>
- *  - Include CSRF in every form: <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
- *  - Include pagination partial where needed: include ROOT."/app/views/frontend/partials/pagination.php"
  */
+
+$u = isset($user) && is_array($user) ? $user : [];
+$avatarFallback = 'data:image/svg+xml;utf8,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="#1a2240"/><circle cx="48" cy="38" r="18" fill="#e2e8f0"/><path d="M20 80c5-14 16-22 28-22s23 8 28 22" fill="#e2e8f0"/></svg>');
+$avatarUrl = !empty($u['avatar']) ? BASE_URL . ltrim((string)$u['avatar'], '/') : $avatarFallback;
+$createdAt = !empty($u['created_at']) ? date('F Y', strtotime((string)$u['created_at'])) : 'N/A';
+$status = empty($u['is_locked']) ? 'Hoạt động' : 'Bị khóa';
 ?>
-<!-- TODO: Implement My Profile -->
-<?php
-  $u = $user ?? [];
-  $avatarUrl = !empty($u['avatar']) ? BASE_URL . ltrim($u['avatar'], '/') : BASE_URL . 'public/images/avatars/default/default.jpg';
-  $createdAt = !empty($u['created_at']) ? date('F Y', strtotime($u['created_at'])) : 'N/A';
-  $status    = empty($u['is_locked']) ? 'Hoạt động' : 'Bị khóa';
-?>
 
-<div class="main-content-inner" id="main-content">
-    
-    <div class="row mt-4">
-        <div class="col-12" id="alertContainer">
-            <?php if (!empty($_SESSION['flash'])): ?>
-                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                    <strong>Well done!</strong> <?= htmlspecialchars($_SESSION['flash']) ?>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+<section class="min-h-screen bg-[#F5F6F8] py-6">
+    <div class="mx-auto w-full max-w-6xl px-4 lg:px-6">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1a2240] via-[#233060] to-[#1a2240] px-6 py-10 text-white shadow-lg lg:px-10">
+            <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#c8a22e]/10"></div>
+            <div class="absolute -bottom-12 left-10 h-40 w-40 rounded-full bg-white/5"></div>
+            <div class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-2xl">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Tài khoản</p>
+                    <h1 class="mb-3 text-3xl font-extrabold tracking-[-0.03em] lg:text-4xl">Hồ sơ cá nhân</h1>
+                    <p class="mb-0 max-w-xl text-sm leading-6 text-white/70">Cập nhật thông tin người dùng, ảnh đại diện và mật khẩu trong cùng một không gian quản lý thống nhất.</p>
                 </div>
-                <?php unset($_SESSION['flash']); ?>
-            <?php endif; ?>
 
-            <?php if (!empty($_SESSION['errors'])): ?>
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                    <strong>Oh snap!</strong> Vui lòng kiểm tra lại thông tin bên dưới:
-                    <ul class="mb-0 mt-2">
-                    <?php foreach ($_SESSION['errors'] as $error): ?>
-                        <li>- <?= htmlspecialchars($error) ?></li>
-                    <?php endforeach; ?>
-                    </ul>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <?php unset($_SESSION['errors']); ?>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center text-white p-4" style="background: linear-gradient(135deg, #8914fe, #8063f5); border-radius: 0.375rem;">
-                    <div class="mb-3">
-                        <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="User Avatar" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); object-fit: cover;">
+                <div class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
+                    <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="User Avatar" class="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/25">
+                    <div>
+                        <div class="text-lg font-bold"><?= htmlspecialchars((string)($u['name'] ?? 'Chưa cập nhật tên')) ?></div>
+                        <div class="text-sm text-white/65"><?= htmlspecialchars((string)($u['email'] ?? '')) ?></div>
+                        <div class="mt-1 text-xs uppercase tracking-[0.18em] text-white/45"><?= htmlspecialchars($status) ?> · <?= htmlspecialchars($createdAt) ?></div>
                     </div>
-                    <h3 class="mb-1"><?= htmlspecialchars($u['name'] ?? 'Chưa cập nhật tên') ?></h3>
                 </div>
             </div>
+        </div>
+
+        <?php if (!empty($_SESSION['flash']) || !empty($_SESSION['errors'])): ?>
+            <div class="mt-6 space-y-3">
+                <?php if (!empty($_SESSION['flash'])): ?>
+                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                        <?= htmlspecialchars((string)$_SESSION['flash']) ?>
+                    </div>
+                    <?php unset($_SESSION['flash']); ?>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['errors'])): ?>
+                    <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                        <div class="font-semibold">Vui lòng kiểm tra lại thông tin:</div>
+                        <ul class="mt-2 list-disc pl-5 space-y-1">
+                            <?php foreach ((array)$_SESSION['errors'] as $error): ?>
+                                <li><?= htmlspecialchars((string)$error) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php unset($_SESSION['errors']); ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
+            <aside class="space-y-4">
+                <?php include ROOT . '/app/views/frontend/user/partials/profile-card.php'; ?>
+                <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                    <?php $active = 'profile';
+                    include ROOT . '/app/views/frontend/user/partials/sidebar.php'; ?>
+                </div>
+            </aside>
+
+            <main class="space-y-6">
+                <section class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-lg font-bold text-slate-900">Cập nhật hồ sơ</h2>
+                        <p class="mt-1 text-sm text-slate-500">Tên, email và ảnh đại diện của bạn.</p>
+                    </div>
+                    <div class="px-6 py-6">
+                        <form id="formUpdateProfile" action="<?= BASE_URL ?>user/saveProfile" method="POST" enctype="multipart/form-data" class="space-y-5">
+                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <div class="grid gap-5 md:grid-cols-2">
+                                <div>
+                                    <label for="name" class="mb-2 block text-sm font-medium text-slate-700">Tên người dùng</label>
+                                    <input type="text" id="name" name="name" value="<?= htmlspecialchars((string)($u['name'] ?? '')) ?>" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                </div>
+                                <div>
+                                    <label for="email" class="mb-2 block text-sm font-medium text-slate-700">Email</label>
+                                    <input type="email" id="email" name="email" value="<?= htmlspecialchars((string)($u['email'] ?? '')) ?>" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="avatar" class="mb-2 block text-sm font-medium text-slate-700">Ảnh đại diện</label>
+                                <input type="file" id="avatar" name="avatar" accept="image/*" class="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700">
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center rounded-xl bg-[#1a2240] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#233060]">Lưu hồ sơ</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-lg font-bold text-slate-900">Đổi mật khẩu</h2>
+                        <p class="mt-1 text-sm text-slate-500">Đặt mật khẩu mạnh để bảo vệ tài khoản.</p>
+                    </div>
+                    <div class="px-6 py-6">
+                        <form id="formChangePassword" action="<?= BASE_URL ?>user/changePassword" method="POST" class="space-y-5">
+                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <div class="grid gap-5 md:grid-cols-2">
+                                <div>
+                                    <label for="current" class="mb-2 block text-sm font-medium text-slate-700">Mật khẩu hiện tại</label>
+                                    <input type="password" id="current" name="current" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                </div>
+                                <div>
+                                    <label for="new_password" class="mb-2 block text-sm font-medium text-slate-700">Mật khẩu mới</label>
+                                    <input type="password" id="new_password" name="new_password" minlength="8" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">Mật khẩu mới nên có tối thiểu 8 ký tự và gồm cả chữ hoa lẫn số.</div>
+
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300">Đổi mật khẩu</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </main>
         </div>
     </div>
-
-    <div class="row mt-4">
-        <div class="col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h4 class="header-title mb-0 font-bold">Thông tin người dùng</h4>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><i class="fa-solid fa-user me-2 text-muted"></i> Tên</span>
-                            <strong><?= htmlspecialchars($u['name'] ?? '') ?></strong>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><i class="fa-solid fa-envelope me-2 text-muted"></i> Email</span>
-                            <strong><?= htmlspecialchars($u['email'] ?? '') ?></strong>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><i class="fa-solid fa-calendar me-2 text-muted"></i> Tham gia</span>
-                            <strong><?= $createdAt ?></strong>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                            <span><i class="fa-solid fa-check me-2 text-muted"></i> Trạng thái</span>
-                            <strong class="<?= empty($u['is_locked']) ? 'text-success' : 'text-danger' ?>"><?= $status ?></strong>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-8">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h4 class="header-title mb-0 font-bold">Cập nhật hồ sơ</h4>
-                </div>
-                <div class="card-body">
-                    <form id="formUpdateProfile" action="<?= BASE_URL ?>user/saveProfile" method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="name" class="form-label">Tên người dùng</label>
-                                <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?= htmlspecialchars($u['name'] ?? '') ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="text" class="form-control" id="email" name="email" 
-                                       value="<?= htmlspecialchars($u['email'] ?? '') ?>">
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <label for="avatar" class="form-label">Ảnh đại diện (Tùy chọn)</label>
-                                <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
-                            </div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">Lưu Hồ Sơ</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="header-title mb-0 font-bold">Đổi Mật Khẩu</h4>
-                </div>
-                <div class="card-body">
-                    <form id="formChangePassword" action="<?= BASE_URL ?>user/changePassword" method="POST">
-                        <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="current" class="form-label">Mật khẩu hiện tại</label>
-                                <input type="password" class="form-control" id="current" name="current">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="new_password" class="form-label">Mật khẩu mới</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password">
-                                <div class="text-muted" style="font-size: 0.8rem; margin-top: 5px;">* Tối thiểu 8 ký tự, gồm 1 chữ in hoa và 1 chữ số.</div>
-                            </div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-warning">Đổi Mật Khẩu</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const existingAlerts = document.querySelectorAll('#alertContainer .alert');
-    existingAlerts.forEach(alert => {
-        setTimeout(() => {
-            alert.classList.remove('show'); 
-            setTimeout(() => alert.remove(), 150); 
-        }, 5000);
+    document.addEventListener('DOMContentLoaded', function() {
+        var forms = document.querySelectorAll('#formUpdateProfile, #formChangePassword');
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
     });
-
-    function showCustomAlert(type, title, message) {
-        const container = document.getElementById('alertContainer');
-        const alertId = 'alert-' + Date.now(); 
-        
-        container.innerHTML = `
-            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
-                <strong>${title}</strong> <br>${message.replace(/\n/g, '<br>')}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close" onclick="this.parentElement.remove()">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        `;
-        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => {
-            const currentAlert = document.getElementById(alertId);
-            if (currentAlert) {
-                currentAlert.classList.remove('show');
-                setTimeout(() => currentAlert.remove(), 150);
-            }
-        }, 5000);
-    }
-
-    const formProfile = document.getElementById('formUpdateProfile');
-    formProfile.addEventListener('submit', function(e) {
-        e.preventDefault();
-        let isValid = true;
-        let errors = [];
-
-        const nameInput = document.getElementById('name');
-        if (nameInput.value.trim().length < 2) {
-            isValid = false;
-            errors.push("- Tên người dùng phải có tối thiểu 2 ký tự.");
-            nameInput.classList.add('is-invalid');
-        } else {
-            nameInput.classList.remove('is-invalid');
-        }
-
-        const emailInput = document.getElementById('email');
-        const emailRegex = /^.+@.+\..+$/;
-        if (!emailRegex.test(emailInput.value.trim())) {
-            isValid = false;
-            errors.push("- Định dạng email không hợp lệ (ví dụ: ten@mien.com).");
-            emailInput.classList.add('is-invalid');
-        } else {
-            emailInput.classList.remove('is-invalid');
-        }
-
-        const avatarInput = document.getElementById('avatar');
-        if (avatarInput.files.length > 0) {
-            const file = avatarInput.files[0];
-            if (!file.type.startsWith('image/')) {
-                isValid = false;
-                errors.push("- Vui lòng chỉ chọn các tệp định dạng hình ảnh (JPG, PNG, WEBP...).");
-                avatarInput.classList.add('is-invalid');
-            } else {
-                avatarInput.classList.remove('is-invalid');
-            }
-        }
-
-        if (!isValid) {
-            showCustomAlert('danger', 'Oh snap!', errors.join('\n'));
-        } else {
-            showCustomAlert('success', 'Well done!', 'Dữ liệu hợp lệ! Đang lưu hồ sơ...');
-            setTimeout(() => formProfile.submit(), 1000);
-        }
-    });
-
-    const formPassword = document.getElementById('formChangePassword');
-    formPassword.addEventListener('submit', function(e) {
-        e.preventDefault();
-        let isValid = true;
-        let errors = [];
-
-        const currentPwd = document.getElementById('current');
-        if (currentPwd.value.trim() === '') {
-            isValid = false;
-            errors.push("- Vui lòng nhập mật khẩu hiện tại.");
-            currentPwd.classList.add('is-invalid');
-        } else {
-            currentPwd.classList.remove('is-invalid');
-        }
-
-        const newPwd = document.getElementById('new_password');
-        const pwdRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!pwdRegex.test(newPwd.value)) {
-            isValid = false;
-            errors.push("- Mật khẩu mới phải dài hơn 8 ký tự, có ít nhất 1 chữ cái in hoa và 1 chữ số.");
-            newPwd.classList.add('is-invalid');
-        } else {
-            newPwd.classList.remove('is-invalid');
-        }
-
-        if (!isValid) {
-            showCustomAlert('danger', 'Oh snap!', errors.join('\n'));
-        } else {
-            showCustomAlert('success', 'Well done!', 'Dữ liệu hợp lệ! Đang đổi mật khẩu...');
-            setTimeout(() => formPassword.submit(), 1000);
-        }
-    });
-});
 </script>
