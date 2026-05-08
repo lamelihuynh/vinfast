@@ -74,12 +74,18 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
               <i class="ti-layout"></i><span>Nội dung website</span>
             </a>
             <ul class="collapse <?= $isContentGroup ? 'show' : '' ?>">
-              <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">Cấu hình hệ thống</a></li>
-              <li class="<?= $isActive('/admin/contacts') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>contacts">Liên hệ</a></li>
-              <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">FAQ</a></li>
+              <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">Trang chủ</a></li>
+              <li class="<?= $isActive('/admin/page-content/about') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>page-content/about">Trang Giới Thiệu</a></li>
+              <li class="<?= $isActive('/admin/contacts') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>contacts">Trang Liên hệ</a></li>
+              <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">Trang Câu Hỏi Thường Gặp</a></li>
+
             </ul>
           </li>
-
+          <li> <a href="<?= ADMIN_URL ?>faq-topic">
+                      <i class="fa-solid fa-layer-group"></i>
+                      <span>Chủ đề FAQ</span>
+                  </a>
+          </li>
           <li class="<?= $isNewsGroup ? 'active' : '' ?>">
             <a href="javascript:void(0)" aria-expanded="<?= $isNewsGroup ? 'true' : 'false' ?>">
               <i class="ti-write"></i><span>Tin tức và Bình luận</span>

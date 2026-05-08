@@ -21,6 +21,8 @@ if (strpos($requestPath, '/admin/products') !== false) {
   $sectionTitle = 'Quản lý người dùng';
 } elseif (strpos($requestPath, '/admin/settings') !== false) {
   $sectionTitle = 'Cấu hình website';
+} elseif (strpos($requestPath, '/admin/faq') !== false) {
+  $sectionTitle = 'Quản lý Hỏi & Đáp';
 }
 ?>
 <div class="header-area" id="sticky-header">
@@ -48,11 +50,6 @@ if (strpos($requestPath, '/admin/products') !== false) {
             <span class="text-muted small">Quản trị viên</span>
             <strong><?= htmlspecialchars(Auth::name()) ?></strong>
           </div>
-        </li>
-        <li>
-          <a href="<?= BASE_URL ?>" class="btn btn-sm btn-outline-primary">
-            <i class="ti-home me-1"></i>Trang chủ
-          </a>
         </li>
         <li>
           <a href="<?= BASE_URL ?>auth/logout" class="btn btn-sm btn-outline-secondary">

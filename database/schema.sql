@@ -33,14 +33,14 @@ CREATE TABLE IF NOT EXISTS contacts (
   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS faqs (
-  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  question   VARCHAR(500) NOT NULL,
-  answer     TEXT         NOT NULL,
-  sort_order SMALLINT     NOT NULL DEFAULT 0,
-  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+-- CREATE TABLE IF NOT EXISTS faqs (
+--   id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--   question   VARCHAR(500) NOT NULL,
+--   answer     TEXT         NOT NULL,
+--   sort_order SMALLINT     NOT NULL DEFAULT 0,
+--   is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+--   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS categories (
   id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -96,12 +96,12 @@ CREATE TABLE IF NOT EXISTS news (
   news_state       ENUM("Hiển thị", "Ẩn") NOT NULL DEFAULT("Hiển thị")
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS news_tags (
-  news_id         INT UNSIGNED AUTO_INCREMENT,
-  tags            VARCHAR(50) NOT NULL,
-  PRIMARY KEY(news_id, tags),
-  FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+-- CREATE TABLE IF NOT EXISTS news_tags (
+--   news_id         INT UNSIGNED AUTO_INCREMENT,
+--   tags            VARCHAR(50) NOT NULL,
+--   PRIMARY KEY(news_id, tags),
+--   FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
+-- ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS news_img_info (
   news_id         INT UNSIGNED AUTO_INCREMENT,
@@ -110,6 +110,12 @@ CREATE TABLE IF NOT EXISTS news_img_info (
   PRIMARY KEY(news_id, img_link, img_des),
   FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS email {
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  email       VARCHAR(100) NOT NULL
+} ENGINE=InnoDB
+
 
 CREATE TABLE IF NOT EXISTS comments (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -135,3 +141,43 @@ INSERT IGNORE INTO categories (name,slug) VALUES
   ('Electric Car','electric-car');
 
 -- Seed: site settings
+
+
+CREATE TABLE IF NOT EXISTS page_assets (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  page_type  VARCHAR(50)  NOT NULL,
+  asset_key  VARCHAR(100) NOT NULL,
+  file_path  VARCHAR(255) NOT NULL,
+  file_size  INT UNSIGNED DEFAULT 0,
+  mime_type  VARCHAR(50)  DEFAULT NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_page_asset (page_type, asset_key)
+) ENGINE=InnoDB;
+
+
+
+
+
+CREATE TABLE IF NOT EXISTS faq_topics (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(120) NOT NULL,
+  slug       VARCHAR(120) NOT NULL UNIQUE,
+  icon_svg   TEXT         DEFAULT NULL,
+  sort_order SMALLINT     NOT NULL DEFAULT 0,
+  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS faqs (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  topic_id   INT UNSIGNED NOT NULL,
+  question   VARCHAR(500) NOT NULL,
+  answer     TEXT         NOT NULL,
+  sort_order SMALLINT     NOT NULL DEFAULT 0,
+  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (topic_id)
+    REFERENCES faq_topics(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;

@@ -24,6 +24,7 @@ class Auth
         $_SESSION['uid']   = $user['id'];
         $_SESSION['uname'] = $user['name'];
         $_SESSION['urole'] = $user['role'];
+        $_SESSION['uavatar'] = $user['avatar'];
         if ($remember) {
             self::issueRememberCookie($user);
         } else {
@@ -58,6 +59,10 @@ class Auth
     public static function isAdmin(): bool
     {
         return self::role() === 'admin';
+    }
+    public static function avatar(): string
+    {
+        return $_SESSION['uavatar'] ?? '';
     }
 
     public static function requireLogin(): void

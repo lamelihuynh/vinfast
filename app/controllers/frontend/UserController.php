@@ -12,6 +12,7 @@ class UserController
 {
     private User  $user;
     private Order $order;
+    
     public function __construct()
     {
         Auth::requireLogin();
@@ -35,14 +36,39 @@ class UserController
             header('Location: ' . BASE_URL . 'user/profile');
             exit;
         }
+
         $avatar = null;
-        if (!empty($_FILES['avatar']['name'])) {
-            try {
-                $avatar = Upload::image($_FILES['avatar'], 'avatars');
-            } catch (RuntimeException $e) {
-                $_SESSION['errors'] = ['avatar' => $e->getMessage()];
+
+        if (!empty($_FILES['avatar']['tmp_name']) && is_uploaded_file($_FILES['avatar']['tmp_name'])) {
+            $mime = mime_content_type($_FILES['avatar']['tmp_name']);
+            if (strpos($mime, 'image/') !== 0) {
+                $_SESSION['errors'] = ['avatar' => 'File tải lên phải là định dạng hình ảnh.'];
                 header('Location: ' . BASE_URL . 'user/profile');
                 exit;
+            }
+
+            $userId = Auth::id();
+            $uploadDir = ROOT . "/public/images/avatars/{$userId}/";
+
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
+            } else {
+                $files = glob($uploadDir . '*'); 
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        @unlink($file); 
+                    }
+                }
+            }
+
+            $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+            if (empty($ext)) $ext = 'jpg';
+            $fileName = 'avatar.' . $ext;
+            
+            $destPath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destPath)) {
+                $avatar = "public/images/avatars/{$userId}/{$fileName}";
             }
         }
         $this->user->update(Auth::id(), [
@@ -50,7 +76,8 @@ class UserController
             'email'  => $_POST['email'],
             'avatar' => $avatar,
         ]);
-        $_SESSION['flash'] = 'Profile updated.';
+        
+        $_SESSION['flash'] = 'Cập nhật hồ sơ thành công.';
         header('Location: ' . BASE_URL . 'user/profile');
         exit;
     }
@@ -66,12 +93,12 @@ class UserController
         }
         $u = $this->user->findById(Auth::id());
         if (!password_verify($_POST['current'], $u['password'])) {
-            $_SESSION['errors'] = ['current' => 'Current password is incorrect.'];
+            $_SESSION['errors'] = ['current' => 'Mật khẩu hiện tại không chính xác.'];
             header('Location: ' . BASE_URL . 'user/profile');
             exit;
         }
         $this->user->changePassword(Auth::id(), $_POST['new_password']);
-        $_SESSION['flash'] = 'Password changed successfully.';
+        $_SESSION['flash'] = 'Đổi mật khẩu thành công.';
         header('Location: ' . BASE_URL . 'user/profile');
         exit;
     }

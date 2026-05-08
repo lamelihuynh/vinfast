@@ -17,19 +17,21 @@ class NewsAdminController
     {
         $q       = trim($_GET['q'] ?? '');
         $catalog = trim($_GET['catalog'] ?? '');
+        $sort    = $_GET['sort'] ?? 'time'; 
         $state   = trim($_GET['state'] ?? '');
         $page    = max(1, (int) ($_GET['page'] ?? 1));
 
         $totalItems = News::count($q, $catalog, $state);
         $pg = new Pagination($totalItems, $page, self::PER_PAGE);
 
-        $articles = News::getAll($pg->current, self::PER_PAGE, $q, $catalog, 'latest', $state);
+        $articles = News::getAll($pg->current, self::PER_PAGE, $q, $catalog, $sort, $state);
 
         View::render('admin/news/index', [
             'articles' => $articles,
             'q'        => $q,
             'catalog'  => $catalog,
             'state'    => $state,
+            'sort'     => $sort,
             'pg'       => $pg,
             'catalogs' => News::CATALOGS,
             'states'   => News::STATES
@@ -55,10 +57,7 @@ class NewsAdminController
         }
 
         $article = News::getBySlug($basicInfo['slug'], '', false);
-
-        View::render('admin/news/show', [
-            'article' => $article
-        ], 'admin');
+        View::render('admin/news/show', ['article' => $article], 'admin');
     }
 
     public function edit(int $id): void
@@ -90,12 +89,10 @@ class NewsAdminController
         Auth::verifyCsrf();
 
         $id = (int) ($_POST['id'] ?? 0);
-        
         $title      = trim($_POST['title'] ?? '');
         $body       = $_POST['body'] ?? ''; 
         $catalog    = $_POST['catalog'] ?? null;
         $news_state = $_POST['news_state'] ?? 'Hiển thị';
-        
         $meta_title = trim($_POST['meta_title'] ?? $title);
         $meta_desc  = trim($_POST['meta_description'] ?? '');
 
@@ -137,7 +134,8 @@ class NewsAdminController
         }
 
         if ($img_link) {
-            $images[] = ['img_link' => $img_link, 'img_des' => $title];
+            $dbLink = str_replace('/', '\\', $img_link);
+            $images[] = ['img_link' => $dbLink, 'img_des' => $title];
         }
 
         $data = [
@@ -151,17 +149,11 @@ class NewsAdminController
         ];
 
         if ($id > 0) {
-            if (News::update($id, $data, $tags, $images)) {
-                $_SESSION['flash'] = 'Cập nhật bài viết thành công.';
-            } else {
-                $_SESSION['errors'] = ['Có lỗi xảy ra khi cập nhật.'];
-            }
+            News::update($id, $data, $tags, $images);
+            $_SESSION['flash'] = 'Cập nhật bài viết thành công.';
         } else {
-            if (News::create($data, $tags, $images) > 0) {
-                $_SESSION['flash'] = 'Đã thêm bài viết mới.';
-            } else {
-                $_SESSION['errors'] = ['Có lỗi xảy ra khi tạo bài viết.'];
-            }
+            News::create($data, $tags, $images);
+            $_SESSION['flash'] = 'Đã thêm bài viết mới.';
         }
 
         header('Location: ' . ADMIN_URL . 'news');
@@ -175,7 +167,6 @@ class NewsAdminController
         if (News::delete($id)) {
             $targetDir = ROOT . "/public/images/news/{$id}";
             $this->deleteDirectory($targetDir);
-
             $_SESSION['flash'] = 'Đã xóa bài viết và thư mục hình ảnh.';
         }
         header('Location: ' . ADMIN_URL . 'news');
@@ -241,12 +232,6 @@ class NewsAdminController
                     'title' => $title, 'slug' => $slug, 'body' => '', 
                     'catalog' => $catalog, 'news_state' => $state
                 ]);
-                if (!$id) {
-                    ob_end_clean();
-                    header('Content-Type: application/json');
-                    echo json_encode(['status' => 'error', 'message' => 'Không thể tạo bài viết.']);
-                    exit;
-                }
             }
 
             $uploadDir = ROOT . "/public/images/news/{$id}/";
@@ -254,10 +239,21 @@ class NewsAdminController
                 @mkdir($uploadDir, 0777, true);
             }
 
+            $existingFiles = glob($uploadDir . '*.*');
+            $maxIndex = 0;
+            if ($existingFiles) {
+                foreach ($existingFiles as $f) {
+                    $basename = pathinfo($f, PATHINFO_FILENAME);
+                    if (is_numeric($basename) && (int)$basename > $maxIndex) {
+                        $maxIndex = (int)$basename;
+                    }
+                }
+            }
+            $nextImgIndex = $maxIndex + 1; 
+
             $blocks = $_POST['blocks'] ?? [];
             $finalBodyParts = [];
             $imagesData = [];
-            $imgCounter = 1;
 
             foreach ($blocks as $index => $block) {
                 $type = $block['type'];
@@ -271,71 +267,59 @@ class NewsAdminController
                 elseif ($type === 'image') {
                     $desc = htmlspecialchars(trim($block['desc'] ?? ''));
                     $webPath = '';
+                    $dbPath  = ''; 
 
                     if (isset($_FILES['block_files']['tmp_name'][$index]) && is_uploaded_file($_FILES['block_files']['tmp_name'][$index])) {
                         
                         $fileTmpPath = $_FILES['block_files']['tmp_name'][$index];
-                        $fileExtension = strtolower(pathinfo($_FILES['block_files']['name'][$index], PATHINFO_EXTENSION));
+                        $originalName = basename($_FILES['block_files']['name'][$index]); 
                         
-                        $newFileName = $imgCounter . '.' . $fileExtension;
-                        $destPath = $uploadDir . $newFileName;
-                        
-                        $patterns = [$uploadDir . $imgCounter . '.*', $uploadDir . $imgCounter . '_*.*'];
-                        foreach ($patterns as $pattern) {
-                            foreach (glob($pattern) ?: [] as $existingFile) {
-                                if (is_file($existingFile) && realpath($existingFile) !== realpath($destPath)) {
-                                    @unlink($existingFile); 
-                                }
+                        if (file_exists($uploadDir . $originalName)) {
+                            $webPath = "public/images/news/{$id}/{$originalName}";
+                            $dbPath  = "public\\images\\news\\{$id}\\{$originalName}";
+                        } 
+
+                        else {
+                            $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                            $newFileName = $nextImgIndex . '.' . $fileExtension;
+                            $nextImgIndex++; 
+                            
+                            $destPath = $uploadDir . $newFileName;
+                            if (@move_uploaded_file($fileTmpPath, $destPath)) {
+                                $webPath = "public/images/news/{$id}/{$newFileName}";
+                                $dbPath  = "public\\images\\news\\{$id}\\{$newFileName}";
                             }
-                        }
-                        
-                        if (@move_uploaded_file($fileTmpPath, $destPath)) {
-                            $webPath = "public/images/news/{$id}/{$newFileName}";
                         }
                     } 
+
                     else {
                         $oldLink = trim($block['old_link'] ?? '');
-                        $webPath = preg_replace('#^/?vinfast/#', '', ltrim($oldLink, '/'));
-                        
-                        if ($webPath !== '') {
-                            $absoluteOldPath = ROOT . '/' . $webPath;
+                        if ($oldLink !== '') {
+                            $fileName = basename(str_replace('\\', '/', $oldLink));
                             
-                            if (file_exists($absoluteOldPath)) {
-                                $ext = pathinfo($absoluteOldPath, PATHINFO_EXTENSION);
-                                $idealName = $imgCounter . '.' . $ext;
-                                $idealPath = $uploadDir . $idealName;
-                                
-                                if (realpath($absoluteOldPath) !== realpath($idealPath)) {
-                                    @unlink($idealPath); 
-                                    if (@rename($absoluteOldPath, $idealPath)) {
-                                        $webPath = "public/images/news/{$id}/{$idealName}";
-                                    }
-                                } else {
-                                    $webPath = "public/images/news/{$id}/{$idealName}";
-                                }
-                            }
+                            $webPath = "public/images/news/{$id}/{$fileName}";
+                            $dbPath  = "public\\images\\news\\{$id}\\{$fileName}";
                         }
                     }
 
-                    if ($webPath !== '') {
+                    if ($webPath !== '' && $dbPath !== '') {
                         $figureHtml = "<figure class='my-6 text-center'>";
                         $figureHtml .= "<img src='" . BASE_URL . "{$webPath}' alt='{$desc}' class='w-full max-h-[600px] object-cover rounded-lg shadow-sm'>";
-                        if ($desc !== '') {
-                            $figureHtml .= "<figcaption class='mt-2 text-sm text-gray-500 italic'>{$desc}</figcaption>";
-                        }
+                        if ($desc !== '') $figureHtml .= "<figcaption class='mt-2 text-sm text-gray-500 italic'>{$desc}</figcaption>";
                         $figureHtml .= "</figure>";
 
                         $finalBodyParts[] = $figureHtml;
+                        
                         $imagesData[] = [
-                            'img_link' => $webPath,
+                            'img_link' => $dbPath, 
                             'img_des'  => $desc
                         ];
-                        $imgCounter++;
                     }
                 }
             }
 
             $finalBody = implode("\n\n", $finalBodyParts);
+
             News::update($id, [
                 'title'      => $title,
                 'slug'       => $slug,
