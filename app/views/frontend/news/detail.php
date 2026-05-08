@@ -118,7 +118,7 @@ $featuredNews = News::getAll(1, 4, '', '', 'latest', 'Hiển thị');
         <aside class="space-y-10">
             
             <div>
-                <h3 class="font-bold text-lg mb-6 border-b-2 border-primary inline-block pb-1">Tin tức liên quan</h3>
+                <h3 class="font-bold text-lg mb-6 border-b-2 border-primary inline-block pb-1">Tin tức mới nhất</h3>
                 <div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
                     <?php foreach ($featuredNews as $fn): ?>
                         <?php 
@@ -145,8 +145,10 @@ $featuredNews = News::getAll(1, 4, '', '', 'latest', 'Hiển thị');
                     <h3 class="text-2xl font-black mb-3 leading-tight uppercase tracking-wide">Nhận thông tin<br><span class="text-secondary">VinFast</span></h3>
                     <p class="text-sm text-gray-300 mb-6">Đăng ký để không bỏ lỡ các chương trình ưu đãi và tin tức công nghệ xe điện mới nhất.</p>
                     
-                    <form class="space-y-3" onsubmit="event.preventDefault(); alert('Cảm ơn bạn đã đăng ký!');">
-                        <input type="email" required placeholder="Nhập email của bạn..." class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent">
+                    <div id="alert-detail"></div>
+                    
+                    <form id="form-subscribe-detail" class="space-y-3">
+                        <input type="text" id="email-detail" placeholder="Nhập email của bạn..." class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent">
                         <button type="submit" class="w-full bg-secondary hover:bg-yellow-600 text-white font-bold py-3 rounded-lg transition shadow-lg tracking-wider">
                             ĐĂNG KÝ NGAY
                         </button>
@@ -156,6 +158,48 @@ $featuredNews = News::getAll(1, 4, '', '', 'latest', 'Hiển thị');
 
         </aside>
     </div>
-</main>
+    <script>
+    document.getElementById('form-subscribe-detail').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const emailInput = document.getElementById('email-detail');
+        const alertBox = document.getElementById('alert-detail');
+        const email = emailInput.value.trim();
 
+        const regex = /^.+@.+\..+$/;
+        
+        if (!regex.test(email)) {
+            alertBox.innerHTML = `
+                <div class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm">
+                    <strong>Lỗi!</strong> Định dạng email không hợp lệ. Vui lòng kiểm tra lại.
+                </div>
+            `;
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append('email', email);
+
+        fetch('<?= BASE_URL ?>news/subscribe', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alertBox.innerHTML = `
+                    <div class="bg-[#d4edda] border border-[#c3e6cb] text-[#155724] px-4 py-2 rounded relative mb-3 text-sm">
+                        <strong>Hoàn tất!</strong> Bạn đã đăng ký nhận tin thành công!
+                    </div>
+                `;
+                emailInput.value = '';
+            } else {
+                alertBox.innerHTML = `<div class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm"><strong>Oh snap!</strong> ${data.message}</div>`;
+            }
+        })
+        .catch(err => {
+            alertBox.innerHTML = `<div class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm"><strong>Oh snap!</strong> Lỗi kết nối máy chủ!</div>`;
+        });
+    });
+    </script>
+</main>
 
