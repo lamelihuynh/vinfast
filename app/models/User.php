@@ -81,4 +81,53 @@ class User
         $stmt = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
         return $stmt->execute([$hash, $id]);
     }
+
+    public function updateRole(int $id, string $role): bool
+    {
+        global $pdo;
+        $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
+        return $stmt->execute([$role, $id]);
+    }
+
+    public function delete(int $id): bool
+    {
+        global $pdo;
+        $stmt = $pdo->prepare('DELETE FROM users WHERE id = ?');
+        return $stmt->execute([$id]);
+    }
+
+    public function paginateAdmin(string $q = '', string $role = '', int $page = 1, int $perPage = 10): array
+    {
+        global $pdo;
+        $where = [];
+        $params = [];
+        
+        if ($q !== '') {
+            $where[] = '(name LIKE ? OR email LIKE ?)';
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+        }
+        
+        if ($role !== '') {
+            $where[] = 'role = ?';
+            $params[] = $role;
+        }
+        
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        $countStmt = $pdo->prepare("SELECT COUNT(id) FROM users $whereClause");
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+        
+        $pg = new Pagination($total, $page, $perPage);
+        
+        $sql = "SELECT * FROM users $whereClause ORDER BY id DESC LIMIT {$pg->limit()} OFFSET {$pg->offset()}";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        return [
+            'users' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'pg' => $pg
+        ];
+    }
 }

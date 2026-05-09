@@ -5,13 +5,12 @@
  * Title  : Customer Contacts & Test Drive Registrations
  *
  * Purpose: Dual-tab admin page: manage contact messages and test drive requests.
- *          Uses Srtdash-style tab navigation and Bootstrap tables.
+ *          Uses Shadcn-style resources for layout.
  *
  * Variables available:
- *   $section (string), $items (array), $pg (Pagination)
+ *   $section (string), $items (array), $pg (Pagination), $counts (array), $status (string)
  */
 ?>
-
 <?php
 $isContacts = $section === 'contacts';
 $isTestDrives = $section === 'test-drives';
@@ -19,18 +18,18 @@ $isTestDrives = $section === 'test-drives';
 function vf_contact_status_badge(string $status): string
 {
     $status = strtolower(trim($status));
-    if ($status === 'unread') return '<span class="badge bg-danger">unread</span>';
-    if ($status === 'replied') return '<span class="badge bg-success">replied</span>';
-    return '<span class="badge bg-secondary">read</span>';
+    if ($status === 'unread') return '<span class="status-p bg-danger text-white" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-solid fa-envelope me-1"></i>Chưa đọc</span>';
+    if ($status === 'replied') return '<span class="status-p bg-success text-white" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-solid fa-reply me-1"></i>Đã phản hồi</span>';
+    return '<span class="status-p bg-secondary text-white" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-regular fa-envelope-open me-1"></i>Đã đọc</span>';
 }
 
 function vf_testdrive_status_badge(string $status): string
 {
     $status = strtolower(trim($status));
-    if ($status === 'pending') return '<span class="badge bg-warning text-dark">pending</span>';
-    if ($status === 'confirmed') return '<span class="badge bg-success">confirmed</span>';
-    if ($status === 'cancelled') return '<span class="badge bg-danger">cancelled</span>';
-    return '<span class="badge bg-secondary">done</span>';
+    if ($status === 'pending') return '<span class="status-p bg-warning text-dark" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-regular fa-clock me-1"></i>Chờ duyệt</span>';
+    if ($status === 'confirmed') return '<span class="status-p bg-primary text-white" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-solid fa-check me-1"></i>Xác nhận</span>';
+    if ($status === 'cancelled') return '<span class="status-p bg-danger text-white" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-solid fa-ban me-1"></i>Đã hủy</span>';
+    return '<span class="status-p bg-success text-white" style="padding:6px 12px;border-radius:4px;display:inline-block"><i class="fa-solid fa-check-double me-1"></i>Hoàn tất</span>';
 }
 
 function vf_testdrive_status_next(string $current): array
@@ -57,343 +56,302 @@ function vf_testdrive_action_label(string $status): string
 function vf_testdrive_btn_class(string $status): string
 {
     $map = [
-        'confirmed' => 'btn-outline-success',
+        'confirmed' => 'btn-outline-primary',
         'cancelled' => 'btn-outline-danger',
-        'done' => 'btn-outline-secondary',
+        'done' => 'btn-outline-success',
     ];
     return $map[$status] ?? 'btn-outline-secondary';
 }
 ?>
 
-<style>
-  .vf-admin-tabs {
-    border-bottom: 2px solid #e9ecef;
-    margin-bottom: 1.25rem;
-  }
-  .vf-admin-tabs a {
-    display: inline-block;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: #6c757d;
-    position: relative;
-    text-decoration: none;
-    transition: color 0.25s ease;
-  }
-  .vf-admin-tabs a:hover {
-    color: #495057;
-  }
-  .vf-admin-tabs a.active {
-    color: #4336fb;
-  }
-  .vf-admin-tabs a::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    width: 100%;
-    height: 3px;
-    background: #4336fb;
-    border-radius: 3px 3px 0 0;
-    transform: scaleX(0);
-    transform-origin: center;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .vf-admin-tabs a.active::after {
-    transform: scaleX(1);
-  }
-
-  /* Stat Cards / Filter Boxes */
-  .vf-stat-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-  .vf-stat-card {
-    flex: 1;
-    min-width: 120px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.75rem;
-    padding: 0.75rem 0.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none !important;
-    color: #475569;
-    text-align: center;
-  }
-  .vf-stat-card:hover {
-    background: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    border-color: #4336fb;
-    color: #4336fb;
-  }
-  .vf-stat-card.active {
-    background: #4336fb;
-    border-color: #4336fb;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(67, 54, 251, 0.25);
-  }
-  .vf-stat-card .vf-stat-label {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    margin-bottom: 0.125rem;
-    letter-spacing: 0.025em;
-  }
-  .vf-stat-card .vf-stat-value {
-    font-size: 1.125rem;
-    font-weight: 800;
-  }
-</style>
-
-<div class="row">
-  <div class="col-12">
-    <!-- Srtdash Card Header Style -->
-    <div class="card mb-4 mt-4">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-          <h4 class="header-title mb-0"><i class="ti-email"></i> Quản lý Liên hệ & Lái thử</h4>
-          <span class="badge badge-primary px-3 py-2">VinFast Admin</span>
-        </div>
-
-        <!-- Tab Navigation - Srtdash Style -->
-        <div class="vf-admin-tabs mb-4">
-          <a href="<?= ADMIN_URL ?>contacts?section=contacts" class="<?= $isContacts ? 'active' : '' ?>">
-            <i class="ti-comment-alt mr-2"></i>Tin nhắn khách hàng
-          </a>
-          <a href="<?= ADMIN_URL ?>contacts?section=test-drives" class="<?= $isTestDrives ? 'active' : '' ?>">
-            <i class="ti-car mr-2"></i>Đăng ký lái thử xe
-          </a>
-        </div>
-
-        <!-- Stat Cards Filter Boxes -->
-        <div class="vf-stat-cards">
-          <?php if ($isContacts): ?>
-            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=" class="vf-stat-card <?= $status === '' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Tất cả</span>
-              <span class="vf-stat-value"><?= (int)($counts['all'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=unread" class="vf-stat-card <?= $status === 'unread' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Chưa đọc</span>
-              <span class="vf-stat-value"><?= (int)($counts['unread'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=read" class="vf-stat-card <?= $status === 'read' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Đã đọc</span>
-              <span class="vf-stat-value"><?= (int)($counts['read'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=replied" class="vf-stat-card <?= $status === 'replied' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Đã phản hồi</span>
-              <span class="vf-stat-value"><?= (int)($counts['replied'] ?? 0) ?></span>
-            </a>
-          <?php else: ?>
-            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=" class="vf-stat-card <?= $status === '' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Tất cả</span>
-              <span class="vf-stat-value"><?= (int)($counts['all'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=pending" class="vf-stat-card <?= $status === 'pending' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Chờ duyệt</span>
-              <span class="vf-stat-value"><?= (int)($counts['pending'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=confirmed" class="vf-stat-card <?= $status === 'confirmed' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Xác nhận</span>
-              <span class="vf-stat-value"><?= (int)($counts['confirmed'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=done" class="vf-stat-card <?= $status === 'done' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Hoàn tất</span>
-              <span class="vf-stat-value"><?= (int)($counts['done'] ?? 0) ?></span>
-            </a>
-            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=cancelled" class="vf-stat-card <?= $status === 'cancelled' ? 'active' : '' ?>">
-              <span class="vf-stat-label">Đã hủy</span>
-              <span class="vf-stat-value"><?= (int)($counts['cancelled'] ?? 0) ?></span>
-            </a>
-          <?php endif; ?>
-        </div>
-      </div>
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h4 class="header-title mb-0"><i class="ti-email me-2"></i>Quản lý Liên hệ & Lái thử</h4>
     </div>
-
-    <div class="card">
-      <div class="card-body">
-        <div class="table-responsive">
-          <?php if ($isContacts): ?>
-            <!-- ===== Contacts Table ===== -->
-            <table class="table table-hover align-middle">
-              <thead class="bg-light">
-                <tr>
-                  <th style="width: 140px;"><i class="ti-info-alt"></i> Trạng thái</th>
-                  <th><i class="ti-user"></i> Người gửi</th>
-                  <th><i class="ti-comment"></i> Nội dung</th>
-                  <th style="width: 170px;"><i class="ti-time"></i> Ngày tạo</th>
-                  <th style="width: 170px;"><i class="ti-time"></i> Cập nhật</th>
-                  <th style="width: 260px;" class="text-end">Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($items)): ?>
-                  <tr><td colspan="6" class="text-center text-muted py-5">Chưa có tin nhắn nào.</td></tr>
-                <?php else: ?>
-                  <?php foreach ($items as $m): ?>
-                    <tr>
-                      <td><?= vf_contact_status_badge((string)($m['status'] ?? 'unread')) ?></td>
-                      <td>
-                        <div class="fw-semibold"><?= htmlspecialchars((string)($m['name'] ?? '')) ?></div>
-                        <div class="text-muted small">
-                          <?= htmlspecialchars((string)($m['email'] ?? '')) ?>
-                          <?php if (!empty($m['phone'])): ?>
-                            · <?= htmlspecialchars((string)$m['phone']) ?>
-                          <?php endif; ?>
-                        </div>
-                      </td>
-                      <td>
-                        <?php
-                          $msg = (string)($m['message'] ?? '');
-                          $excerpt = mb_strlen($msg) > 120 ? mb_substr($msg, 0, 120) . '…' : $msg;
-                        ?>
-                        <div class="text-muted"><?= htmlspecialchars($excerpt) ?></div>
-                      </td>
-                      <td class="text-muted small">
-                        <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
-                      </td>
-                      <td class="text-muted small">
-                        <?= htmlspecialchars((string)($m['updated_at'] ?? '')) ?>
-                      </td>
-                      <td class="text-end">
-                        <div class="d-flex justify-content-end gap-1">
-                          <form action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
-                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                            <input type="hidden" name="status" value="read">
-                            <button class="btn btn-sm btn-outline-secondary" type="submit" title="Mark as read">
-                              <i class="fa-regular fa-eye"></i>
-                            </button>
-                          </form>
-
-                          <form action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
-                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                            <input type="hidden" name="status" value="replied">
-                            <button class="btn btn-sm btn-outline-success" type="submit" title="Mark as replied">
-                              <i class="fa-solid fa-reply"></i>
-                            </button>
-                          </form>
-
-                          <form action="<?= ADMIN_URL ?>contacts/delete/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Delete this message?');">
-                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
-                              <i class="fa-solid fa-trash"></i>
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </tbody>
-            </table>
-
-          <?php else: ?>
-            <!-- ===== Test Drives Table ===== -->
-            <table class="table table-hover align-middle">
-              <thead class="bg-light">
-                <tr>
-                  <th style="width: 120px;"><i class="ti-info-alt"></i> Trạng thái</th>
-                  <th><i class="ti-user"></i> Người đăng ký</th>
-                  <th><i class="ti-car"></i> Phương tiện</th>
-                  <th><i class="ti-location-pin"></i> Địa điểm</th>
-                  <th style="width: 120px;"><i class="ti-calendar"></i> Ngày hẹn</th>
-                  <th style="width: 170px;"><i class="ti-time"></i> Ngày tạo</th>
-                  <th style="width: 170px;"><i class="ti-time"></i> Cập nhật</th>
-                  <th style="width: 300px;" class="text-end">Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($items)): ?>
-                  <tr><td colspan="8" class="text-center text-muted py-5">Chưa có đăng ký lái thử nào.</td></tr>
-                <?php else: ?>
-                  <?php foreach ($items as $m): ?>
-                    <tr>
-                      <td><?= vf_testdrive_status_badge((string)($m['status'] ?? 'pending')) ?></td>
-                      <td>
-                        <div class="fw-semibold"><?= htmlspecialchars((string)($m['name'] ?? '')) ?></div>
-                        <div class="text-muted small">
-                          <?= htmlspecialchars((string)($m['email'] ?? '')) ?>
-                          <?php if (!empty($m['phone'])): ?>
-                            · <?= htmlspecialchars((string)$m['phone']) ?>
-                          <?php endif; ?>
-                        </div>
-                      </td>
-                      <td>
-                        <?= htmlspecialchars((string)($m['product_name'] ?? '—')) ?>
-                      </td>
-                      <td class="small">
-                        <div class="text-muted"><?= htmlspecialchars((string)($m['province'] ?? '')) ?></div>
-                        <div class="text-dark"><?= htmlspecialchars((string)($m['showroom'] ?? '')) ?></div>
-                      </td>
-                      <td class="small text-muted">
-                        <?= htmlspecialchars((string)($m['preferred_date'] ?? '—')) ?>
-                      </td>
-                      <td class="text-muted small">
-                        <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
-                      </td>
-                      <td class="text-muted small">
-                        <?= htmlspecialchars((string)($m['updated_at'] ?? '')) ?>
-                      </td>
-                      <td class="text-end">
-                        <div class="d-flex justify-content-end gap-1">
-                          <?php
-                            $currentStatus = strtolower(trim((string)($m['status'] ?? 'pending')));
-                            $nextStatuses = vf_testdrive_status_next($currentStatus);
-                          ?>
-                          <?php foreach ($nextStatuses as $ns): ?>
-                            <form action="<?= ADMIN_URL ?>contacts/setTestDriveStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
-                              <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                              <input type="hidden" name="status" value="<?= htmlspecialchars($ns) ?>">
-                              <button class="btn btn-sm <?= vf_testdrive_btn_class($ns) ?>" type="submit">
-                                <?= htmlspecialchars(vf_testdrive_action_label($ns)) ?>
-                              </button>
-                            </form>
-                          <?php endforeach; ?>
-
-                          <form action="<?= ADMIN_URL ?>contacts/deleteTestDrive/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Delete this registration?');">
-                            <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
-                              <i class="fa-solid fa-trash"></i>
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          <?php endif; ?>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        <div class="btn-group" role="group">
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts" class="btn <?= $isContacts ? 'btn-primary' : 'btn-outline-primary' ?>">Tin nhắn</a>
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives" class="btn <?= $isTestDrives ? 'btn-primary' : 'btn-outline-primary' ?>">Lái thử xe</a>
         </div>
-
-        <!-- Pagination -->
-        <?php if (!empty($pg) && ($pg->pages ?? 1) > 1): ?>
-          <nav aria-label="Pagination">
-            <ul class="pagination justify-content-center mb-0">
-              <li class="page-item <?= $pg->hasPrev() ? '' : 'disabled' ?>">
-                <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= max(1, $pg->current - 1) ?>?section=<?= htmlspecialchars($section) ?>&status=<?= htmlspecialchars($status) ?>">Prev</a>
-              </li>
-              <?php for ($i = 1; $i <= (int)$pg->pages; $i++): ?>
-                <li class="page-item <?= $i === (int)$pg->current ? 'active' : '' ?>">
-                  <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= $i ?>?section=<?= htmlspecialchars($section) ?>&status=<?= htmlspecialchars($status) ?>"><?= $i ?></a>
-                </li>
-              <?php endfor; ?>
-              <li class="page-item <?= $pg->hasNext() ? '' : 'disabled' ?>">
-                <a class="page-link" href="<?= ADMIN_URL ?>contacts/index/<?= min((int)$pg->pages, $pg->current + 1) ?>?section=<?= htmlspecialchars($section) ?>&status=<?= htmlspecialchars($status) ?>">Next</a>
-              </li>
-            </ul>
-          </nav>
-        <?php endif; ?>
-      </div>
     </div>
-  </div>
 </div>
 
+<div class="row g-3 mb-4">
+    <?php if ($isContacts): ?>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#1464f4,#3b7cf8)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Tất cả</div>
+                        <div class="h4 mb-0"><?= (int)($counts['all'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=unread" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Chưa đọc</div>
+                        <div class="h4 mb-0"><?= (int)($counts['unread'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=read" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#6b7280,#4b5563)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Đã đọc</div>
+                        <div class="h4 mb-0"><?= (int)($counts['read'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=contacts&status=replied" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#10b981,#059669)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Đã phản hồi</div>
+                        <div class="h4 mb-0"><?= (int)($counts['replied'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    <?php else: ?>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#1464f4,#3b7cf8)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Tất cả</div>
+                        <div class="h4 mb-0"><?= (int)($counts['all'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=pending" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Chờ duyệt</div>
+                        <div class="h4 mb-0"><?= (int)($counts['pending'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=confirmed" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#10b981,#059669)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Xác nhận</div>
+                        <div class="h4 mb-0"><?= (int)($counts['confirmed'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-xl-3">
+            <a href="<?= ADMIN_URL ?>contacts?section=test-drives&status=cancelled" class="text-decoration-none">
+                <div class="card border-0 text-white" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+                    <div class="card-body py-3">
+                        <div class="small opacity-75">Đã hủy</div>
+                        <div class="h4 mb-0"><?= (int)($counts['cancelled'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    <?php endif; ?>
+</div>
+
+<div class="card">
+    <div class="card-body border-bottom pb-3">
+        <form method="GET" action="<?= ADMIN_URL ?>contacts" class="row g-2 align-items-end mb-2">
+            <input type="hidden" name="section" value="<?= htmlspecialchars($section) ?>">
+            <div class="col-md-4">
+                <label class="form-label">Trạng thái</label>
+                <select name="status" class="form-select">
+                    <option value="" <?= $status === '' ? 'selected' : '' ?>>Tất cả trạng thái</option>
+                    <?php if ($isContacts): ?>
+                        <option value="unread" <?= $status === 'unread' ? 'selected' : '' ?>>Chưa đọc</option>
+                        <option value="read" <?= $status === 'read' ? 'selected' : '' ?>>Đã đọc</option>
+                        <option value="replied" <?= $status === 'replied' ? 'selected' : '' ?>>Đã phản hồi</option>
+                    <?php else: ?>
+                        <option value="pending" <?= $status === 'pending' ? 'selected' : '' ?>>Chờ duyệt</option>
+                        <option value="confirmed" <?= $status === 'confirmed' ? 'selected' : '' ?>>Xác nhận</option>
+                        <option value="done" <?= $status === 'done' ? 'selected' : '' ?>>Hoàn tất</option>
+                        <option value="cancelled" <?= $status === 'cancelled' ? 'selected' : '' ?>>Đã hủy</option>
+                    <?php endif; ?>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <button class="btn btn-primary w-100 btn-sm" type="submit">
+                    <i class="fa-solid fa-filter me-1"></i>Lọc
+                </button>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="<?= ADMIN_URL ?>contacts?section=<?= htmlspecialchars($section) ?>" class="btn btn-outline-secondary w-100 btn-sm">
+                    <i class="fa-solid fa-rotate-left me-1"></i>Đặt lại
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <?php if ($isContacts): ?>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase">
+                        <tr>
+                            <th scope="col" style="width: 140px;">Trạng thái</th>
+                            <th scope="col">Người gửi</th>
+                            <th scope="col">Nội dung</th>
+                            <th scope="col" style="width: 170px;">Ngày tạo</th>
+                            <th scope="col" style="width: 150px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($items)): ?>
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fa-solid fa-inbox" style="font-size:3em;opacity:0.3"></i>
+                                        <p class="mt-3">Chưa có tin nhắn nào.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($items as $m): ?>
+                                <tr>
+                                    <td><?= vf_contact_status_badge((string)($m['status'] ?? 'unread')) ?></td>
+                                    <td>
+                                        <div class="fw-semibold"><?= htmlspecialchars((string)($m['name'] ?? '')) ?></div>
+                                        <div class="text-muted small">
+                                            <?= htmlspecialchars((string)($m['email'] ?? '')) ?>
+                                            <?php if (!empty($m['phone'])): ?>
+                                                · <?= htmlspecialchars((string)$m['phone']) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <?php
+                                            $msg = (string)($m['message'] ?? '');
+                                            $excerpt = mb_strlen($msg) > 120 ? mb_substr($msg, 0, 120) . '…' : $msg;
+                                        ?>
+                                        <div class="text-muted small"><?= htmlspecialchars($excerpt) ?></div>
+                                    </td>
+                                    <td class="text-muted small">
+                                        <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-start gap-2">
+                                            <form action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
+                                                <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                                                <input type="hidden" name="status" value="read">
+                                                <button class="btn btn-link text-secondary p-0" type="submit" title="Đánh dấu đã đọc">
+                                                    <i class="fa-regular fa-eye"></i>
+                                                </button>
+                                            </form>
+                                            <form action="<?= ADMIN_URL ?>contacts/setStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
+                                                <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                                                <input type="hidden" name="status" value="replied">
+                                                <button class="btn btn-link text-success p-0" type="submit" title="Đánh dấu đã phản hồi">
+                                                    <i class="fa-solid fa-reply"></i>
+                                                </button>
+                                            </form>
+                                            <form action="<?= ADMIN_URL ?>contacts/delete/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xoá tin nhắn này?');">
+                                                <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                                                <button class="btn btn-link text-danger p-0" type="submit" title="Xóa">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase">
+                        <tr>
+                            <th scope="col" style="width: 140px;">Trạng thái</th>
+                            <th scope="col">Người đăng ký</th>
+                            <th scope="col">Phương tiện</th>
+                            <th scope="col">Địa điểm & Ngày hẹn</th>
+                            <th scope="col" style="width: 170px;">Ngày tạo</th>
+                            <th scope="col" style="width: 200px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($items)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fa-solid fa-inbox" style="font-size:3em;opacity:0.3"></i>
+                                        <p class="mt-3">Chưa có đăng ký lái thử nào.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($items as $m): ?>
+                                <tr>
+                                    <td><?= vf_testdrive_status_badge((string)($m['status'] ?? 'pending')) ?></td>
+                                    <td>
+                                        <div class="fw-semibold"><?= htmlspecialchars((string)($m['name'] ?? '')) ?></div>
+                                        <div class="text-muted small">
+                                            <?= htmlspecialchars((string)($m['email'] ?? '')) ?>
+                                            <?php if (!empty($m['phone'])): ?>
+                                                · <?= htmlspecialchars((string)$m['phone']) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge text-black badge-primary"><?= htmlspecialchars((string)($m['product_name'] ?? '—')) ?></span>
+                                    </td>
+                                    <td class="small">
+                                        <div class="text-dark fw-semibold"><?= htmlspecialchars((string)($m['showroom'] ?? '')) ?></div>
+                                        <div class="text-muted mb-1"><?= htmlspecialchars((string)($m['province'] ?? '')) ?></div>
+                                        <div class="text-primary"><i class="fa-regular fa-calendar me-1"></i><?= htmlspecialchars((string)($m['preferred_date'] ?? '—')) ?></div>
+                                    </td>
+                                    <td class="text-muted small">
+                                        <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-start gap-1 flex-wrap">
+                                            <?php
+                                                $currentStatus = strtolower(trim((string)($m['status'] ?? 'pending')));
+                                                $nextStatuses = vf_testdrive_status_next($currentStatus);
+                                            ?>
+                                            <?php foreach ($nextStatuses as $ns): ?>
+                                                <form action="<?= ADMIN_URL ?>contacts/setTestDriveStatus/<?= (int)($m['id'] ?? 0) ?>" method="post">
+                                                    <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                                                    <input type="hidden" name="status" value="<?= htmlspecialchars($ns) ?>">
+                                                    <button class="btn btn-sm <?= vf_testdrive_btn_class($ns) ?> py-0 px-2" style="font-size: 11px;" type="submit">
+                                                        <?= htmlspecialchars(vf_testdrive_action_label($ns)) ?>
+                                                    </button>
+                                                </form>
+                                            <?php endforeach; ?>
+                                            <form action="<?= ADMIN_URL ?>contacts/deleteTestDrive/<?= (int)($m['id'] ?? 0) ?>" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xoá đăng ký này?');">
+                                                <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                                                <button class="btn btn-link text-danger p-0 ms-2" type="submit" title="Xóa">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+        
+        <?php
+        $itemName = $isContacts ? 'tin nhắn' : 'lượt đăng ký';
+        if (!empty($pg) && ($pg->pages ?? 1) > 1) {
+            include ROOT . '/app/views/admin/partials/pagination.php';
+        }
+        ?>
+    </div>
+</div>
