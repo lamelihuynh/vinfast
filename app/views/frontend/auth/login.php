@@ -21,6 +21,7 @@
  */
 ?>
 <?php $old = is_array($old ?? null) ? $old : []; ?>
+<?php $loginErrors = is_array($loginErrors ?? null) ? $loginErrors : []; ?>
 <section class="min-h-screen flex">
   <div class="hidden lg:flex w-[42%] flex-col justify-between p-12 relative overflow-hidden bg-gradient-to-br from-slate-900 via-[#233060] to-slate-900">
     <div class="absolute w-[420px] h-[420px] rounded-full bg-yellow-500/15 -top-24 -right-20"></div>
@@ -56,32 +57,49 @@
       <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Đăng nhập</h1>
       <p class="text-sm text-slate-500 mb-6">Chưa có tài khoản? <a href="<?= BASE_URL ?>auth/register" class="text-blue-600 font-semibold hover:underline">Đăng ký ngay</a></p>
 
-      <form method="POST" action="<?= BASE_URL ?>auth/login" class="needs-validation space-y-4" novalidate>
+      <form method="POST" action="<?= BASE_URL ?>auth/login" class="vf-login-form needs-validation space-y-4" novalidate>
         <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
 
         <div>
           <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
           <input
             type="email"
-            class="form-control !rounded-xl !border-slate-200 !py-3 !px-4"
+            class="form-control !rounded-xl !border-slate-200 !py-3 !px-4<?= isset($loginErrors['email']) ? ' is-invalid' : '' ?>"
             id="email"
             name="email"
             value="<?= htmlspecialchars((string)($old['email'] ?? '')) ?>"
             placeholder="ten@example.com"
             required>
-          <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+          <div class="invalid-feedback"><?= htmlspecialchars((string)($loginErrors['email'] ?? 'Vui lòng nhập email hợp lệ.')) ?></div>
         </div>
 
         <div>
           <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu <span class="text-red-500">*</span></label>
-          <input
-            type="password"
-            class="form-control !rounded-xl !border-slate-200 !py-3 !px-4"
-            id="password"
-            name="password"
-            placeholder="••••••••"
-            required>
-          <div class="invalid-feedback">Mật khẩu là bắt buộc.</div>
+          <div class="relative">
+            <input
+              type="password"
+              class="form-control !rounded-xl !border-slate-200 !py-3 !px-4 !pr-11<?= isset($loginErrors['password']) ? ' is-invalid' : '' ?>"
+              id="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              required>
+            <button
+              type="button"
+              class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              data-target="password"
+              aria-label="Hiện mật khẩu"
+              aria-pressed="false">
+              <svg class="eye-open w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg class="eye-closed w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.58 10.58A3 3 0 0 0 13.42 13.42M9.88 5.08A10.5 10.5 0 0 1 12 4.88c6 0 9.75 7.12 9.75 7.12a18.41 18.41 0 0 1-3.64 4.58M6.34 6.34A18.65 18.65 0 0 0 2.25 12s3.75 6.75 9.75 6.75a10.7 10.7 0 0 0 4.12-.8" />
+              </svg>
+            </button>
+          </div>
+          <div class="invalid-feedback"><?= htmlspecialchars((string)($loginErrors['password'] ?? 'Mật khẩu là bắt buộc.')) ?></div>
         </div>
 
         <div class="flex items-center justify-between">

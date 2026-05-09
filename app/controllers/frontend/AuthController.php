@@ -32,6 +32,7 @@ class AuthController
         SEO::set('Login');
         View::render('frontend/auth/login', [
             'old' => $this->pullOld(),
+            'loginErrors' => $this->pullLoginErrors(),
         ], 'auth');
     }
 
@@ -56,7 +57,6 @@ class AuthController
     {
         Auth::logout();
         session_start();
-        $_SESSION['flash'] = 'Ban da dang xuat thanh cong.';
         header('Location: ' . BASE_URL . 'auth/login');
         exit;
     }
@@ -74,7 +74,7 @@ class AuthController
             ->required('password');
 
         if ($v->fails()) {
-            $_SESSION['errors'] = $v->errors();
+            $_SESSION['login_errors'] = $v->errors();
             $_SESSION['old'] = ['email' => $email];
             header('Location: ' . BASE_URL . 'auth/login');
             exit;
@@ -82,14 +82,14 @@ class AuthController
 
         $user = $this->user->findByEmail($email);
         if (!$user || !password_verify($password, (string)$user['password'])) {
-            $_SESSION['errors'] = ['Email hoặc mật khẩu không đúng.'];
+            $_SESSION['login_errors'] = ['password' => 'Email hoặc mật khẩu không đúng.'];
             $_SESSION['old'] = ['email' => $email];
             header('Location: ' . BASE_URL . 'auth/login');
             exit;
         }
 
         if ((int)($user['is_locked'] ?? 0) === 1) {
-            $_SESSION['errors'] = ['Tài khoản cua bạn da bi khoa.'];
+            $_SESSION['login_errors'] = ['password' => 'Tài khoản của bạn đã bị khóa.'];
             header('Location: ' . BASE_URL . 'auth/login');
             exit;
         }
@@ -171,5 +171,12 @@ class AuthController
         $old = is_array($_SESSION['old'] ?? null) ? $_SESSION['old'] : [];
         unset($_SESSION['old']);
         return $old;
+    }
+
+    private function pullLoginErrors(): array
+    {
+        $errors = is_array($_SESSION['login_errors'] ?? null) ? $_SESSION['login_errors'] : [];
+        unset($_SESSION['login_errors']);
+        return $errors;
     }
 }

@@ -119,7 +119,7 @@
               <li id="special" class="text-slate-400 transition-colors duration-200"><span>Ít nhất 1 số</span></li>
             </ul>
           </div>
-          <div class="invalid-feedback">Mật khẩu tối thiểu 8 ký tự.</div>
+          <div class="invalid-feedback">Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và ít nhất 1 chữ số.</div>
         </div>
 
         <div>

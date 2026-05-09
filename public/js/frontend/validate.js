@@ -18,48 +18,67 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Password confirmation
-  const pw = document.getElementById("password");
-  const cp = document.getElementById("confirm_password");
-  const character = document.getElementById("character");
-  const uppercase = document.getElementById("uppercase");
-  const special = document.getElementById("special");
-
   const setRuleState = (el, isValid) => {
     if (!el) return;
     el.classList.toggle("is-valid", isValid);
   };
 
-  const validatePasswordRules = () => {
-    if (!pw) return;
+  document.querySelectorAll("form.needs-validation").forEach(form => {
+    const passwordInput = form.querySelector("#password, #new_password");
+    const confirmInput = form.querySelector("#confirm_password");
+    const currentInput = form.querySelector("#current");
+    const character = form.querySelector("#character");
+    const uppercase = form.querySelector("#uppercase");
+    const special = form.querySelector("#special");
 
-    const val = pw.value;
-    const isLengthValid = val.length >= 8;
-    const hasUpperAndLower = /[A-Z]/.test(val) && /[a-z]/.test(val);
-    const hasNumber = /\d/.test(val);
-
-    setRuleState(character, isLengthValid);
-    setRuleState(uppercase, hasUpperAndLower);
-    setRuleState(special, hasNumber);
-
-    // Keep browser validation consistent with visual checklist.
-    pw.setCustomValidity(isLengthValid && hasUpperAndLower && hasNumber ? "" : "Mật khẩu chưa đủ điều kiện.");
-
-    if (cp) {
-      cp.setCustomValidity(cp.value !== pw.value ? "Passwords do not match." : "");
+    const shouldValidateStrength = Boolean(confirmInput) || (passwordInput && passwordInput.id === "new_password");
+    if (!passwordInput || !shouldValidateStrength) {
+      return;
     }
-  };
 
-  if (pw) {
-    pw.addEventListener("input", validatePasswordRules);
+    const validatePasswordRules = () => {
+      const val = passwordInput.value;
+      if (val === "") {
+        passwordInput.setCustomValidity("");
+        if (confirmInput) {
+          confirmInput.setCustomValidity("");
+        }
+        setRuleState(character, false);
+        setRuleState(uppercase, false);
+        setRuleState(special, false);
+        return;
+      }
+
+      const isLengthValid = val.length >= 8;
+      const hasUpperAndLower = /[A-Z]/.test(val) && /[a-z]/.test(val);
+      const hasNumber = /\d/.test(val);
+      const sameAsCurrent = Boolean(currentInput && currentInput.value && currentInput.value === val);
+
+      setRuleState(character, isLengthValid);
+      setRuleState(uppercase, hasUpperAndLower);
+      setRuleState(special, hasNumber);
+
+      // Keep browser validation consistent with the visible checklist.
+      passwordInput.setCustomValidity(
+        isLengthValid && hasUpperAndLower && hasNumber && !sameAsCurrent
+          ? ""
+          : (sameAsCurrent ? "Mật khẩu mới không được giống mật khẩu hiện tại." : "Mật khẩu chưa đủ điều kiện.")
+      );
+
+      if (confirmInput) {
+        confirmInput.setCustomValidity(confirmInput.value !== passwordInput.value ? "Passwords do not match." : "");
+      }
+    };
+
+    passwordInput.addEventListener("input", validatePasswordRules);
     validatePasswordRules();
-  }
 
-  if (pw && cp) {
-    cp.addEventListener("input", () => {
-      cp.setCustomValidity(cp.value !== pw.value ? "Passwords do not match." : "");
-    });
-  }
+    if (confirmInput) {
+      confirmInput.addEventListener("input", () => {
+        confirmInput.setCustomValidity(confirmInput.value !== passwordInput.value ? "Passwords do not match." : "");
+      });
+    }
+  });
 
   // Show/hide password controls
   document.querySelectorAll(".toggle-password").forEach(btn => {

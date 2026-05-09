@@ -62,7 +62,25 @@ class Auth
     }
     public static function avatar(): string
     {
-        return $_SESSION['uavatar'] ?? '';
+        $avatar = (string)($_SESSION['uavatar'] ?? '');
+        if ($avatar !== '') {
+            return $avatar;
+        }
+
+        $uid = self::id();
+        if (empty($uid)) {
+            return '';
+        }
+
+        $user = (new User())->findById((int)$uid);
+        if (!$user || empty($user['avatar'])) {
+            return '';
+        }
+
+        $avatar = (string)$user['avatar'];
+        $_SESSION['uavatar'] = $avatar;
+
+        return $avatar;
     }
 
     public static function requireLogin(): void

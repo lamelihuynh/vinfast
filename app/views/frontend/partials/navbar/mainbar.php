@@ -5,6 +5,8 @@
       <img src="<?= htmlspecialchars($navLogo) ?>" alt="VinFast" class="h-9 w-auto">
     </a>
 
+    <?php $avatarUrl = Auth::avatar() !== '' ? BASE_URL . ltrim((string)Auth::avatar(), '/') : ''; ?>
+
     <form action="<?= BASE_URL ?>products" method="get" class="hidden md:flex flex-1 max-w-xl mx-auto border border-slate-200 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-vfNavy/20 focus-within:border-vfNavy transition">
       <input type="text" name="q" placeholder="Tìm kiếm xe, dịch vụ..." class="w-full px-4 py-2 text-[13px] text-slate-700 outline-none">
       <button type="submit" class="px-4 bg-[#0B233F] text-white hover:bg-[#0a1f35] transition flex items-center justify-center"><i class="fa-solid fa-magnifying-glass text-[14px]"></i></button>
@@ -14,34 +16,32 @@
       <?php if ($isLoggedIn): ?>
         <div class="relative" id="vfUserMenu">
           <button type="button" id="vfUserTrigger" aria-expanded="false" class="inline-flex items-center gap-2 text-slate-700 hover:text-vfNavy text-sm">
-              <?php if (Auth::avatar() !== ''): ?>
-                  <img src="<?= BASE_URL . htmlspecialchars(Auth::avatar()) ?>" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-slate-200">
-              <?php else: ?>
-                  <span class="w-8 h-8 rounded-full bg-gradient-to-br from-vfNavy to-blue-500 text-white text-[11px] font-bold inline-flex items-center justify-center">
-                      <?= htmlspecialchars($initials !== '' ? $initials : 'U') ?>
-                  </span>
-              <?php endif; ?>
-              <span class="hidden md:inline"><?= htmlspecialchars(Auth::name()) ?></span>
-              <i class="fa-solid fa-chevron-down text-[11px]"></i>
+            <?php if ($avatarUrl !== ''): ?>
+              <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-slate-200">
+            <?php else: ?>
+              <span class="w-8 h-8 rounded-full bg-gradient-to-br from-vfNavy to-blue-500 text-white text-[11px] font-bold inline-flex items-center justify-center">
+                <?= htmlspecialchars($initials !== '' ? $initials : 'U') ?>
+              </span>
+            <?php endif; ?>
+            <span class="hidden md:inline"><?= htmlspecialchars(Auth::name()) ?></span>
+            <i class="fa-solid fa-chevron-down text-[11px]"></i>
           </button>
           <div id="vfUserDropdown" class="hidden absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-xl p-1">
             <div class="flex items-center gap-2 px-2 py-2 border-b border-slate-100 mb-1">
-                <?php if (Auth::avatar() !== ''): ?>
-                    <img src="<?= BASE_URL . htmlspecialchars(Auth::avatar()) ?>" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-slate-200">
-                <?php else: ?>
-                    <span class="w-8 h-8 rounded-full bg-gradient-to-br from-vfNavy to-blue-500 text-white text-[11px] font-bold inline-flex items-center justify-center">
-                        <?= htmlspecialchars($initials !== '' ? $initials : 'U') ?>
-                    </span>
-                <?php endif; ?>
-                <div class="min-w-0">
-                    <p class="text-[13px] text-slate-900 font-semibold truncate"><?= htmlspecialchars(Auth::name()) ?></p>
-                    <p class="text-[11px] text-slate-400">Thành viên VinFast</p>
-                </div>
+              <?php if ($avatarUrl !== ''): ?>
+                <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-slate-200">
+              <?php else: ?>
+                <span class="w-8 h-8 rounded-full bg-gradient-to-br from-vfNavy to-blue-500 text-white text-[11px] font-bold inline-flex items-center justify-center">
+                  <?= htmlspecialchars($initials !== '' ? $initials : 'U') ?>
+                </span>
+              <?php endif; ?>
+              <div class="min-w-0">
+                <p class="text-[13px] text-slate-900 font-semibold truncate"><?= htmlspecialchars(Auth::name()) ?></p>
+                <p class="text-[11px] text-slate-400">Thành viên VinFast</p>
+              </div>
             </div>
             <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>user/profile"><i class="fa-regular fa-user w-4"></i>Thông tin tài khoản</a>
             <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>user/orders"><i class="fa-regular fa-clock w-4"></i>Lịch sử đơn hàng</a>
-            <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>contact"><i class="fa-solid fa-screwdriver-wrench w-4"></i>Bảo dưỡng - Sửa chữa</a>
-            <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>products"><i class="fa-solid fa-car w-4"></i>Xe của tôi</a>
             <?php if (Auth::isAdmin()): ?>
               <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= ADMIN_URL ?>dashboard"><i class="fa-solid fa-shield-halved w-4"></i>Quản trị viên</a>
             <?php endif; ?>
@@ -58,5 +58,5 @@
         <i class="fa-solid fa-bars"></i>
       </button>
     </div>
-  </div>  
+  </div>
 </div>

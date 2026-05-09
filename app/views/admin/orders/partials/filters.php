@@ -20,7 +20,7 @@ $q = trim((string)($q ?? ''));
             placeholder="Tìm theo khách hàng, email, tên xe hoặc mã đơn"
             value="<?= htmlspecialchars($q) ?>">
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <select name="status" class="form-select">
             <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>Tất cả trạng thái</option>
             <option value="pending" <?= $status === 'pending' ? 'selected' : '' ?>>Chờ xử lý</option>
@@ -29,7 +29,7 @@ $q = trim((string)($q ?? ''));
             <option value="cancelled" <?= $status === 'cancelled' ? 'selected' : '' ?>>Đã hủy</option>
         </select>
     </div>
-    <div class="col-md-3 d-grid">
+    <div class="col-md-2 d-grid">
         <button type="submit" class="btn btn-primary">Lọc đơn</button>
     </div>
 </form>

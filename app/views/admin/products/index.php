@@ -26,15 +26,18 @@ $products = is_array($products ?? null) ? $products : [];
 $cats = is_array($cats ?? null) ? $cats : [];
 $summary = is_array($summary ?? null) ? $summary : [];
 $productsForModal = is_array($productsForModal ?? null) ? $productsForModal : [];
+$price_min = (string)($price_min ?? '');
+$price_max = (string)($price_max ?? '');
+$sort = (string)($sort ?? 'default');
 ?>
 <?php include ROOT . '/app/views/admin/products/partials/stats.php'; ?>
 
 <div class="card">
     <?php include ROOT . '/app/views/admin/products/partials/filters.php'; ?>
     <?php include ROOT . '/app/views/admin/products/partials/table.php'; ?>
-    <?php 
+    <?php
     $itemName = 'sản phẩm';
-    include ROOT . '/app/views/admin/partials/pagination.php'; 
+    include ROOT . '/app/views/admin/partials/pagination.php';
     ?>
 </div>
 <?php include ROOT . '/app/views/admin/products/partials/modal.php'; ?>

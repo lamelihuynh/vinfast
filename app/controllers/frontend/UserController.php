@@ -77,6 +77,12 @@ class UserController
             'avatar' => $avatar,
         ]);
 
+        $updatedUser = $this->user->findById(Auth::id());
+        if (is_array($updatedUser)) {
+            $_SESSION['uname'] = (string)($updatedUser['name'] ?? $_SESSION['uname'] ?? '');
+            $_SESSION['uavatar'] = (string)($updatedUser['avatar'] ?? $_SESSION['uavatar'] ?? '');
+        }
+
         $_SESSION['flash'] = 'Cập nhật hồ sơ thành công.';
         header('Location: ' . BASE_URL . 'user/profile');
         exit;
@@ -85,18 +91,36 @@ class UserController
     public function changePassword(): void
     {
         Auth::verifyCsrf();
-        $v = (new Validator($_POST))->required('current')->minLen('new_password', 8);
+        $v = (new Validator($_POST))
+            ->required('current')
+            ->required('new_password')
+            ->minLen('new_password', 8);
         if ($v->fails()) {
             $_SESSION['errors'] = $v->errors();
             header('Location: ' . BASE_URL . 'user/profile');
             exit;
         }
+
+        $newPassword = (string)($_POST['new_password'] ?? '');
+        if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/\d/', $newPassword)) {
+            $_SESSION['errors'] = ['new_password' => 'Mật khẩu phải có chữ hoa, chữ thường và ít nhất 1 chữ số.'];
+            header('Location: ' . BASE_URL . 'user/profile');
+            exit;
+        }
+
         $u = $this->user->findById(Auth::id());
         if (!password_verify($_POST['current'], $u['password'])) {
             $_SESSION['errors'] = ['current' => 'Mật khẩu hiện tại không chính xác.'];
             header('Location: ' . BASE_URL . 'user/profile');
             exit;
         }
+
+        if (password_verify($newPassword, (string)$u['password'])) {
+            $_SESSION['errors'] = ['new_password' => 'Mật khẩu mới không được giống mật khẩu hiện tại.'];
+            header('Location: ' . BASE_URL . 'user/profile');
+            exit;
+        }
+
         $this->user->changePassword(Auth::id(), $_POST['new_password']);
         $_SESSION['flash'] = 'Đổi mật khẩu thành công.';
         header('Location: ' . BASE_URL . 'user/profile');

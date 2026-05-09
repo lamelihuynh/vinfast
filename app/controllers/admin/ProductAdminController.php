@@ -19,6 +19,11 @@ class ProductAdminController
         $q = trim((string)($_GET['q'] ?? ''));
         $cat = (int)($_GET['cat'] ?? 0);
         $status = trim((string)($_GET['status'] ?? 'all'));
+        $priceMinRaw = trim((string)($_GET['price_min'] ?? ''));
+        $priceMaxRaw = trim((string)($_GET['price_max'] ?? ''));
+        $price_min = $priceMinRaw === '' ? null : (float)str_replace([',', ' '], '', $priceMinRaw);
+        $price_max = $priceMaxRaw === '' ? null : (float)str_replace([',', ' '], '', $priceMaxRaw);
+        $sort = trim((string)($_GET['sort'] ?? 'default'));
         $allowedStatus = ['all', 'active', 'inactive'];
         if (!in_array($status, $allowedStatus, true)) {
             $status = 'all';
@@ -30,12 +35,17 @@ class ProductAdminController
             'search' => $q,
             'category_id' => $cat > 0 ? $cat : null,
             'status' => $status,
+            'price_min' => $price_min,
+            'price_max' => $price_max,
+            'sort' => $sort,
         ];
 
         $summaryFilters = [
             'search' => $q,
             'category_id' => $cat > 0 ? $cat : null,
             'status' => 'all',
+            'price_min' => $price_min,
+            'price_max' => $price_max,
         ];
         $summary = [
             'total' => Product::countAdminList($summaryFilters),
@@ -54,6 +64,9 @@ class ProductAdminController
             'q' => $q !== '' ? $q : null,
             'cat' => $cat > 0 ? $cat : null,
             'status' => $status !== 'all' ? $status : null,
+            'price_min' => $priceMinRaw !== '' ? $priceMinRaw : null,
+            'price_max' => $priceMaxRaw !== '' ? $priceMaxRaw : null,
+            'sort' => $sort !== 'default' ? $sort : null,
         ], static function ($value): bool {
             return $value !== null;
         });
@@ -68,6 +81,9 @@ class ProductAdminController
             'q' => $q,
             'cat' => $cat,
             'status' => $status,
+            'price_min' => $priceMinRaw,
+            'price_max' => $priceMaxRaw,
+            'sort' => $sort,
             'summary' => $summary,
             'pg' => $pg,
             'pageUrl' => $pageUrl,

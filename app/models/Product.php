@@ -81,6 +81,21 @@ class Product
             $where[] = 'p.is_active = 0';
         }
 
+        // Price range filter for admin list
+        if (isset($filters['price_min']) && $filters['price_min'] !== null && $filters['price_min'] !== '') {
+            if (is_numeric($filters['price_min'])) {
+                $where[] = 'p.price >= :price_min';
+                $params[':price_min'] = (float)$filters['price_min'];
+            }
+        }
+
+        if (isset($filters['price_max']) && $filters['price_max'] !== null && $filters['price_max'] !== '') {
+            if (is_numeric($filters['price_max'])) {
+                $where[] = 'p.price <= :price_max';
+                $params[':price_max'] = (float)$filters['price_max'];
+            }
+        }
+
         return [implode(' AND ', $where), $params];
     }
 
@@ -356,11 +371,23 @@ class Product
 
         [$whereSql, $params] = self::buildAdminFilters($filters);
 
+        $orderBy = 'p.created_at DESC';
+        $sort = $filters['sort'] ?? '';
+        if ($sort === 'price_asc') {
+            $orderBy = 'p.price ASC';
+        } elseif ($sort === 'price_desc') {
+            $orderBy = 'p.price DESC';
+        } elseif ($sort === 'name_asc') {
+            $orderBy = 'p.name ASC';
+        } elseif ($sort === 'name_desc') {
+            $orderBy = 'p.name DESC';
+        }
+
         $sql = "SELECT p.*, c.name AS category_name
                 FROM products p
                 JOIN categories c ON c.id = p.category_id
                 WHERE {$whereSql}
-                ORDER BY p.created_at DESC
+                ORDER BY {$orderBy}
                 LIMIT :limit OFFSET :offset";
 
         $stmt = $pdo->prepare($sql);

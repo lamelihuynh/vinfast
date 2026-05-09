@@ -93,3 +93,10 @@ a:hover      { color: var(--vf-gold);  }
   color: #16a34a;
   font-weight: 600;
 }
+
+/* Login form keeps inline errors only, without Bootstrap valid-state check icons. */
+.vf-login-form .form-control:valid,
+.vf-login-form .form-control.is-valid {
+  background-image: none !important;
+  box-shadow: none !important;
+}

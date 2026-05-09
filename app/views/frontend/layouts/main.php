@@ -61,6 +61,7 @@ $scripts = $scripts ?? '';
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="<?= BASE_URL ?>public/js/frontend/main.js"></script>
+  <script src="<?= BASE_URL ?>public/js/frontend/validate.js?v=<?= filemtime(ROOT . '/public/js/frontend/validate.js') ?>"></script>
   <!-- Extra scripts injected by child views via $scripts variable -->
   <?= $scripts ?? '' ?>
 </body>
