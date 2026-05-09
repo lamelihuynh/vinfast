@@ -20,14 +20,17 @@
  *  - Include pagination partial where needed: include ROOT."/app/views/frontend/partials/pagination.php"
  */
 ?>
-<?php $old = is_array($old ?? null) ? $old : []; ?>
+<?php 
+$logoUrl = SiteSetting::imageUrl(SiteSetting::all()['logo'] ?? '', 'public/images/logo/vinfast-logo.png');
+$old = is_array($old ?? null) ? $old : []; 
+?>
 <section class="min-h-screen flex">
   <div class="hidden lg:flex w-[38%] flex-col justify-between p-12 relative overflow-hidden bg-gradient-to-br from-slate-900 via-[#233060] to-slate-900">
     <div class="absolute w-[380px] h-[380px] rounded-full bg-yellow-500/15 -top-20 -right-14"></div>
     <div class="absolute w-[220px] h-[220px] rounded-full bg-blue-500/10 bottom-20 -left-12"></div>
 
     <div class="relative z-10">
-      <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast" class="h-11 w-auto object-contain">
+      <img src="<?= htmlspecialchars($logoUrl) ?>" alt="VinFast" class="h-11 w-auto object-contain">
     </div>
 
     <div class="relative z-10 space-y-5">
@@ -50,7 +53,7 @@
       <a href="<?= BASE_URL ?>auth/login" class="inline-block mb-6 text-sm text-slate-500 hover:text-slate-800">&larr; Quay lại đăng nhập</a>
 
       <div class="lg:hidden mb-6 text-center">
-        <img src="<?= BASE_URL ?>public/images/logo/vinfast-logo.png" alt="VinFast" class="h-9 w-auto object-contain mx-auto">
+        <img src="<?= htmlspecialchars($logoUrl) ?>" alt="VinFast" class="h-9 w-auto object-contain mx-auto">
       </div>
 
       <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Tạo tài khoản</h1>
