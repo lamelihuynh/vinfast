@@ -65,9 +65,12 @@ class NewsController
         }
  
         SEO::set($article['title'], '');
+
+        $comments = Comment::getApprovedByNewsId($article['id']);
  
         View::render('frontend/news/detail', [
             'article'  => $article,
+            'comments' => $comments,
         ]);
     }
     

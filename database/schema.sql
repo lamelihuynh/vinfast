@@ -105,19 +105,6 @@ CREATE TABLE IF NOT EXISTS orders (
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS comments (
-  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id     INT UNSIGNED NOT NULL,
-  product_id  INT UNSIGNED DEFAULT NULL,
-  rating      TINYINT NOT NULL DEFAULT 0,
-  body        TEXT         NOT NULL,
-  helpful_count INT NOT NULL DEFAULT 0,
-  is_approved TINYINT(1)   NOT NULL DEFAULT 0,
-  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 -- 4. News & Content
 CREATE TABLE IF NOT EXISTS news (
   id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -137,6 +124,19 @@ CREATE TABLE IF NOT EXISTS news_tags (
   FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS comments (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT UNSIGNED NOT NULL,
+  news_id  INT UNSIGNED DEFAULT NULL,
+  rating      TINYINT NOT NULL DEFAULT 0,
+  body        TEXT         NOT NULL,
+  helpful_count INT NOT NULL DEFAULT 0,
+  is_approved TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
+  FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS news_img_info (
   news_id         INT UNSIGNED,
   img_link        VARCHAR(300),
@@ -144,6 +144,11 @@ CREATE TABLE IF NOT EXISTS news_img_info (
   PRIMARY KEY(news_id, img_link, img_des),
   FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS email {
+  id          INT PRIMARY KEY,
+  email       VARCHAR(100) NOT NULL
+} ENGINE=InnoDB
 
 -- 5. Seed Initial Data
 INSERT IGNORE INTO users (name,email,password,role) VALUES
