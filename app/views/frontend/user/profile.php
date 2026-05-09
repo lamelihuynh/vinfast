@@ -49,9 +49,7 @@ $hasNotice = !empty($_SESSION['flash']) || !empty($_SESSION['errors']);
                 <section class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
                     <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-3">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Thông tin cá nhân</h2>
-                            <p class="mt-1 text-sm text-slate-500">Cập nhật hồ sơ theo phong cách thẻ quản lý hiện đại.</p>
-                        </div>
+                            <h2 class="text-lg font-bold text-slate-900">Thông tin cá nhân</h2>                        </div>
                         <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Hồ sơ chính</span>
                     </div>
 
@@ -99,26 +97,58 @@ $hasNotice = !empty($_SESSION['flash']) || !empty($_SESSION['errors']);
                         <p class="mt-1 text-sm text-slate-500">Đặt mật khẩu mạnh và cập nhật định kỳ để bảo vệ tài khoản.</p>
                     </div>
                     <div class="px-6 py-6">
-                        <form id="formChangePassword" action="<?= BASE_URL ?>user/changePassword" method="POST" class="space-y-5">
+                        <form id="formChangePassword" action="<?= BASE_URL ?>user/changePassword" method="POST" class="needs-validation space-y-5" novalidate>
                             <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
                             <div class="grid gap-5 md:grid-cols-2">
                                 <div>
                                     <label for="current" class="mb-2 block text-sm font-medium text-slate-700">Mật khẩu hiện tại</label>
-                                    <input type="password" id="current" name="current" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                    <div class="relative">
+                                        <input type="password" id="current" name="current" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                        <button
+                                            type="button"
+                                            class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            data-target="current"
+                                            aria-label="Hiện mật khẩu"
+                                            aria-pressed="false">
+                                            <svg class="eye-open w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                            <svg class="eye-closed w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.58 10.58A3 3 0 0 0 13.42 13.42M9.88 5.08A10.5 10.5 0 0 1 12 4.88c6 0 9.75 7.12 9.75 7.12a18.41 18.41 0 0 1-3.64 4.58M6.34 6.34A18.65 18.65 0 0 0 2.25 12s3.75 6.75 9.75 6.75a10.7 10.7 0 0 0 4.12-.8" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label for="new_password" class="mb-2 block text-sm font-medium text-slate-700">Mật khẩu mới</label>
-                                    <input type="password" id="new_password" name="new_password" minlength="8" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                    <div class="relative">
+                                        <input type="password" id="new_password" name="new_password" minlength="8" required class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition focus:border-[#1a2240] focus:ring-2 focus:ring-[#1a2240]/10">
+                                        <button
+                                            type="button"
+                                            class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            data-target="new_password"
+                                            aria-label="Hiện mật khẩu"
+                                            aria-pressed="false">
+                                            <svg class="eye-open w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                            <svg class="eye-closed w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.58 10.58A3 3 0 0 0 13.42 13.42M9.88 5.08A10.5 10.5 0 0 1 12 4.88c6 0 9.75 7.12 9.75 7.12a18.41 18.41 0 0 1-3.64 4.58M6.34 6.34A18.65 18.65 0 0 0 2.25 12s3.75 6.75 9.75 6.75a10.7 10.7 0 0 0 4.12-.8" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="password-require mt-2">
+                                        <p class="descx text-xs font-medium text-slate-500 mb-1">Mật khẩu bao gồm</p>
+                                        <ul class="below-desc space-y-1 text-xs">
+                                            <li id="character" class="text-slate-400 transition-colors duration-200"><span>Ít nhất 8 ký tự</span></li>
+                                            <li id="uppercase" class="text-slate-400 transition-colors duration-200"><span>Chữ hoa &amp; chữ thường</span></li>
+                                            <li id="special" class="text-slate-400 transition-colors duration-200"><span>Ít nhất 1 số</span></li>
+                                            <li id="notSame" class="text-slate-400 transition-colors duration-200"><span>Không giống mật khẩu cũ</span></li>
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                                <div class="font-semibold text-slate-700 mb-1">Yêu cầu mật khẩu</div>
-                                <ul class="list-disc pl-5 space-y-1">
-                                    <li>Tối thiểu 8 ký tự</li>
-                                    <li>Nên có chữ hoa, chữ thường và số</li>
-                                    <li>Không dùng lại mật khẩu cũ</li>
-                                </ul>
                             </div>
 
                             <div class="flex justify-end">
@@ -134,17 +164,6 @@ $hasNotice = !empty($_SESSION['flash']) || !empty($_SESSION['errors']);
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var forms = document.querySelectorAll('#formUpdateProfile, #formChangePassword');
-        Array.prototype.slice.call(forms).forEach(function(form) {
-            form.addEventListener('submit', function(event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
-
         var avatarInput = document.getElementById('avatar');
         var avatarPreview = document.getElementById('profileAvatarPreview');
         if (avatarInput && avatarPreview) {

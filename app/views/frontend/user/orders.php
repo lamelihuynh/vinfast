@@ -41,7 +41,6 @@ $orders = is_iterable($ordersRaw) ? $ordersRaw : [];
           <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-3">
             <div>
               <h2 class="text-lg font-bold text-slate-900">Lịch sử đơn hàng</h2>
-              <p class="mt-1 text-sm text-slate-500">Trạng thái đơn hàng sẽ được cập nhật theo xử lý phía quản trị.</p>
             </div>
             <a href="<?= BASE_URL ?>products" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Tiếp tục đặt xe</a>
           </div>

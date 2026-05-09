@@ -7,6 +7,11 @@ $colorName = isset($colorName) ? (string)$colorName : '';
 $selectedColorSurcharge = isset($selectedColorSurcharge) ? (int)$selectedColorSurcharge : 0;
 $defaultColor = isset($defaultColor) && is_array($defaultColor) ? $defaultColor : [];
 $productId = isset($productId) ? (int)$productId : 0;
+
+// Redirect to login if not authenticated, otherwise go to checkout
+$checkoutUrl = Auth::check()
+	? BASE_URL . 'order/checkout/' . $productId
+	: BASE_URL . 'auth/login?redirect=' . urlencode('/order/checkout/' . $productId);
 ?>
 <div class="min-w-0">
 	<div class="mb-2 flex items-start justify-between gap-3">
@@ -65,7 +70,7 @@ $productId = isset($productId) ? (int)$productId : 0;
 
 	<div class="mb-6 rounded-xl border border-slate-100 bg-slate-50 p-4">
 		<div class="grid grid-cols-1 gap-3">
-			<a id="vfPdCheckoutBtn" href="<?= BASE_URL ?>order/checkout/<?= (int)$productId ?>" class="vf-pd-checkout-link inline-flex items-center justify-center rounded-lg border-2 border-vfNavy bg-vfNavy px-4 py-3 text-center text-[13px] font-bold tracking-[0.3px] text-white no-underline transition hover:border-vfNavy/90 hover:bg-vfNavy/90">ĐẶT CỌC NGAY</a>
+			<a id="vfPdCheckoutBtn" href="<?= htmlspecialchars($checkoutUrl) ?>" class="vf-pd-checkout-link inline-flex items-center justify-center rounded-lg border-2 border-vfNavy bg-vfNavy px-4 py-3 text-center text-[13px] font-bold tracking-[0.3px] text-white no-underline transition hover:border-vfNavy/90 hover:bg-vfNavy/90">ĐẶT CỌC NGAY</a>
 		</div>
 	</div>
 
@@ -76,7 +81,7 @@ $productId = isset($productId) ? (int)$productId : 0;
 			<div class="vf-pd-mobile-cta-meta">
 				<p class="vf-pd-mobile-cta-price"><?= htmlspecialchars($priceText) ?> VNĐ</p>
 			</div>
-			<a href="<?= BASE_URL ?>order/checkout/<?= (int)$productId ?>" class="vf-pd-checkout-link vf-pd-mobile-cta-btn w-full">Đặt cọc ngay</a>
+			<a href="<?= htmlspecialchars($checkoutUrl) ?>" class="vf-pd-checkout-link vf-pd-mobile-cta-btn w-full">Đặt cọc ngay</a>
 		</div>
 	</div>
 </div>

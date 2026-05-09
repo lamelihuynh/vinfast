@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const character = form.querySelector("#character");
     const uppercase = form.querySelector("#uppercase");
     const special = form.querySelector("#special");
+    const notSame = form.querySelector("#notSame");
 
     const shouldValidateStrength = Boolean(confirmInput) || (passwordInput && passwordInput.id === "new_password");
     if (!passwordInput || !shouldValidateStrength) {
@@ -57,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setRuleState(character, isLengthValid);
       setRuleState(uppercase, hasUpperAndLower);
       setRuleState(special, hasNumber);
+      setRuleState(notSame, !sameAsCurrent || !val);
 
       // Keep browser validation consistent with the visible checklist.
       passwordInput.setCustomValidity(

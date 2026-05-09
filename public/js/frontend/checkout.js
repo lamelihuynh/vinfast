@@ -109,6 +109,7 @@
     var request = new XMLHttpRequest();
     request.open('POST', window.location.pathname + '?save_checkout_step2=1', true);
     request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('X-CSRF-Token', csrfToken);
     request.onload = function() {
       console.log('Step2 data saved. Response:', request.responseText);
       // Update step 3 display with latest form data
@@ -162,7 +163,7 @@
   function validateStep2() {
     clearStep2Errors();
     
-    var hasError = false;data-price-total-estimate
+    var hasError = false;
     var requiredFields = ['full_name', 'phone', 'email', 'cccd', 'province', 'showroom'];
     var requiredMessages = {
       full_name: 'Vui lòng điền họ và tên',
@@ -315,7 +316,7 @@
   }
 
   function updateDepositSummary() {
-    var totalDeposit = baseDeposit + selectedColorSurcharge;
+    var totalDeposit = baseDeposit;
     if (summaryDeposit) {
       summaryDeposit.textContent = formatVnd(totalDeposit);
     }

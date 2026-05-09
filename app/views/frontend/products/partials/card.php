@@ -34,13 +34,6 @@ if ($powerText === '') {
           <p class="text-slate-400 mb-1.5 text-[11px]"><?= htmlspecialchars($categoryText) ?></p>
           <p class="text-vfGold mt-2 mb-2 text-[15px] font-bold"><?= number_format((float)($p['price'] ?? 0), 0, ',', '.') ?> VND</p>
 
-          <div class="flex items-center justify-between">
-            <span class="flex items-center gap-1 text-emerald-500 text-[10px]">
-              <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span>
-              Còn kinh doanh
-            </span>
-            <span class="text-slate-400 text-[10px]">⚡ <?= htmlspecialchars($powerText) ?></span>
-          </div>
         </div>
       </a>
     </div>

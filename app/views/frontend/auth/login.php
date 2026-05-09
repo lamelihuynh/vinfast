@@ -107,7 +107,7 @@
             <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
             Ghi nhớ đăng nhập
           </label>
-          <span class="text-xs text-slate-400">Quên mật khẩu?</span>
+          <a href="<?= BASE_URL ?>auth/forgot-password" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Quên mật khẩu?</a>
         </div>
 
         <button type="submit" class="w-full rounded-xl bg-[#1464F4] hover:bg-blue-700 text-white font-bold py-3 text-sm tracking-wide">ĐĂNG NHẬP</button>

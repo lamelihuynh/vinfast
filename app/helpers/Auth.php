@@ -109,7 +109,20 @@ class Auth
     }
     public static function verifyCsrf(): void
     {
-        if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['_csrf'] ?? '')) {
+        // Try to get CSRF token from POST, JSON body, or header
+        $token = $_POST['_csrf'] ?? null;
+        if ($token === null) {
+            $input = file_get_contents('php://input');
+            if ($input) {
+                $data = json_decode($input, true);
+                $token = $data['_csrf'] ?? null;
+            }
+        }
+        if ($token === null) {
+            $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+        }
+
+        if (!hash_equals($_SESSION['csrf'] ?? '', $token ?? '')) {
             http_response_code(403);
             die('Invalid CSRF token.');
         }
