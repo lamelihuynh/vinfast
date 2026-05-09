@@ -21,7 +21,7 @@ define('UPLOAD_PATH',   ROOT . '/public/images/uploads/');
 define('UPLOAD_URL',    BASE_URL . 'public/images/uploads/');
 define('AUTH_COOKIE_SECRET', hash('sha256', ROOT . '|vinfast|auth-cookie-v1'));
 define('PER_PAGE',      10);
-define('MAX_FILE_SIZE', 2 * 1024 * 1024);            // 2 MB
+define('MAX_FILE_SIZE', 5 * 1024 * 1024);            // 2 MB
 define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
 
 require_once ROOT . '/config/database.php';

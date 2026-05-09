@@ -162,7 +162,7 @@ class AuthController
             exit;
         }
 
-        header('Location: ' . BASE_URL . 'user/profile');
+        header('Location: ' . BASE_URL);
         exit;
     }
 
