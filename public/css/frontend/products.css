@@ -1,8 +1,8 @@
 ﻿/**
- * public/css/frontend/products.css — Products Page Styles
+ * public/css/frontend/products.css — Products Page & Product Detail Styles
  * Owner: Hai Nam (Member 3)
  *
- * Page-specific styles for frontend products listing.
+ * Page-specific styles for frontend products listing and product detail pages.
  * Keep shared/global tokens in global.css.
  */
 
@@ -12,49 +12,8 @@
 
 .products-wrap {
   display: grid;
-  grid-template-columns: 270px 1fr;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
-}
-
-.products-filter-toggle {
-  display: none;
-}
-
-.products-sidebar {
-  background: #fff;
-  border: 1px solid #e9edf3;
-  border-radius: 12px;
-  padding: 1rem;
-  height: fit-content;
-  position: sticky;
-  top: 88px;
-}
-
-.products-sidebar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #eef2f6;
-  padding-bottom: 0.75rem;
-  margin-bottom: 0.9rem;
-}
-
-.products-sidebar-head h3 {
-  font-size: 1rem;
-  margin: 0;
-  font-weight: 700;
-}
-
-.products-filter-group {
-  margin-bottom: 0.85rem;
-}
-
-.products-filter-group .form-label {
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #5c6774;
-  margin-bottom: 0.35rem;
 }
 
 .products-content {
@@ -63,7 +22,6 @@
 
 .products-grid-wrap {
   width: 100%;
-  max-width: 1140px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -85,38 +43,6 @@
   margin: 0;
   color: #64748b;
   font-size: 0.9rem;
-}
-
-.products-badge-new {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: #16a34a;
-  color: #fff;
-  border-radius: 6px;
-  padding: 2px 7px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  z-index: 2;
-}
-
-.products-price {
-  margin: 0;
-  color: #c1121f;
-  font-weight: 700;
-}
-
-.products-filter-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: #c8a22e;
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
 }
 
 /* Product detail JS state styles */
@@ -297,45 +223,6 @@
 }
 
 @media (max-width: 991.98px) {
-  .products-wrap {
-    grid-template-columns: 1fr;
-  }
-
-  .products-filter-toggle {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .products-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 300px;
-    max-width: 85vw;
-    border-radius: 0;
-    z-index: 1040;
-    transform: translateX(-102%);
-    transition: transform 0.2s ease;
-    overflow-y: auto;
-  }
-
-  .products-sidebar.is-open {
-    transform: translateX(0);
-  }
-
-  .products-grid-wrap {
-    max-width: none;
-  }
-
-  body.products-filter-open::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 1035;
-  }
-
   #vfProductDetail {
     padding-bottom: 96px;
   }

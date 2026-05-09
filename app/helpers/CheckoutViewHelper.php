@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/ImageHelper.php';
+
 class CheckoutViewHelper
 {
     public static function prepare(array $product, array $selectedColor, array $provinces, array $showrooms, array $formData, array $switchProducts): array
@@ -9,128 +11,16 @@ class CheckoutViewHelper
         $productSlug = trim((string)($product['slug'] ?? ''));
         $priceText = number_format((float)($product['price'] ?? 0), 0, ',', '.');
 
-        $extractProductFamily = static function (string $text): string {
-            $value = strtolower(trim($text));
-            if ($value === '') {
-                return '';
-            }
-
-            if (preg_match('/(?:^|[-_])vf(?:-?mpv)?-?([3-9])(?:[-_]|$)/i', $value, $familyMatch)) {
-                return 'vf' . $familyMatch[1];
-            }
-
-            $normalized = preg_replace('/[^a-z0-9]+/i', '-', $value);
-            $normalized = trim((string)$normalized, '-');
-            if ($normalized === '') {
-                return '';
-            }
-
-            if (strpos($normalized, 'vinfast-') === 0) {
-                $normalized = substr($normalized, 8);
-            }
-
-            $normalized = trim((string)$normalized, '-');
-            if ($normalized === '') {
-                return '';
-            }
-
-            $parts = explode('-', $normalized);
-            $family = strtolower(trim((string)($parts[0] ?? '')));
-            if (!preg_match('/^[a-z0-9]+$/', $family)) {
-                return '';
-            }
-
-            return $family;
-        };
-
         $productFamily = '';
         if (!empty($product['slug'])) {
-            $productFamily = $extractProductFamily((string)$product['slug']);
+            $productFamily = ImageHelper::extractFamily((string)$product['slug']);
         }
         if ($productFamily === '' && !empty($product['name'])) {
-            $productFamily = $extractProductFamily((string)$product['name']);
+            $productFamily = ImageHelper::extractFamily((string)$product['name']);
         }
 
         $resolveImageUrl = static function (string $imgRel, string $preferredSlug = '') use ($productFamily): string {
-            $imgRel = trim($imgRel);
-            if ($imgRel === '') {
-                return '';
-            }
-
-            $preferredSlug = strtolower(trim($preferredSlug));
-            if ($preferredSlug === '') {
-                $preferredSlug = '';
-            }
-
-            if (preg_match('/^https?:\/\//i', $imgRel)) {
-                return $imgRel;
-            }
-
-            $imgRel = ltrim($imgRel, '/');
-
-            if (strpos($imgRel, '/') !== false) {
-                $fullPath = ROOT . '/public/images/' . $imgRel;
-                if (is_file($fullPath)) {
-                    return BASE_URL . 'public/images/' . $imgRel;
-                }
-
-                $basename = basename($imgRel);
-                $fixCandidates = [];
-                if ($preferredSlug !== '') {
-                    $fixCandidates[] = 'uploads/products/' . $preferredSlug . '/' . $basename;
-                }
-                if ($productFamily !== '') {
-                    $fixCandidates[] = 'uploads/products/' . $productFamily . '/' . $basename;
-                }
-
-                foreach ($fixCandidates as $candidate) {
-                    $candidatePath = ROOT . '/public/images/' . $candidate;
-                    if (is_file($candidatePath)) {
-                        return BASE_URL . 'public/images/' . $candidate;
-                    }
-                }
-
-                return BASE_URL . 'public/images/' . $imgRel;
-            }
-
-            $basename = basename($imgRel);
-            $candidates = [
-                $preferredSlug !== '' ? 'uploads/products/' . $preferredSlug . '/' . $basename : '',
-                $productFamily !== '' ? 'uploads/products/' . $productFamily . '/' . $basename : '',
-                'uploads/products/' . $imgRel,
-                'products/' . $imgRel,
-                $imgRel,
-            ];
-
-            foreach ($candidates as $candidate) {
-                if ($candidate === '') {
-                    continue;
-                }
-                $fullPath = ROOT . '/public/images/' . $candidate;
-                if (is_file($fullPath)) {
-                    return BASE_URL . 'public/images/' . $candidate;
-                }
-            }
-
-            if ($preferredSlug !== '') {
-                $slugPriorityPath = ROOT . '/public/images/uploads/products/' . $preferredSlug . '/' . $basename;
-                if (is_file($slugPriorityPath)) {
-                    $match = str_replace(ROOT . '/public/images/', '', $slugPriorityPath);
-                    $match = str_replace('\\', '/', $match);
-                    return BASE_URL . 'public/images/' . $match;
-                }
-            }
-
-            if ($productFamily !== '') {
-                $priorityPath = ROOT . '/public/images/uploads/products/' . $productFamily . '/' . $basename;
-                if (is_file($priorityPath)) {
-                    $match = str_replace(ROOT . '/public/images/', '', $priorityPath);
-                    $match = str_replace('\\', '/', $match);
-                    return BASE_URL . 'public/images/' . $match;
-                }
-            }
-
-            return BASE_URL . 'public/images/products/' . $imgRel;
+            return ImageHelper::resolveImageUrl($imgRel, $productFamily, $preferredSlug, []);
         };
 
         $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
@@ -275,7 +165,7 @@ class CheckoutViewHelper
             $modelKey = strtolower(trim((string)($item['model_key'] ?? '')));
             if ($modelKey === '') {
                 $fallbackSeed = (string)($item['slug'] ?? $item['name'] ?? '');
-                $modelKey = $extractProductFamily($fallbackSeed);
+                $modelKey = ImageHelper::extractFamily($fallbackSeed);
             }
 
             $switchProductsUi[] = [
@@ -295,7 +185,7 @@ class CheckoutViewHelper
                 'id' => $productId,
                 'name' => $productName,
                 'slug' => (string)($product['slug'] ?? ''),
-                'modelKey' => $extractProductFamily((string)($product['slug'] ?? $productName)),
+                'modelKey' => ImageHelper::extractFamily((string)($product['slug'] ?? $productName)),
                 'priceRaw' => (float)($product['price'] ?? 0),
                 'priceText' => $priceText . ' VNĐ',
                 'imageUrl' => $mainImage,

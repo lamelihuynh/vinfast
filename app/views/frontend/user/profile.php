@@ -49,7 +49,8 @@ $hasNotice = !empty($_SESSION['flash']) || !empty($_SESSION['errors']);
                 <section class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
                     <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-3">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Thông tin cá nhân</h2>                        </div>
+                            <h2 class="text-lg font-bold text-slate-900">Thông tin cá nhân</h2>                        
+                        </div>
                         <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Hồ sơ chính</span>
                     </div>
 

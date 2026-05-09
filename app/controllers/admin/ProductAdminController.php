@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../../helpers/ImageHelper.php';
+
 /**
  * app/controllers/admin/ProductAdminController.php
  * Owner: Hai Nam 
@@ -598,13 +600,7 @@ class ProductAdminController
 
     private function normalizeColorImagePath(string $path): string
     {
-        $path = trim(str_replace('\\', '/', $path));
-        if (!$path) {
-            return '';
-        }
-        return preg_match('~(?:^|[A-Za-z]:)?(?:.*/)?public/images/(.+)$~i', $path, $m)
-            ? ltrim($m[1], '/')
-            : ltrim($path, '/');
+        return ImageHelper::normalizePath($path);
     }
 
     private function resolveMainImage(array $allImages, array $newImages): string
@@ -699,24 +695,7 @@ class ProductAdminController
 
     private function extractImageFamily(string $text): string
     {
-        $text = strtolower(trim($text));
-        if (!$text) {
-            return '';
-        }
-
-        if (preg_match('/(?:^|[-_])vf(?:-?mpv)?-?([3-9])(?:[-_]|$)/i', $text, $match)) {
-            return 'vf' . $match[1];
-        }
-
-        $normalized = preg_replace('/[^a-z0-9-]/i', '-', $text);
-        $normalized = trim(str_replace('vinfast-', '', $normalized), '-');
-
-        if (!$normalized) {
-            return '';
-        }
-
-        $family = strtolower(explode('-', $normalized)[0]);
-        return preg_match('/^[a-z0-9]+$/', $family) ? $family : '';
+        return ImageHelper::extractFamily($text);
     }
 
     private function enrichExteriorColorImages(array $rows, string $family): array
@@ -734,44 +713,7 @@ class ProductAdminController
 
     private function resolveColorImageInFamily(string $family, string $code): string
     {
-        $family = trim($family);
-        $code = strtolower(trim($code));
-        if ($family === '' || $code === '') {
-            return '';
-        }
-
-        $dirs = [];
-        $dirs[] = ROOT . '/public/images/uploads/products/' . $family;
-
-        $familyFallback = $this->extractImageFamily($family);
-        if ($familyFallback !== '' && $familyFallback !== $family) {
-            $dirs[] = ROOT . '/public/images/uploads/products/' . $familyFallback;
-        }
-
-        $extensions = ['webp', 'jpg', 'jpeg', 'png'];
-
-        foreach ($dirs as $dir) {
-            if (!is_dir($dir)) {
-                continue;
-            }
-
-            foreach ($extensions as $ext) {
-                $candidate = $dir . '/' . $code . '.' . $ext;
-                if (is_file($candidate)) {
-                    $relative = str_replace(ROOT . '/public/images/', '', str_replace('\\', '/', $candidate));
-                    return $relative;
-                }
-            }
-
-            $matches = glob($dir . '/' . $code . '.*') ?: [];
-            if (!empty($matches)) {
-                $match = (string)$matches[0];
-                $relative = str_replace(ROOT . '/public/images/', '', str_replace('\\', '/', $match));
-                return $relative;
-            }
-        }
-
-        return '';
+        return ImageHelper::findColorImageInFamily($family, $code);
     }
 
     private function deleteUploadedImage(string $relative): void

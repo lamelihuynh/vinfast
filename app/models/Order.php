@@ -22,6 +22,11 @@ class Order
         'cancelled' => [],
     ];
 
+    private const SQL_BASE = "SELECT o.*, p.name AS product_name, p.price, u.name AS user_name, u.email
+        FROM orders o
+        JOIN products p ON o.product_id = p.id
+        JOIN users u ON o.user_id = u.id";
+
     public static function create($userId, $productId, $type = 'deposit', $note = null)
     {
         global $pdo;
@@ -136,41 +141,16 @@ class Order
         $perPage = max(1, $perPage);
         $offset = ($page - 1) * $perPage;
 
-        $where = [];
-        $params = [];
+        [$where, $params] = self::buildAdminFilters($filters);
 
-        $status = trim((string)($filters['status'] ?? 'all'));
-        if ($status !== '' && $status !== 'all' && in_array($status, self::ALLOWED_STATUSES, true)) {
-            $where[] = 'o.status = :status';
-            $params[':status'] = $status;
-        }
-
-        $q = trim((string)($filters['q'] ?? ''));
-        if ($q !== '') {
-            $where[] = '(u.name LIKE :q1 OR u.email LIKE :q2 OR p.name LIKE :q3 OR CAST(o.id AS CHAR) LIKE :q4)';
-            $params[':q1'] = '%' . $q . '%';
-            $params[':q2'] = '%' . $q . '%';
-            $params[':q3'] = '%' . $q . '%';
-            $params[':q4'] = '%' . $q . '%';
-        }
-
-        $sql = "
-            SELECT o.*, p.name AS product_name, p.price, u.name AS user_name, u.email
-            FROM orders o
-            JOIN products p ON o.product_id = p.id
-            JOIN users u ON o.user_id = u.id
-        ";
-
+        $sql = self::SQL_BASE;
         if (!empty($where)) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
-
         $sql .= ' ORDER BY o.created_at DESC, o.id DESC LIMIT :limit OFFSET :offset';
 
         $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value, PDO::PARAM_STR);
-        }
+        self::bindParams($stmt, $params);
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -182,39 +162,19 @@ class Order
     {
         global $pdo;
 
-        $where = [];
-        $params = [];
+        [$where, $params] = self::buildAdminFilters($filters);
 
-        $status = trim((string)($filters['status'] ?? 'all'));
-        if ($status !== '' && $status !== 'all' && in_array($status, self::ALLOWED_STATUSES, true)) {
-            $where[] = 'o.status = :status';
-            $params[':status'] = $status;
-        }
-
-        $q = trim((string)($filters['q'] ?? ''));
-        if ($q !== '') {
-            $where[] = '(u.name LIKE :q1 OR u.email LIKE :q2 OR p.name LIKE :q3 OR CAST(o.id AS CHAR) LIKE :q4)';
-            $params[':q1'] = '%' . $q . '%';
-            $params[':q2'] = '%' . $q . '%';
-            $params[':q3'] = '%' . $q . '%';
-            $params[':q4'] = '%' . $q . '%';
-        }
-
-        $sql = "
-            SELECT COUNT(*) AS cnt
-            FROM orders o
-            JOIN products p ON o.product_id = p.id
-            JOIN users u ON o.user_id = u.id
-        ";
+        $sql = "SELECT COUNT(*) AS cnt
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                JOIN users u ON o.user_id = u.id";
 
         if (!empty($where)) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value, PDO::PARAM_STR);
-        }
+        self::bindParams($stmt, $params);
         $stmt->execute();
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -300,11 +260,7 @@ class Order
             unset($note['payment_verified_at']);
         }
 
-        $json = json_encode($note, JSON_UNESCAPED_UNICODE);
-        if ($json === false) {
-            return false;
-        }
-
+        $json = self::encodeOrderNote($note);
         $stmt = $pdo->prepare('UPDATE orders SET note = ? WHERE id = ?');
         return $stmt->execute([$json, $orderId]);
     }
@@ -322,5 +278,41 @@ class Order
 
         $decoded = json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private static function encodeOrderNote(array $note): string
+    {
+        $json = json_encode($note, JSON_UNESCAPED_UNICODE);
+        return $json !== false ? $json : '{}';
+    }
+
+    private static function buildAdminFilters(array $filters = []): array
+    {
+        $where = [];
+        $params = [];
+
+        $status = trim((string)($filters['status'] ?? 'all'));
+        if ($status !== '' && $status !== 'all' && in_array($status, self::ALLOWED_STATUSES, true)) {
+            $where[] = 'o.status = :status';
+            $params[':status'] = $status;
+        }
+
+        $q = trim((string)($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(u.name LIKE :q1 OR u.email LIKE :q2 OR p.name LIKE :q3 OR CAST(o.id AS CHAR) LIKE :q4)';
+            $params[':q1'] = '%' . $q . '%';
+            $params[':q2'] = '%' . $q . '%';
+            $params[':q3'] = '%' . $q . '%';
+            $params[':q4'] = '%' . $q . '%';
+        }
+
+        return [$where, $params];
+    }
+
+    private static function bindParams(PDOStatement $stmt, array $params): void
+    {
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
     }
 }
