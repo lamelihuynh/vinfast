@@ -91,14 +91,15 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
         'id' => $id,
         'orderCode' => 'VF-ORD-' . str_pad((string)$id, 6, '0', STR_PAD_LEFT),
         'createdAt' => !empty($order['created_at']) ? date('d/m/Y H:i', strtotime((string)$order['created_at'])) : '--',
-        'userName' => (string)($order['user_name'] ?? ''),
-        'email' => (string)($order['email'] ?? ''),
-        'phone' => $extractPhone($order['note'] ?? ''),
+        'customerName' => (string)($note['full_name'] ?? ($order['user_name'] ?? '')),
+        'email' => (string)($note['email'] ?? ''),
+        'phone' => (string)($note['phone'] ?? $extractPhone($order['note'] ?? '')),
         'productName' => (string)($order['product_name'] ?? ''),
         'price' => number_format((float)($order['price'] ?? 0), 0, ',', '.') . ' VND',
         'type' => $typeMap[(string)($order['type'] ?? '')] ?? (string)($order['type'] ?? ''),
         'status' => $labelByStatus((string)($order['status'] ?? 'pending')),
         'statusRaw' => (string)($order['status'] ?? 'pending'),
+        'ownerType' => (string)($note['owner_type'] ?? ''),
         'province' => (string)($note['province'] ?? ''),
         'showroom' => (string)($note['showroom'] ?? ''),
         'payMethod' => $payMethodMap[(string)($note['pay_method'] ?? '')] ?? (string)($note['pay_method'] ?? ''),
@@ -110,12 +111,13 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
 };
 ?>
 
+<?php include ROOT . '/app/views/admin/orders/partials/summary.php'; ?>
+
 <div class="row mb-4">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <?php include ROOT . '/app/views/admin/orders/partials/filters.php'; ?>
-                <?php include ROOT . '/app/views/admin/orders/partials/summary.php'; ?>
             </div>
         </div>
     </div>
@@ -123,5 +125,3 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
 
 <?php include ROOT . '/app/views/admin/orders/partials/table.php'; ?>
 <?php include ROOT . '/app/views/admin/orders/partials/detail-modal.php'; ?>
-
-<?php include ROOT . '/app/views/frontend/partials/pagination.php'; ?>

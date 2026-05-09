@@ -275,7 +275,7 @@ if (empty($specRows)) {
         ['label' => 'Công suất', 'value' => $powerText],
         ['label' => 'Phạm vi di chuyển', 'value' => $rangeText],
         ['label' => 'Dung lượng pin', 'value' => $batteryText],
-        ['label' => 'Tăng tốc (0-100km/h)', 'value' => $accelerationText],
+        ['label' => 'Tăng tốc', 'value' => $accelerationText],
         ['label' => 'Vận tốc tối đa', 'value' => $maxSpeedText],
     ];
 }

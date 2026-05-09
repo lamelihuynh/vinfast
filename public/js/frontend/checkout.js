@@ -23,6 +23,10 @@
   var selectedExterior = form.querySelector('[data-selected-exterior]');
   var selectedInterior = form.querySelector('[data-selected-interior]');
   var selectedVariantPrice = form.querySelector('[data-selected-variant-price]');
+  var priceBreakdownToggle = form.querySelector('[data-price-breakdown-toggle]');
+  var priceBreakdownPanel = form.querySelector('[data-price-breakdown-panel]');
+  var priceBreakdownIcon = form.querySelector('[data-price-breakdown-icon]');
+  var colorChoices = form.querySelectorAll('[data-color-choice]');
   var variantButtons = form.querySelectorAll('[data-variant-btn]');
   var variantInput = form.querySelector('[data-variant-input]');
   var interiorRadios = form.querySelectorAll('[data-interior-radio]');
@@ -36,6 +40,10 @@
   var selectedColorSurcharge = Number(root.getAttribute('data-color-surcharge') || '0');
   if (Number.isNaN(selectedColorSurcharge) || selectedColorSurcharge < 0) {
     selectedColorSurcharge = 0;
+  }
+  var currentVariantPrice = Number(selectedVariantPrice ? String(selectedVariantPrice.textContent || '').replace(/[^0-9]/g, '') : 0);
+  if (Number.isNaN(currentVariantPrice) || currentVariantPrice < 0) {
+    currentVariantPrice = 0;
   }
 
   var step = Number(root.getAttribute('data-step') || '1');
@@ -154,8 +162,16 @@
   function validateStep2() {
     clearStep2Errors();
     
-    var hasError = false;
-    var requiredFields = ['full_name', 'phone', 'email', 'province', 'showroom'];
+    var hasError = false;data-price-total-estimate
+    var requiredFields = ['full_name', 'phone', 'email', 'cccd', 'province', 'showroom'];
+    var requiredMessages = {
+      full_name: 'Vui lòng điền họ và tên',
+      phone: 'Vui lòng điền số điện thoại',
+      email: 'Vui lòng điền email',
+      cccd: 'Vui lòng điền số CCCD',
+      province: 'Vui lòng chọn tỉnh thành',
+      showroom: 'Vui lòng chọn showroom',
+    };
 
     for (var i = 0; i < requiredFields.length; i += 1) {
       var name = requiredFields[i];
@@ -164,7 +180,7 @@
 
       var value = String(input.value || '').trim();
       if (!value) {
-        showFieldError(name, 'Vui lòng điền trường này');
+        showFieldError(name, requiredMessages[name] || 'Vui lòng điền trường này');
         hasError = true;
         continue;
       }
@@ -235,6 +251,14 @@
     var checked = form.querySelector('[data-color-radio]:checked');
     if (!checked) return;
 
+    colorChoices.forEach(function (choice) {
+      var isActive = !!choice.querySelector('[data-color-radio]:checked');
+      choice.classList.toggle('is-active', isActive);
+      choice.classList.toggle('border-vfNavy', isActive);
+      choice.classList.toggle('shadow-[0_0_0_2px_rgba(20,100,244,0.22)]', isActive);
+      choice.classList.toggle('border-slate-200', !isActive);
+    });
+
     var colorName = checked.getAttribute('data-color-name') || checked.value || '';
     var colorImage = checked.getAttribute('data-color-image') || '';
     selectedColorSurcharge = Number(checked.getAttribute('data-color-surcharge') || 0);
@@ -276,6 +300,20 @@
     return num.toLocaleString('vi-VN') + ' VNĐ';
   }
 
+  function updatePriceBreakdown() {
+    var basePrice = currentVariantPrice;
+    if (Number.isNaN(basePrice) || basePrice < 0) {
+      basePrice = 0;
+    }
+    // Total price with color surcharge (Giá xe kèm pin = Tổng dự kiến)
+    var totalWithSurcharge = basePrice + selectedColorSurcharge;
+
+    var priceTotalEstimates = form.querySelectorAll('[data-price-total-estimate]');
+    priceTotalEstimates.forEach(function (el) {
+      el.textContent = formatVnd(totalWithSurcharge);
+    });
+  }
+
   function updateDepositSummary() {
     var totalDeposit = baseDeposit + selectedColorSurcharge;
     if (summaryDeposit) {
@@ -292,6 +330,8 @@
       if (!wrap) return;
       wrap.classList.toggle('hidden', selectedColorSurcharge <= 0);
     });
+
+    updatePriceBreakdown();
   }
 
   function setActiveVariant(btn) {
@@ -316,13 +356,20 @@
       summaryVariant.textContent = variantName || '-';
     }
 
-    var priceText = formatVnd(variantPrice);
+    currentVariantPrice = Number(variantPrice || 0);
+    if (Number.isNaN(currentVariantPrice) || currentVariantPrice < 0) {
+      currentVariantPrice = 0;
+    }
+
+    var priceText = formatVnd(currentVariantPrice);
     if (selectedVariantPrice) {
       selectedVariantPrice.textContent = priceText;
     }
     if (summaryPrice) {
       summaryPrice.textContent = priceText;
     }
+
+    updatePriceBreakdown();
   }
 
   function syncSelectedInterior() {
@@ -424,16 +471,42 @@
     });
   });
 
+  if (priceBreakdownToggle && priceBreakdownPanel) {
+    priceBreakdownToggle.addEventListener('click', function () {
+      var expanded = !priceBreakdownPanel.classList.contains('hidden');
+      priceBreakdownPanel.classList.toggle('hidden', expanded);
+      priceBreakdownToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      if (priceBreakdownIcon) {
+        priceBreakdownIcon.classList.toggle('rotate-180', !expanded);
+      }
+    });
+  }
+
   var selectedShowroom = showroomSelect ? String(showroomSelect.getAttribute('data-selected') || '') : '';
   populateShowrooms(selectedShowroom);
 
   var defaultVariantBtn = form.querySelector('[data-variant-btn].border-vfNavy') || variantButtons[0];
   if (defaultVariantBtn) {
     setActiveVariant(defaultVariantBtn);
+  } else {
+    var activeSwitchBtn = form.querySelector('[data-switch-product].border-vfNavy') || switchButtons[0];
+    if (activeSwitchBtn) {
+      var priceSpan = activeSwitchBtn.querySelector('.text-vfNavy');
+      if (priceSpan) {
+        currentVariantPrice = Number((priceSpan.textContent || '').replace(/[^0-9]/g, ''));
+        if (Number.isNaN(currentVariantPrice) || currentVariantPrice < 0) {
+          currentVariantPrice = 0;
+        }
+        if (selectedVariantPrice) {
+          selectedVariantPrice.textContent = formatVnd(currentVariantPrice);
+        }
+      }
+    }
   }
 
   syncSelectedColor();
   syncSelectedInterior();
+  updatePriceBreakdown();
   updateDepositSummary();
   setStep(step);
 })();

@@ -1,8 +1,4 @@
 <div class="card-body">
-    <div class="pb-3 mb-3 border-bottom">
-        <h5 class="header-title mb-2">Bảng Quản Lý Sản Phẩm</h5>
-        <p class="text-muted mb-0">Theo dõi sản phẩm theo danh mục, giá bán và trạng thái hiển thị</p>
-    </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light text-uppercase">

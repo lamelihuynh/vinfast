@@ -5,6 +5,14 @@ $fmtVnd = static function (float $value): string {
     return number_format($value, 0, ',', '.') . ' VNĐ';
 };
 
+$paymentMap = [
+    'unpaid' => ['label' => 'Chưa thanh toán', 'class' => 'bg-yellow-100 text-yellow-800'],
+    'pending_verify' => ['label' => 'Chờ xác nhận', 'class' => 'bg-blue-100 text-blue-800'],
+    'paid' => ['label' => 'Đã nhận cọc', 'class' => 'bg-green-100 text-green-800'],
+    'failed' => ['label' => 'Thanh toán thất bại', 'class' => 'bg-red-100 text-red-800'],
+    'refunded' => ['label' => 'Đã hoàn tiền', 'class' => 'bg-purple-100 text-purple-800'],
+];
+
 ?>
 
 <section class="min-h-screen bg-slate-50 py-6">
@@ -25,19 +33,43 @@ $fmtVnd = static function (float $value): string {
         <?php else: ?>
             <div class="space-y-3">
                 <?php foreach ($orders as $o): ?>
-                    <?php $oid = htmlspecialchars((string)($o['orderId'] ?? 'VF-0000')); ?>
-                    <?php $name = htmlspecialchars((string)($o['carName'] ?? '—')); ?>
-                    <?php $date = htmlspecialchars((string)($o['orderDate'] ?? '—')); ?>
-                    <?php $amount = $fmtVnd((float)($o['depositAmount'] ?? 0)); ?>
-                    <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white px-4 py-3">
-                        <div>
-                            <div class="text-sm text-slate-500">Mã đơn: <span class="font-mono text-slate-700"><?= $oid ?></span></div>
-                            <div class="text-sm font-semibold text-slate-900"><?= $name ?></div>
-                            <div class="text-xs text-slate-500"><?= $date ?></div>
+                    <?php
+                    $oid = htmlspecialchars((string)($o['orderId'] ?? 'VF-0000'));
+                    $name = htmlspecialchars((string)($o['carName'] ?? '—'));
+                    $date = htmlspecialchars((string)($o['orderDate'] ?? '—'));
+                    $customerName = htmlspecialchars((string)($o['customerName'] ?? ''));
+                    $customerEmail = htmlspecialchars((string)($o['email'] ?? ''));
+                    $customerPhone = htmlspecialchars((string)($o['phone'] ?? ''));
+                    $province = htmlspecialchars((string)($o['province'] ?? ''));
+                    $showroom = htmlspecialchars((string)($o['showroom'] ?? ''));
+                    $paymentStatusRaw = (string)($o['paymentStatus'] ?? 'pending_verify');
+                    $paymentUi = $paymentMap[$paymentStatusRaw] ?? $paymentMap['pending_verify'];
+                    $amount = (float)($o['depositAmount'] ?? 0);
+                    ?>
+                    <div class="rounded-lg border border-slate-100 bg-white px-4 py-3">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm text-slate-500">Mã đơn: <span class="font-mono text-slate-700"><?= $oid ?></span></div>
+                                <div class="text-sm font-semibold text-slate-900"><?= $name ?></div>
+                                <div class="mt-1 space-y-0.5 text-xs text-slate-500">
+                                    <?php if ($customerName !== ''): ?><div><?= $customerName ?></div><?php endif; ?>
+                                    <?php if ($customerPhone !== ''): ?><div><?= $customerPhone ?></div><?php endif; ?>
+                                    <?php if ($customerEmail !== ''): ?><div><?= $customerEmail ?></div><?php endif; ?>
+                                    <?php if ($province !== ''): ?><div><?= $province ?><?php if ($showroom !== ''): ?> · <?= $showroom ?><?php endif; ?></div><?php endif; ?>
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1"><?= $date ?></div>
+                            </div>
+
+                            <div class="text-right">
+                                <div class="text-xs text-slate-500">Tiền cọc</div>
+                                <div class="text-sm font-semibold text-slate-900"><?= $amount > 0 ? $fmtVnd($amount) : 'Chưa cập nhật' ?></div>
+                                <span class="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= htmlspecialchars($paymentUi['class']) ?>">
+                                    <?= htmlspecialchars($paymentUi['label']) ?>
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-sm font-semibold text-slate-900"><?= $amount ?></div>
-                            <a href="<?= BASE_URL ?>order/confirmation" class="text-xs text-[#1a6fe0] mt-1 inline-block">Xem chi tiết</a>
+                        <div class="mt-3 flex items-center justify-end">
+                            <a href="<?= BASE_URL ?>order/confirmation" class="text-xs text-[#1a6fe0] inline-block">Xem chi tiết</a>
                         </div>
                     </div>
                 <?php endforeach; ?>

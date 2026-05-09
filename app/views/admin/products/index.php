@@ -27,15 +27,15 @@ $cats = is_array($cats ?? null) ? $cats : [];
 $summary = is_array($summary ?? null) ? $summary : [];
 $productsForModal = is_array($productsForModal ?? null) ? $productsForModal : [];
 ?>
-
-<?php include ROOT . '/app/views/admin/products/partials/page-header.php'; ?>
-
 <?php include ROOT . '/app/views/admin/products/partials/stats.php'; ?>
 
 <div class="card">
     <?php include ROOT . '/app/views/admin/products/partials/filters.php'; ?>
     <?php include ROOT . '/app/views/admin/products/partials/table.php'; ?>
-    <?php include ROOT . '/app/views/admin/products/partials/pagination.php'; ?>
+    <?php 
+    $itemName = 'sản phẩm';
+    include ROOT . '/app/views/admin/partials/pagination.php'; 
+    ?>
 </div>
 <?php include ROOT . '/app/views/admin/products/partials/modal.php'; ?>
 <?php include ROOT . '/app/views/admin/products/partials/modal-script.php'; ?>

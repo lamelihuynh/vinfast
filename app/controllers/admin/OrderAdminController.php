@@ -10,7 +10,7 @@
  */
 class OrderAdminController
 {
-    private const PER_PAGE = 10;
+    private const PER_PAGE = 5;
 
     public function index(): void
     {

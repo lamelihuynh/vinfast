@@ -346,6 +346,9 @@ class OrderController
                 'orderDbId' => (int)$r['id'],
                 'carName' => (string)($r['product_name'] ?? '—'),
                 'orderDate' => !empty($r['created_at']) ? date('d/m/Y H:i', strtotime($r['created_at'])) : '',
+                'customerName' => (string)($note['full_name'] ?? ($r['user_name'] ?? '')),
+                'email' => (string)($note['email'] ?? ($r['email'] ?? '')),
+                'phone' => (string)($note['phone'] ?? ''),
                 'depositAmount' => (float)($note['deposit_amount'] ?? 0),
                 'paymentStatus' => $paymentStatus,
             ];

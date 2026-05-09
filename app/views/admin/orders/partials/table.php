@@ -6,10 +6,18 @@
  */
 $orders = $orders ?? [];
 $typeMap = $typeMap ?? [];
-$labelByStatus = $labelByStatus ?? function($v) { return $v; };
-$badgeByStatus = $badgeByStatus ?? function($v) { return $v; };
-$extractPhone = $extractPhone ?? function($v) { return ''; };
-$extractOrderDetail = $extractOrderDetail ?? function($v) { return []; };
+$labelByStatus = $labelByStatus ?? function ($v) {
+    return $v;
+};
+$badgeByStatus = $badgeByStatus ?? function ($v) {
+    return $v;
+};
+$extractPhone = $extractPhone ?? function ($v) {
+    return '';
+};
+$extractOrderDetail = $extractOrderDetail ?? function ($v) {
+    return [];
+};
 ?>
 <div class="row">
     <div class="col-12">
@@ -57,10 +65,10 @@ $extractOrderDetail = $extractOrderDetail ?? function($v) { return []; };
                                             <div class="small text-muted">#<?= $id ?></div>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold"><?= htmlspecialchars((string)($order['user_name'] ?? '')) ?></div>
-                                            <div class="small text-muted"><?= htmlspecialchars((string)($order['email'] ?? '')) ?></div>
-                                            <?php if ($phone !== ''): ?>
-                                                <div class="small text-muted"><?= htmlspecialchars($phone) ?></div>
+                                            <div class="fw-semibold"><?= htmlspecialchars((string)($detailPayload['customerName'] ?? $order['user_name'] ?? '')) ?></div>
+                                            <div class="small text-muted"><?= htmlspecialchars((string)($detailPayload['email'] ?? '')) ?></div>
+                                            <?php if (($detailPayload['phone'] ?? '') !== ''): ?>
+                                                <div class="small text-muted"><?= htmlspecialchars((string)$detailPayload['phone']) ?></div>
                                             <?php endif; ?>
                                         </td>
                                         <td>
@@ -102,6 +110,10 @@ $extractOrderDetail = $extractOrderDetail ?? function($v) { return []; };
                     </table>
                 </div>
             </div>
+            <?php 
+            $itemName = 'đơn hàng';
+            include ROOT . '/app/views/admin/partials/pagination.php'; 
+            ?>
         </div>
     </div>
 </div>

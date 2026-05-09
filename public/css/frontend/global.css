@@ -20,7 +20,7 @@
 /* ===== BASE ===== */
 body         { font-family: "Segoe UI", Roboto, sans-serif; color: var(--vf-dark); }
 a            { color: var(--vf-blue); }
-a:hover      { color: var(--vf-red);  }
+a:hover      { color: var(--vf-gold);  }
 .btn-primary { background: var(--vf-blue); border-color: var(--vf-blue); }
 
 /* ===== HEADER INTERACTIONS ===== */

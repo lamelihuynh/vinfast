@@ -81,15 +81,15 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                     <div class="border-b px-4 pt-4">
                         <div class="flex items-center gap-2 pb-3">
                             <?php for ($step = 1; $step <= 3; $step++): ?>
-                                <button type="button" data-step-tab="<?= $step ?>"
-                                    class="px-2 py-1 text-[11px] font-semibold <?= $currentStep === $step ? 'bg-slate-100 text-vfNavy' : 'text-slate-400' ?>">
+                                <span data-step-tab="<?= $step ?>"
+                                    class="pointer-events-none px-2 py-1 text-[11px] font-semibold <?= $currentStep === $step ? 'bg-slate-100 text-vfNavy' : 'text-slate-400' ?>">
                                     <span class="inline-grid h-5 w-5 place-items-center rounded-full text-[10px] <?= $currentStep >= $step ? 'bg-vfNavy text-white' : 'border text-slate-400' ?>">
                                         <?= $step ?>
                                     </span>
                                     <span class="hidden sm:inline">
                                         <?= $step === 1 ? 'Lựa chọn' : ($step === 2 ? 'Thông tin' : 'Đặt cọc') ?>
                                     </span>
-                                </button>
+                                </span>
                                 <?php if ($step < 3): ?>
                                     <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
                                 <?php endif; ?>

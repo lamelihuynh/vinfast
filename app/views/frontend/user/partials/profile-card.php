@@ -15,7 +15,12 @@ $avatar = htmlspecialchars((string)($userData['avatar'] ?? $avatarFallback));
         <div class="min-w-0">
             <h3 class="truncate text-base font-bold text-slate-900"><?= $name ?></h3>
             <p class="truncate text-sm text-slate-500"><?= $email ?></p>
-            <div class="mt-2 inline-flex rounded-full bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Hồ sơ</div>
+            <div class="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">Member</div>
         </div>
+    </div>
+
+    <div class="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">VinFast Care</div>
+        <div class="mt-1 text-[12px] text-slate-600">Theo dõi đơn hàng, trạng thái xử lý và thông tin tài khoản tại một nơi.</div>
     </div>
 </div>

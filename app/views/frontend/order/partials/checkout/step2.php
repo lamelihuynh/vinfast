@@ -24,10 +24,10 @@ $provinces = $provinces ?? [];
 
         <div class="sm:col-span-2">
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Họ và tên <span class="text-red-500">*</span></label>
-            <input type="text" name="full_name" maxlength="80" value="<?= htmlspecialchars((string)$formData['full_name']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="Nguyễn Hải Nam" required>
+            <input type="text" name="full_name" maxlength="80" value="<?= htmlspecialchars((string)$formData['full_name']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="Họ và tên" required>
         </div>
 
-        <div>
+        <div class="sm:col-span-2">
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Số điện thoại <span class="text-red-500">*</span></label>
             <input type="tel" name="phone"
                 maxlength="10"
@@ -39,7 +39,7 @@ $provinces = $provinces ?? [];
             <p data-error="phone" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
-        <div>
+        <div class="sm:col-span-2">
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Email <span class="text-red-500">*</span></label>
             <input type="email" name="email"
                 value="<?= htmlspecialchars((string)($formData['email'] ?? '')) ?>"
@@ -48,19 +48,19 @@ $provinces = $provinces ?? [];
             <p data-error="email" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
-        <div>
-            <label class="mb-1 block text-[12px] font-semibold text-slate-700">Số CCCD</label>
+        <div class="sm:col-span-2">
+            <label class="mb-1 block text-[12px] font-semibold text-slate-700">Số CCCD <span class="text-red-500">*</span></label>
             <input type="text" name="cccd"
                 maxlength="12"
                 pattern="[0-9]{12}"
                 oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 12)"
                 value="<?= htmlspecialchars((string)($formData['cccd'] ?? '')) ?>"
                 class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500"
-                placeholder="Nhập 12 số CCCD">
+                placeholder="Nhập 12 số CCCD" required>
             <p data-error="cccd" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
-        <div>
+        <div class="sm:col-span-2">
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Tỉnh thành <span class="text-red-500">*</span></label>
             <select name="province" data-province-select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" required>
                 <option value="">Chọn tỉnh thành</option>
@@ -68,13 +68,15 @@ $provinces = $provinces ?? [];
                     <option value="<?= htmlspecialchars((string)$province) ?>" <?= $formData['province'] === $province ? 'selected' : '' ?>><?= htmlspecialchars((string)$province) ?></option>
                 <?php endforeach; ?>
             </select>
+            <p data-error="province" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
 
-        <div>
+        <div class="sm:col-span-2">
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Showroom nhận xe <span class="text-red-500">*</span></label>
             <select name="showroom" data-showroom-select data-selected="<?= htmlspecialchars((string)$formData['showroom']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" required>
                 <option value="">Chọn showroom</option>
             </select>
+            <p data-error="showroom" class="mt-1 hidden text-[12px] text-red-600"></p>
         </div>
     </div>
 

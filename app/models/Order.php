@@ -147,8 +147,11 @@ class Order
 
         $q = trim((string)($filters['q'] ?? ''));
         if ($q !== '') {
-            $where[] = '(u.name LIKE :q OR u.email LIKE :q OR p.name LIKE :q OR CAST(o.id AS CHAR) LIKE :q)';
-            $params[':q'] = '%' . $q . '%';
+            $where[] = '(u.name LIKE :q1 OR u.email LIKE :q2 OR p.name LIKE :q3 OR CAST(o.id AS CHAR) LIKE :q4)';
+            $params[':q1'] = '%' . $q . '%';
+            $params[':q2'] = '%' . $q . '%';
+            $params[':q3'] = '%' . $q . '%';
+            $params[':q4'] = '%' . $q . '%';
         }
 
         $sql = "
@@ -190,8 +193,11 @@ class Order
 
         $q = trim((string)($filters['q'] ?? ''));
         if ($q !== '') {
-            $where[] = '(u.name LIKE :q OR u.email LIKE :q OR p.name LIKE :q OR CAST(o.id AS CHAR) LIKE :q)';
-            $params[':q'] = '%' . $q . '%';
+            $where[] = '(u.name LIKE :q1 OR u.email LIKE :q2 OR p.name LIKE :q3 OR CAST(o.id AS CHAR) LIKE :q4)';
+            $params[':q1'] = '%' . $q . '%';
+            $params[':q2'] = '%' . $q . '%';
+            $params[':q3'] = '%' . $q . '%';
+            $params[':q4'] = '%' . $q . '%';
         }
 
         $sql = "

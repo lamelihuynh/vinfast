@@ -14,6 +14,11 @@ $fmtVnd = static function (float $v) {
             $oid = htmlspecialchars((string)($o['orderId'] ?? ('VF-ORD-' . str_pad((string)($o['id'] ?? 0), 6, '0', STR_PAD_LEFT))));
             $name = htmlspecialchars((string)($o['carName'] ?? $o['product_name'] ?? '—'));
             $date = htmlspecialchars((string)($o['orderDate'] ?? $o['created_at'] ?? '—'));
+            $customerName = htmlspecialchars((string)($o['customerName'] ?? ''));
+            $customerEmail = htmlspecialchars((string)($o['email'] ?? ''));
+            $customerPhone = htmlspecialchars((string)($o['phone'] ?? ''));
+            $province = htmlspecialchars((string)($o['province'] ?? ''));
+            $showroom = htmlspecialchars((string)($o['showroom'] ?? ''));
             $amount = (float)($o['depositAmount'] ?? $o['deposit_amount'] ?? 0);
             $paymentStatus = htmlspecialchars((string)($o['paymentStatus'] ?? $o['payment_status'] ?? 'pending_verify'));
             $statusClass = 'bg-slate-100 text-slate-700';
@@ -30,16 +35,31 @@ $fmtVnd = static function (float $v) {
                 $statusLabel = 'Chưa thanh toán';
             }
         ?>
-            <div class="rounded-lg border border-slate-100 bg-white p-4 flex items-center justify-between">
-                <div>
-                    <div class="text-sm text-slate-500">Mã: <span class="font-mono text-slate-700"><?= $oid ?></span></div>
-                    <div class="text-base font-semibold text-slate-900"><?= $name ?></div>
-                    <div class="text-xs text-slate-500"><?= $date ?></div>
+            <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div class="text-sm text-slate-500">Mã đơn: <span class="font-mono font-semibold text-slate-700"><?= $oid ?></span></div>
+                    <div class="text-xs text-slate-500">Ngày tạo: <?= $date ?></div>
                 </div>
-                <div class="text-right">
-                    <div class="text-sm font-semibold text-slate-900"><?= $amount > 0 ? $fmtVnd($amount) : '--' ?></div>
-                    <div class="mt-2">
-                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= $statusClass ?>"><?= htmlspecialchars($statusLabel) ?></span>
+
+                <div class="mt-3 grid gap-4 md:grid-cols-2">
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Khách hàng</div>
+                        <div class="mt-1 text-sm font-semibold text-slate-900"><?= $customerName !== '' ? $customerName : 'Chưa cập nhật' ?></div>
+                        <?php if ($customerEmail !== ''): ?><div class="text-xs text-slate-500"><?= $customerEmail ?></div><?php endif; ?>
+                        <?php if ($customerPhone !== ''): ?><div class="text-xs text-slate-500"><?= $customerPhone ?></div><?php endif; ?>
+                        <?php if ($province !== '' || $showroom !== ''): ?>
+                            <div class="mt-1 text-xs text-slate-500"><?= $province ?><?= $province !== '' && $showroom !== '' ? ' · ' : '' ?><?= $showroom ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="md:text-right">
+                        <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Sản phẩm</div>
+                        <div class="mt-1 text-sm font-semibold text-slate-900"><?= $name ?></div>
+                        <div class="mt-2 text-xs text-slate-500">Tiền cọc</div>
+                        <div class="text-sm font-semibold text-slate-900"><?= $amount > 0 ? $fmtVnd($amount) : 'Chưa cập nhật' ?></div>
+                        <div class="mt-2">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= $statusClass ?>"><?= htmlspecialchars($statusLabel) ?></span>
+                        </div>
                     </div>
                 </div>
             </div>

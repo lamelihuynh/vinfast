@@ -34,14 +34,14 @@ $cardItems = [
 <div class="row">
     <?php foreach ($cardItems as $item): ?>
         <div class="col-xl-3 col-md-6 col-12 mb-4">
-            <div class="card border-0 text-dark <?= htmlspecialchars((string)$item['class']) ?>">
+            <div class="card border-0 text-white <?= htmlspecialchars((string)$item['class']) ?>">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="small opacity-75"><?= htmlspecialchars((string)$item['label']) ?></div>
                         <i class="<?= htmlspecialchars($item['icon']) ?>"></i>
                     </div>
-                    <div class="h5 mb-1 text-dark"><?= htmlspecialchars((string)$item['value']) ?></div>
-                    <div class="small opacity-75"><?= htmlspecialchars((string)$item['sub']) ?></div>
+                    <div class="h5 mb-1 text-white"><?= htmlspecialchars((string)$item['value']) ?></div>
+                    <div class="small opacity-75 text-white"><?= htmlspecialchars((string)$item['sub']) ?></div>
                 </div>
             </div>
         </div>

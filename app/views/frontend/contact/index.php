@@ -171,7 +171,7 @@ $isTestDriveTab = $tab === 'test-drive';
         <p class="text-sm font-bold tracking-widest text-[#FFB81C] uppercase">LIÊN HỆ VỚI CHÚNG TÔI</p>
         <span class="h-1 w-8 bg-[#FFB81C] rounded-full"></span>
       </div>
-      <h1 class="mt-2 text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#0b233f] to-[#1a4a82] sm:text-5xl drop-shadow-sm">
+      <h1 class="mt-2 text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-vfNavy to-[#1a4a82] sm:text-5xl drop-shadow-sm">
         Gửi yêu cầu hỗ trợ
       </h1>
       <p class="mt-4 max-w-2xl mx-auto text-base text-slate-600">
@@ -314,7 +314,7 @@ $isTestDriveTab = $tab === 'test-drive';
           <div class="mt-6 space-y-4 text-sm">
             <div class="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-[#0b233f] transition-colors group-hover:bg-[#0b233f] group-hover:text-white">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-vfNavy transition-colors group-hover:bg-vfNavy group-hover:text-white">
                   <i class="fa-solid fa-location-dot"></i>
                 </div>
                 <div>
@@ -322,14 +322,14 @@ $isTestDriveTab = $tab === 'test-drive';
                   <p class="mt-1 font-medium text-slate-900"><?= htmlspecialchars($address ?: 'Chưa cập nhật') ?></p>
                 </div>
               </div>
-              <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#0b233f] hover:text-[#FFB81C] transition-colors" href="<?= htmlspecialchars($mapUrl) ?>" target="_blank" rel="noreferrer">
+              <a class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-vfNavy hover:text-[#FFB81C] transition-colors" href="<?= htmlspecialchars($mapUrl) ?>" target="_blank" rel="noreferrer">
                 Xem trên bản đồ <i class="fa-solid fa-arrow-right-long"></i>
               </a>
             </div>
 
             <div class="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-[#0b233f] transition-colors group-hover:bg-[#0b233f] group-hover:text-white">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-vfNavy transition-colors group-hover:bg-vfNavy group-hover:text-white">
                   <i class="fa-solid fa-phone"></i>
                 </div>
                 <div>
@@ -341,7 +341,7 @@ $isTestDriveTab = $tab === 'test-drive';
 
             <div class="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-[#0b233f] transition-colors group-hover:bg-[#0b233f] group-hover:text-white">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8fafc] text-vfNavy transition-colors group-hover:bg-vfNavy group-hover:text-white">
                   <i class="fa-solid fa-envelope"></i>
                 </div>
                 <div>

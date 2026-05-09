@@ -1,11 +1,13 @@
 <div class="card-body border-top pt-3 mt-2">
-    <?php if (isset($pg) && $pg->pages > 1): ?>
+    <?php if (isset($pg) && $pg->total > 0): ?>
         <div class="d-flex align-items-center justify-content-between">
             <small class="text-muted">
                 Hiển thị <strong><?= (($pg->current - 1) * $pg->perPage) + 1 ?></strong> đến
                 <strong><?= min($pg->current * $pg->perPage, $pg->total) ?></strong>
-                trên tổng <strong><?= $pg->total ?></strong> sản phẩm
+                trên tổng <strong><?= $pg->total ?></strong> <?= htmlspecialchars($itemName ?? 'bản ghi') ?>
             </small>
+            
+            <?php if ($pg->pages > 1): ?>
             <nav>
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item <?= $pg->hasPrev() ? '' : 'disabled' ?>">
@@ -50,6 +52,7 @@
                     </li>
                 </ul>
             </nav>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>

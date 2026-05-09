@@ -184,10 +184,10 @@ class ProductAdminController
 
         if ($isEdit) {
             $this->persistUpdate($id, is_array($existing) ? $existing : [], $payload, $allImages);
-            $_SESSION['flash'] = 'Product updated successfully.';
+            $_SESSION['flash'] = 'Sản phẩm đã được cập nhật thành công.';
         } else {
             $this->persistCreate($payload, $allImages);
-            $_SESSION['flash'] = 'Product created successfully.';
+            $_SESSION['flash'] = 'Sản phẩm đã được tạo thành công.';
         }
         header('Location: ' . ADMIN_URL . 'products');
         exit;
@@ -223,7 +223,7 @@ class ProductAdminController
 
         $next = ((int)($product['is_active'] ?? 0) === 1) ? 0 : 1;
         Product::setActive($id, $next);
-        $_SESSION['flash'] = $next === 1 ? 'Product is now visible.' : 'Product is now hidden.';
+        $_SESSION['flash'] = $next === 1 ? 'Sản phẩm hiện đang được hiển thị.' : 'Sản phẩm hiện đang bị ẩn.';
         header('Location: ' . ADMIN_URL . 'products');
         exit;
     }
@@ -241,7 +241,7 @@ class ProductAdminController
 
         if (Product::hasOrders($id)) {
             Product::setActive($id, 0);
-            $_SESSION['errors'] = ['Product has related orders, so it was hidden instead of deleted.'];
+            $_SESSION['errors'] = ['Không thể xóa sản phẩm vì đã có đơn hàng liên quan. Sản phẩm đã bị ẩn khỏi danh mục.'];
             header('Location: ' . ADMIN_URL . 'products');
             exit;
         }
@@ -253,7 +253,7 @@ class ProductAdminController
             $this->deleteUploadedImage((string)$img);
         }
 
-        $_SESSION['flash'] = 'Product deleted successfully.';
+        $_SESSION['flash'] = 'Sản phẩm đã được xóa thành công.';
         header('Location: ' . ADMIN_URL . 'products');
         exit;
     }

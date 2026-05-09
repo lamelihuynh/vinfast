@@ -1,6 +1,11 @@
 <div class="card-body border-bottom pb-3">
+    <div class="pb-3 mb-3  d-flex align-items-center justify-content-between">
+        <h5 class="header-title mb-0">Bảng Quản Lý Sản Phẩm</h5>
+        <button type="button" id="openCreateProductBtn" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#productModal">
+            <i class="fa-solid fa-plus me-2"></i>Thêm Sản Phẩm
+        </button>
+    </div>
     <form method="GET" action="<?= ADMIN_URL ?>products" class="row g-2 align-items-end mb-2">
-
         <div class="col-md-4">
             <label class="form-label">Tìm kiếm</label>
             <div class="input-group">

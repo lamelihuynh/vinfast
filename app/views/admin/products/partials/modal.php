@@ -87,7 +87,7 @@
                         <div class="col-12">
                             <label class="form-label">Tải ảnh mới</label>
                             <input type="file" class="form-control" name="images[]" id="modal_images" accept="image/jpeg,image/png,image/webp" multiple>
-                            <small class="text-muted">JPG/PNG/WebP, tối đa 2MB mỗi ảnh. Hãy chọn 1 ảnh chính để hiển thị ưu tiên.</small>
+                            <small class="text-muted">JPG/PNG/WebP, tối đa 5MB mỗi ảnh. Hãy chọn 1 ảnh chính để hiển thị ưu tiên.</small>
                         </div>
 
                         <!-- Table editor for existing images -> color mapping (srtdash-style) -->

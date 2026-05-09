@@ -25,14 +25,6 @@ function extractRangeText(array $specs): string
   return 'N/A';
 }
 
-function isProductNew(array $product): bool
-{
-  if (empty($product['created_at'])) return false;
-  $created = strtotime($product['created_at']);
-  if (!$created) return false;
-  return (time() - $created) <= 60 * 24 * 3600;
-}
-
 $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 ?>
 
@@ -73,7 +65,6 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
               <option value="default" <?= selectedValue('default', $sort) ?>>Mặc định</option>
               <option value="price_asc" <?= selectedValue('price_asc', $sort) ?>>Giá tăng dần</option>
               <option value="price_desc" <?= selectedValue('price_desc', $sort) ?>>Giá giảm dần</option>
-              <option value="newest" <?= selectedValue('newest', $sort) ?>>Mới nhất</option>
             </select>
           </div>
         </div>

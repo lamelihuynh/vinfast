@@ -23,7 +23,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Khách hàng</div>
-                        <div class="fw-semibold" data-detail="userName">--</div>
+                        <div class="fw-semibold" data-detail="customerName">--</div>
                         <div class="small text-muted" data-detail="email">--</div>
                         <div class="small text-muted" data-detail="phone">--</div>
                     </div>
@@ -139,12 +139,13 @@
 
             setText('orderCode', order.orderCode || '');
             setText('createdAt', order.createdAt || '');
-            setText('userName', order.userName || '');
+            setText('customerName', order.customerName || order.userName || '');
             setText('email', order.email || '');
             setText('phone', order.phone || '');
             setText('productName', order.productName || '');
             setText('price', order.price || '');
             setText('type', order.type || '');
+            setText('ownerType', order.ownerType || '');
             setText('province', order.province || '');
             setText('showroom', order.showroom || '');
             setText('payMethod', order.payMethod || '');

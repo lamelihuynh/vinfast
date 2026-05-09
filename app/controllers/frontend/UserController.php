@@ -12,7 +12,7 @@ class UserController
 {
     private User  $user;
     private Order $order;
-    
+
     public function __construct()
     {
         Auth::requireLogin();
@@ -53,10 +53,10 @@ class UserController
             if (!is_dir($uploadDir)) {
                 @mkdir($uploadDir, 0777, true);
             } else {
-                $files = glob($uploadDir . '*'); 
+                $files = glob($uploadDir . '*');
                 foreach ($files as $file) {
                     if (is_file($file)) {
-                        @unlink($file); 
+                        @unlink($file);
                     }
                 }
             }
@@ -64,7 +64,7 @@ class UserController
             $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
             if (empty($ext)) $ext = 'jpg';
             $fileName = 'avatar.' . $ext;
-            
+
             $destPath = $uploadDir . $fileName;
 
             if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destPath)) {
@@ -76,7 +76,7 @@ class UserController
             'email'  => $_POST['email'],
             'avatar' => $avatar,
         ]);
-        
+
         $_SESSION['flash'] = 'Cập nhật hồ sơ thành công.';
         header('Location: ' . BASE_URL . 'user/profile');
         exit;
@@ -107,10 +107,37 @@ class UserController
     {
         SEO::set('My Orders');
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $perPage = 10;
+        $perPage = 5;
         $total = Order::countByUserId(Auth::id());
         $pg = new Pagination($total, $page, $perPage);
-        $orders = Order::getByUserId(Auth::id(), $pg->current, $pg->perPage);
+        $rawOrders = Order::getByUserId(Auth::id(), $pg->current, $pg->perPage);
+        $orders = [];
+        foreach ($rawOrders as $row) {
+            $note = [];
+            if (is_string($row['note'] ?? '')) {
+                $decoded = json_decode((string)$row['note'], true);
+                if (is_array($decoded)) {
+                    $note = $decoded;
+                }
+            } elseif (is_array($row['note'] ?? null)) {
+                $note = $row['note'];
+            }
+
+            $paymentStatus = Order::getPaymentStatusFromNote($row['note'] ?? null);
+            $orders[] = [
+                'orderId' => 'VF-' . strtoupper(dechex((int)$row['id'])) . '-' . strtoupper(substr(md5((string)$row['id']), 0, 4)),
+                'orderDbId' => (int)$row['id'],
+                'carName' => (string)($row['product_name'] ?? '—'),
+                'orderDate' => !empty($row['created_at']) ? date('d/m/Y H:i', strtotime((string)$row['created_at'])) : '',
+                'customerName' => (string)($note['full_name'] ?? ($row['user_name'] ?? '')),
+                'email' => (string)($note['email'] ?? ($row['email'] ?? '')),
+                'phone' => (string)($note['phone'] ?? ''),
+                'province' => (string)($note['province'] ?? ''),
+                'showroom' => (string)($note['showroom'] ?? ''),
+                'depositAmount' => (float)($note['deposit_amount'] ?? 0),
+                'paymentStatus' => $paymentStatus,
+            ];
+        }
 
         $query = $_GET;
         unset($query['page']);

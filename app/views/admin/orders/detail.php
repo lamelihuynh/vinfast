@@ -35,8 +35,9 @@ $typeMap = [
 ];
 
 $depositAmount = (float)($note['deposit_amount'] ?? 0);
+$customerName = trim((string)($note['full_name'] ?? ($order['user_name'] ?? '')));
 $phone = trim((string)($note['phone'] ?? ''));
-$email = trim((string)($note['email'] ?? ($order['email'] ?? '')));
+$email = trim((string)($note['email'] ?? ''));
 $province = trim((string)($note['province'] ?? ''));
 $showroom = trim((string)($note['showroom'] ?? ''));
 $payMethod = trim((string)($note['pay_method'] ?? ''));
@@ -64,8 +65,8 @@ $payMethodMap = [
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="small text-muted">Khách hàng</div>
-                        <div class="fw-semibold"><?= htmlspecialchars((string)($order['user_name'] ?? '')) ?></div>
-                        <div class="small text-muted"><?= htmlspecialchars((string)($order['email'] ?? '')) ?></div>
+                        <div class="fw-semibold"><?= htmlspecialchars($customerName !== '' ? $customerName : '--') ?></div>
+                        <div class="small text-muted"><?= htmlspecialchars($email !== '' ? $email : '--') ?></div>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Sản phẩm</div>
