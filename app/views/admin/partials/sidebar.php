@@ -17,7 +17,7 @@ $isActive = static function (string $needle) use ($requestPath): bool {
 $isDashboardGroup = $isActive('/admin/dashboard');
 $isUserGroup = $isActive('/admin/users');
 $isProductGroup = $isActive('/admin/products') || $isActive('/admin/orders');
-$isContentGroup = $isActive('/admin/settings') || $isActive('/admin/contacts') || $isActive('/admin/faq');
+$isContentGroup = $isActive('/admin/settings') || $isActive('/admin/contacts') || $isActive('/admin/faq') || $isActive('/admin/faq-topic') || $isActive('/admin/page-content');
 $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
 ?>
 <div class="sidebar-menu">
@@ -35,18 +35,11 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
     <div class="menu-inner">
       <nav>
         <ul class="metismenu" id="menu">
-          <li>
-            <a href="<?= BASE_URL ?>"><i class="ti-home"></i><span>Trở về trang chủ</span></a>
-          </li>
-          <li class="<?= $isDashboardGroup ? 'active' : '' ?>">
-            <a href="javascript:void(0)" aria-expanded="<?= $isDashboardGroup ? 'true' : 'false' ?>">
-              <i class="ti-dashboard"></i><span>dashboard</span>
+
+          <li class="<?= $isActive('/admin/dashboard') ? 'active' : '' ?>">
+            <a href="<?= ADMIN_URL ?>dashboard">
+              <i class="ti-dashboard"></i><span>Tổng quan</span>
             </a>
-            <ul class="collapse <?= $isDashboardGroup ? 'show' : '' ?>">
-              <li class="<?= $isActive('/admin/dashboard') ? 'active' : '' ?>">
-                <a href="<?= ADMIN_URL ?>dashboard">Tổng quan</a>
-              </li>
-            </ul>
           </li>
 
           <li class="<?= $isUserGroup ? 'active' : '' ?>">
@@ -79,13 +72,8 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
               <li class="<?= $isActive('/admin/page-content/about') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>page-content/about">Trang Giới Thiệu</a></li>
               <li class="<?= $isActive('/admin/contacts') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>contacts">Trang Liên hệ</a></li>
               <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">Trang Câu Hỏi Thường Gặp</a></li>
-
+              <li class="<?= $isActive('/admin/faq-topic') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq-topic">Trang FAQ</a></li>
             </ul>
-          </li>
-          <li> <a href="<?= ADMIN_URL ?>faq-topic">
-                      <i class="fa-solid fa-layer-group"></i>
-                      <span>Chủ đề FAQ</span>
-                  </a>
           </li>
           <li class="<?= $isNewsGroup ? 'active' : '' ?>">
             <a href="javascript:void(0)" aria-expanded="<?= $isNewsGroup ? 'true' : 'false' ?>">
@@ -97,6 +85,10 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
             </ul>
           </li>
 
+          <li>
+            <a href="<?= BASE_URL ?>"><i class="ti-home"></i><span>Trở về trang chủ</span></a>
+          </li>
+          
           <li>
             <a href="<?= BASE_URL ?>auth/logout"><i class="ti-power-off"></i><span>Đăng xuất</span></a>
           </li>
