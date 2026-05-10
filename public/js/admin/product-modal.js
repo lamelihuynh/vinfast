@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   var modalApi = bootstrap.Modal.getOrCreateInstance(modalEl);
+  var oldState = window.VF_PRODUCT_MODAL_OLD && typeof window.VF_PRODUCT_MODAL_OLD === 'object' ? window.VF_PRODUCT_MODAL_OLD : null;
 
   var titleEl = document.getElementById('productModalTitle');
   var submitBtn = document.getElementById('productModalSubmitBtn');
@@ -30,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var inputMaxSpeed = document.getElementById('modal_max_speed');
   var inputBattery = document.getElementById('modal_battery');
   var inputDepositAmount = document.getElementById('modal_deposit_amount');
-  var inputDepositNonRefundable = document.getElementById('modal_deposit_non_refundable');
   var inputExteriorColorsRaw = document.getElementById('modal_exterior_colors_raw');
   var inputIsActive = document.getElementById('modal_is_active');
   var inputImages = document.getElementById('modal_images');
@@ -202,7 +202,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMaxSpeed.value = '';
     inputBattery.value = '';
     if (inputDepositAmount) inputDepositAmount.value = '15000000';
-    if (inputDepositNonRefundable) inputDepositNonRefundable.value = '1';
     if (inputExteriorColorsRaw) inputExteriorColorsRaw.value = '';
     inputIsActive.checked = true;
     inputImages.value = '';
@@ -211,6 +210,45 @@ document.addEventListener('DOMContentLoaded', function () {
     slugTouched = false;
     clearNewImagesPreview();
     renderColorImageTable({ images: [], exterior_colors: [] });
+  }
+
+  function fillFormFromState(state) {
+    var productLike = null;
+    if (state && Number(state.id || 0) > 0) {
+      productLike = products.find(function (item) {
+        return Number(item.id) === Number(state.id);
+      }) || null;
+    }
+
+    if (productLike) {
+      fillFormForEdit(productLike);
+    } else {
+      resetFormForCreate();
+      titleEl.textContent = 'Thêm sản phẩm mới';
+      submitBtn.textContent = 'Tạo sản phẩm';
+    }
+
+    inputId.value = String(Number(state.id || 0));
+    inputName.value = state.name || '';
+    inputCategory.value = String(state.category_id || '');
+    inputSlug.value = state.slug || '';
+    inputPrice.value = state.price || '';
+    inputDescription.value = state.description || '';
+    inputRange.value = state.range || '';
+    inputPower.value = state.power || '';
+    inputAcceleration.value = state.acceleration || '';
+    inputMaxSpeed.value = state.max_speed || '';
+    inputBattery.value = state.battery || '';
+    if (inputDepositAmount) inputDepositAmount.value = String(state.deposit_amount || 15000000);
+    if (inputExteriorColorsRaw) inputExteriorColorsRaw.value = state.exterior_colors_raw || '';
+    inputIsActive.checked = Number(state.is_active || 0) === 1 || state.is_active === true || state.is_active === '1';
+
+    var images = Array.isArray(state.existing_images) ? state.existing_images : (productLike && Array.isArray(productLike.images) ? productLike.images : []);
+    var colors = Array.isArray(state.exterior_colors) ? state.exterior_colors : (productLike && Array.isArray(productLike.exterior_colors) ? productLike.exterior_colors : []);
+    renderColorImageTable({ images: images, exterior_colors: colors });
+    serializeTableToTextarea();
+    clearNewImagesPreview();
+    refreshMainIndicators();
   }
 
   function fillFormForEdit(product) {
@@ -228,7 +266,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMaxSpeed.value = product.max_speed || '';
     inputBattery.value = product.battery || '';
     if (inputDepositAmount) inputDepositAmount.value = String(product.deposit_amount || 15000000);
-    if (inputDepositNonRefundable) inputDepositNonRefundable.value = '1';
     if (inputExteriorColorsRaw) {
       inputExteriorColorsRaw.value = colorRowsToTextarea(product.exterior_colors || []);
     }
@@ -383,6 +420,11 @@ document.addEventListener('DOMContentLoaded', function () {
       resetFormForCreate();
       modalApi.show();
     });
+  }
+
+  if (oldState && Object.keys(oldState).length > 0) {
+    fillFormFromState(oldState);
+    modalApi.show();
   }
 
   if (inputSlug) {

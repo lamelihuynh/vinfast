@@ -26,6 +26,7 @@ $products = is_array($products ?? null) ? $products : [];
 $cats = is_array($cats ?? null) ? $cats : [];
 $summary = is_array($summary ?? null) ? $summary : [];
 $productsForModal = is_array($productsForModal ?? null) ? $productsForModal : [];
+$old = is_array($old ?? null) ? $old : [];
 $price_min = (string)($price_min ?? '');
 $price_max = (string)($price_max ?? '');
 $sort = (string)($sort ?? 'default');

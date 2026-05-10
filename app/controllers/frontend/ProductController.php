@@ -111,19 +111,4 @@ class ProductController
         ]);
     }
 
-    public function checkout($id = 0): void
-    {
-        require_once __DIR__ . '/OrderController.php';
-        $oc = new OrderController();
-        $oc->checkout($id);
-    }
-
-
-
-    public function confirmation(): void
-    {
-        require_once __DIR__ . '/OrderController.php';
-        $oc = new OrderController();
-        $oc->confirmation();
-    }
 }

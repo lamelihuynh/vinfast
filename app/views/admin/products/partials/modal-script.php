@@ -1,11 +1,13 @@
 <?php
 $productsForModal = $productsForModal ?? [];
+$old = is_array($old ?? null) ? $old : [];
 $productModalJsVersion = AssetHelper::getVersion('public/js/admin/product-modal.js');
 ?>
 <script id="productModalData" type="application/json">
     <?= json_encode($productsForModal ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
 </script>
 <script>
+    window.VF_PRODUCT_MODAL_OLD = <?= json_encode($old ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     window.VF_PRODUCT_MODAL_BASE_URL = <?= json_encode(BASE_URL, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     window.VF_ADMIN_URL = <?= json_encode(ADMIN_URL, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>

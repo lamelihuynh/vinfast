@@ -1,4 +1,5 @@
-﻿<?php
+<?php
+require_once __DIR__ . '/../../../helpers/ImageHelper.php';
 $product = isset($product) && is_array($product) ? $product : [];
 $productId = (int)($product['id'] ?? 0);
 $productName = (string)($product['name'] ?? 'VinFast');
@@ -10,47 +11,15 @@ if ($descriptionText === '') {
 
 $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
 $images = is_array($product['images'] ?? null) ? $product['images'] : [];
-$extractProductFamily = static function (string $text): string {
-    $value = strtolower(trim($text));
-    if ($value === '') {
-        return '';
-    }
-
-    if (preg_match('/(?:^|[-_])vf(?:-?mpv)?-?([3-9])(?:[-_]|$)/i', $value, $familyMatch)) {
-        return 'vf' . $familyMatch[1];
-    }
-
-    $normalized = preg_replace('/[^a-z0-9]+/i', '-', $value);
-    $normalized = trim((string)$normalized, '-');
-    if ($normalized === '') {
-        return '';
-    }
-
-    if (strpos($normalized, 'vinfast-') === 0) {
-        $normalized = substr($normalized, 8);
-    }
-
-    $normalized = trim((string)$normalized, '-');
-    if ($normalized === '') {
-        return '';
-    }
-
-    $parts = explode('-', $normalized);
-    $family = strtolower(trim((string)($parts[0] ?? '')));
-    if (!preg_match('/^[a-z0-9]+$/', $family)) {
-        return '';
-    }
-
-    return $family;
-};
 
 $productFamily = '';
 if (!empty($product['slug'])) {
-    $productFamily = $extractProductFamily((string)$product['slug']);
+    $productFamily = ImageHelper::extractFamily((string)$product['slug']);
 }
 if ($productFamily === '' && !empty($product['name'])) {
-    $productFamily = $extractProductFamily((string)$product['name']);
+    $productFamily = ImageHelper::extractFamily((string)$product['name']);
 }
+
 
 $resolveImageUrl = function (string $imgRel) use ($productFamily): string {
     $imgRel = trim($imgRel);

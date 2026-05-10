@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../helpers/ImageHelper.php';
 /**
  * app/controllers/admin/ProductAdminController.php
  * Owner: Hai Nam 
- * Routes: /admin/products   /admin/products/form   /admin/products/form/{id}
+ * Routes: /admin/products
  *         POST /admin/products/save   POST /admin/products/delete/{id}
  *
  *  * Full CRUD for vehicle listings.
@@ -18,6 +18,9 @@ class ProductAdminController
 
     public function index(): void
     {
+        $old = is_array($_SESSION['old'] ?? null) ? $_SESSION['old'] : [];
+        unset($_SESSION['old']);
+
         $q = trim((string)($_GET['q'] ?? ''));
         $cat = (int)($_GET['cat'] ?? 0);
         $status = trim((string)($_GET['status'] ?? 'all'));
@@ -80,6 +83,7 @@ class ProductAdminController
             'products' => $products,
             'productsForModal' => $productsForModal,
             'cats' => $cats,
+            'old' => $old,
             'q' => $q,
             'cat' => $cat,
             'status' => $status,
@@ -123,38 +127,12 @@ class ProductAdminController
                 'max_speed' => (string)($specs['max_speed'] ?? ''),
                 'battery' => (string)($specs['battery'] ?? ''),
                 'deposit_amount' => max(0, (int)($specs['deposit_amount'] ?? 15000000)),
-                'deposit_non_refundable' => !empty($specs['deposit_non_refundable']) ? 1 : 0,
                 'exterior_colors' => is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [],
                 'images' => array_values($localImages),
-                'family' => $this->extractImageFamily((string)($p['slug'] ?? '')),
             ];
         }, $products);
     }
 
-    public function form($id = 0): void
-    {
-        $id = (int)$id;
-        $product = null;
-        if ($id > 0) {
-            $product = Product::getByIdAdmin($id);
-            if (!$product) {
-                $_SESSION['errors'] = ['Product not found.'];
-                header('Location: ' . ADMIN_URL . 'products');
-                exit;
-            }
-        }
-
-        $old = $_SESSION['old'] ?? null;
-        unset($_SESSION['old']);
-
-        $cats = Category::getAll();
-        SEO::set($id > 0 ? 'Edit Product' : 'Create Product');
-        View::render('admin/products/form', [
-            'product' => $product,
-            'cats' => $cats,
-            'old' => is_array($old) ? $old : [],
-        ], 'admin');
-    }
 
     public function save(): void
     {
@@ -176,7 +154,7 @@ class ProductAdminController
         if (!empty($errors)) {
             $_SESSION['errors'] = $errors;
             $_SESSION['old'] = $payload + ['id' => $id];
-            header('Location: ' . ADMIN_URL . 'products/form' . ($id > 0 ? '/' . $id : ''));
+            header('Location: ' . ADMIN_URL . 'products');
             exit;
         }
 
@@ -192,7 +170,7 @@ class ProductAdminController
         } catch (RuntimeException $e) {
             $_SESSION['errors'] = [$e->getMessage()];
             $_SESSION['old'] = $payload + ['id' => $id, 'existing_images' => $existingImages];
-            header('Location: ' . ADMIN_URL . 'products/form' . ($id > 0 ? '/' . $id : ''));
+            header('Location: ' . ADMIN_URL . 'products');
             exit;
         }
 
@@ -290,7 +268,6 @@ class ProductAdminController
             'max_speed' => trim((string)($_POST['max_speed'] ?? '')),
             'battery' => trim((string)($_POST['battery'] ?? '')),
             'deposit_amount' => max(0, (int)($_POST['deposit_amount'] ?? 15000000)),
-            'deposit_non_refundable' => isset($_POST['deposit_non_refundable']) ? 1 : 0,
             'exterior_colors_raw' => trim((string)($_POST['exterior_colors_raw'] ?? '')),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
         ];
