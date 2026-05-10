@@ -27,7 +27,7 @@ $sort = $sort ?? 'default';
 $q = $q ?? '';
 ?>
 
-<aside id="productsSidebar" class="bg-white border-r border-slate-100 flex-shrink-0 fixed lg:sticky z-50 lg:z-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0" style="width:256px;top:0;left:0;height:100vh;overflow-y:auto;">
+<aside id="productsSidebar" class="products-sidebar bg-white border border-slate-100 rounded-lg flex-shrink-0 fixed lg:static z-50 lg:z-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 self-start">
   <div class="p-3 border-b border-slate-100 flex items-center justify-between lg:sticky lg:top-0 bg-white z-10">
     <div class="flex items-center gap-2">
       <i class="fa-solid fa-sliders text-slate-600 text-sm"></i>

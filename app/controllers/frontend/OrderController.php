@@ -138,7 +138,6 @@ class OrderController
             }
 
             $formData = [
-                'owner_type' => (string)($_POST['owner_type'] ?? 'ca-nhan'),
                 'full_name' => trim((string)($_POST['full_name'] ?? '')),
                 'phone' => trim((string)($_POST['phone'] ?? '')),
                 'cccd' => trim((string)($_POST['cccd'] ?? '')),
@@ -198,11 +197,6 @@ class OrderController
                 exit;
             }
 
-            $allowedOwnerTypes = ['ca-nhan', 'doanh-nghiep'];
-            if (!in_array($formData['owner_type'], $allowedOwnerTypes, true)) {
-                $formData['owner_type'] = 'ca-nhan';
-            }
-
             $allowedPayMethods = ['card-intl', 'card-domestic', 'transfer'];
             if (!in_array($formData['pay_method'], $allowedPayMethods, true)) {
                 $formData['pay_method'] = 'card-intl';
@@ -216,7 +210,6 @@ class OrderController
             }
 
             $notePayload = [
-                'owner_type' => $formData['owner_type'],
                 'full_name' => $formData['full_name'],
                 'phone' => $formData['phone'],
                 'email' => $formData['email'],

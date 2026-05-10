@@ -1,0 +1,135 @@
+/*
+ * public/css/admin/main.css
+ * Responsive overrides for the custom VinFast admin pages.
+ */
+
+.admin-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  display: none;
+  border: 0;
+  background: rgba(18, 24, 40, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.admin-sidebar-backdrop.is-active {
+  display: block;
+  opacity: 1;
+}
+
+@media (max-width: 1364px) {
+  .page-container {
+    padding-left: 0;
+  }
+
+  .sidebar-menu {
+    left: 0;
+    transform: translateX(-100%);
+    width: min(86vw, 320px);
+    max-width: 320px;
+    transition: transform 0.25s ease, left 0.25s ease;
+  }
+
+  .page-container:not(.sbar_collapsed) .sidebar-menu {
+    transform: translateX(0);
+  }
+
+  .main-content-inner {
+    padding: 0 16px 36px;
+  }
+
+  .container-fluid.pt-4 {
+    padding-top: 1rem !important;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .header-area .row {
+    row-gap: 0.75rem;
+  }
+
+  .header-area .col-md-8,
+  .header-area .col-md-4 {
+    width: 100%;
+  }
+
+  .header-area .notification-area {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-area .notification-area > li {
+    margin-left: 0;
+  }
+
+  .header-area .notification-area .btn {
+    width: 100%;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+
+  .table-responsive .table {
+    min-width: 720px;
+  }
+
+  .form-control,
+  .form-select,
+  .btn {
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .header-area h6 {
+    font-size: 1rem;
+  }
+
+  .header-area small {
+    display: block;
+    line-height: 1.35;
+  }
+
+  .main-content-inner {
+    padding: 0 12px 28px;
+  }
+
+  .page-container:not(.sbar_collapsed) .sidebar-menu {
+    box-shadow: 2px 0 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .card {
+    border-radius: 12px;
+  }
+
+  .card-body {
+    padding: 0.9rem;
+  }
+
+  .table-responsive .table th,
+  .table-responsive .table td {
+    white-space: nowrap;
+  }
+
+  .table-responsive .btn {
+    white-space: nowrap;
+  }
+}

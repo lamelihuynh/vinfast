@@ -33,7 +33,6 @@ if ($powerText === '') {
           <h4 class="text-slate-900 mb-0.5 text-[14px] font-bold"><?= htmlspecialchars($p['name'] ?? '') ?></h4>
           <p class="text-slate-400 mb-1.5 text-[11px]"><?= htmlspecialchars($categoryText) ?></p>
           <p class="text-vfGold mt-2 mb-2 text-[15px] font-bold"><?= number_format((float)($p['price'] ?? 0), 0, ',', '.') ?> VND</p>
-
         </div>
       </a>
     </div>

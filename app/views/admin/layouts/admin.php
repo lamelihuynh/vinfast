@@ -11,6 +11,9 @@
  *
  * $content is injected by View::render().
  */
+$content = $content ?? '';
+$styles = $styles ?? '';
+$scripts = $scripts ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,6 +31,7 @@
   <link rel="stylesheet" href="<?= SRTDASH_LIB_URL ?>css/default-css.css">
   <link rel="stylesheet" href="<?= SRTDASH_LIB_URL ?>css/styles.css">
   <link rel="stylesheet" href="<?= SRTDASH_LIB_URL ?>css/responsive.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>public/css/admin/main.css">
   <?= $styles ?? '' ?>
 </head>
 

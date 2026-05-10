@@ -1,4 +1,4 @@
-﻿/**
+/**
  * public/css/frontend/products.css — Products Page & Product Detail Styles
  * Owner: Hai Nam (Member 3)
  *
@@ -10,10 +10,45 @@
   font-family: "Segoe UI", Roboto, sans-serif;
 }
 
+/* Sidebar: mobile = fixed drawer, desktop = sticky trong grid */
+.products-sidebar {
+  width: 256px;
+}
+
+/* Mobile: slide-in drawer (fixed) */
+@media (max-width: 1023px) {
+  .products-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 50;
+  }
+}
+
+/* Desktop: sticky column trong grid layout */
+@media (min-width: 1024px) {
+  .products-sidebar {
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    border-radius: 0.5rem;
+  }
+}
+
 .products-wrap {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .products-wrap {
+    grid-template-columns: 256px 1fr;
+  }
 }
 
 .products-content {

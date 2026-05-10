@@ -11,18 +11,6 @@ $provinces = $provinces ?? [];
 
     <div class="grid gap-4 rounded-xl border border-slate-100 p-4 sm:grid-cols-2">
         <div class="sm:col-span-2">
-            <p class="mb-2 text-[12px] font-semibold text-slate-800">Chủ sở hữu xe</p>
-            <div class="flex flex-wrap gap-4">
-                <?php foreach (['ca-nhan' => 'Cá nhân', 'doanh-nghiep' => 'Doanh nghiệp'] as $value => $label): ?>
-                    <label class="inline-flex cursor-pointer items-center gap-2 text-[12px] text-slate-700">
-                        <input type="radio" name="owner_type" value="<?= htmlspecialchars($value) ?>" class="h-4 w-4 border-slate-300 text-blue-600" <?= $formData['owner_type'] === $value ? 'checked' : '' ?>>
-                        <span><?= htmlspecialchars($label) ?></span>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <div class="sm:col-span-2">
             <label class="mb-1 block text-[12px] font-semibold text-slate-700">Họ và tên <span class="text-red-500">*</span></label>
             <input type="text" name="full_name" maxlength="80" value="<?= htmlspecialchars((string)$formData['full_name']) ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-blue-500" placeholder="Họ và tên" required>
         </div>

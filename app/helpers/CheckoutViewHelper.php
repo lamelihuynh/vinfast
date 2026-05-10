@@ -253,7 +253,6 @@ class CheckoutViewHelper
         }
 
         $formData = array_merge([
-            'owner_type' => 'ca-nhan',
             'full_name' => '',
             'phone' => '',
             'cccd' => '',

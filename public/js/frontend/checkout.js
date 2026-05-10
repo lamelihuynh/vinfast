@@ -89,7 +89,6 @@
     
     var step2Data = {
       _csrf: csrfToken,
-      owner_type: ownerTypeRadio ? ownerTypeRadio.value : 'ca-nhan',
       full_name: form.querySelector('[name="full_name"]') ? form.querySelector('[name="full_name"]').value : '',
       phone: form.querySelector('[name="phone"]') ? form.querySelector('[name="phone"]').value : '',
       email: form.querySelector('[name="email"]') ? form.querySelector('[name="email"]').value : '',
