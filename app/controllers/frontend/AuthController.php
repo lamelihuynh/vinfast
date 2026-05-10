@@ -82,14 +82,14 @@ class AuthController
 
         $user = $this->user->findByEmail($email);
         if (!$user || !password_verify($password, (string)$user['password'])) {
-            $_SESSION['login_errors'] = ['password' => 'Email hoặc mật khẩu không đúng.'];
+            $_SESSION['errors'] = ['Email hoặc mật khẩu không đúng.'];
             $_SESSION['old'] = ['email' => $email];
             header('Location: ' . BASE_URL . 'auth/login');
             exit;
         }
 
         if ((int)($user['is_locked'] ?? 0) === 1) {
-            $_SESSION['login_errors'] = ['password' => 'Tài khoản của bạn đã bị khóa.'];
+            $_SESSION['errors'] = ['Tài khoản của bạn đã bị khóa.'];
             header('Location: ' . BASE_URL . 'auth/login');
             exit;
         }
