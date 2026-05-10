@@ -284,7 +284,7 @@ $isTestDriveTab = $tab === 'test-drive';
 
                 <div>
                   <label class="vf-form-label" for="td_date">Ngày mong muốn lái thử <span class="text-red-500">*</span></label>
-                  <input id="td_date" name="preferred_date" type="date" required class="vf-form-input" />
+                  <input id="td_date" name="preferred_date" type="date" required class="vf-form-input" min="<?= date('Y-m-d') ?>" />
                 </div>
 
                 <div>

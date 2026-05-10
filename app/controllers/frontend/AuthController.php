@@ -65,7 +65,7 @@ class AuthController
     {
         Auth::verifyCsrf();
 
-        $email = trim((string)($_POST['email'] ?? ''));
+        $email = strip_tags(trim((string)($_POST['email'] ?? '')));
         $password = (string)($_POST['password'] ?? '');
         $remember = isset($_POST['remember']) && (string)$_POST['remember'] === '1';
 
@@ -102,8 +102,8 @@ class AuthController
     {
         Auth::verifyCsrf();
 
-        $name = trim((string)($_POST['name'] ?? ''));
-        $email = trim((string)($_POST['email'] ?? ''));
+        $name = strip_tags(trim((string)($_POST['name'] ?? '')));
+        $email = strip_tags(trim((string)($_POST['email'] ?? '')));
         $password = (string)($_POST['password'] ?? '');
         $confirm = (string)($_POST['confirm_password'] ?? '');
 

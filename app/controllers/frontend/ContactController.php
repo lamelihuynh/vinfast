@@ -97,10 +97,10 @@ class ContactController {
             exit;
         }
 
-        $name = trim((string)($_POST['name'] ?? ''));
-        $email = trim((string)($_POST['email'] ?? ''));
-        $phone = trim((string)($_POST['phone'] ?? ''));
-        $message = trim((string)($_POST['message'] ?? ''));
+        $name = strip_tags(trim((string)($_POST['name'] ?? '')));
+        $email = strip_tags(trim((string)($_POST['email'] ?? '')));
+        $phone = strip_tags(trim((string)($_POST['phone'] ?? '')));
+        $message = strip_tags(trim((string)($_POST['message'] ?? '')));
 
         Contact::create($name, $email, $phone, $message);
 
@@ -129,14 +129,21 @@ class ContactController {
             exit;
         }
 
-        $name = trim((string)($_POST['name'] ?? ''));
-        $email = trim((string)($_POST['email'] ?? ''));
-        $phone = trim((string)($_POST['phone'] ?? ''));
+        $name = strip_tags(trim((string)($_POST['name'] ?? '')));
+        $email = strip_tags(trim((string)($_POST['email'] ?? '')));
+        $phone = strip_tags(trim((string)($_POST['phone'] ?? '')));
         $productId = (int)($_POST['product_id'] ?? 0);
-        $province = trim((string)($_POST['province'] ?? ''));
-        $showroom = trim((string)($_POST['showroom'] ?? ''));
-        $preferredDate = trim((string)($_POST['preferred_date'] ?? ''));
-        $note = trim((string)($_POST['note'] ?? ''));
+        $province = strip_tags(trim((string)($_POST['province'] ?? '')));
+        $showroom = strip_tags(trim((string)($_POST['showroom'] ?? '')));
+        $preferredDate = strip_tags(trim((string)($_POST['preferred_date'] ?? '')));
+        $note = strip_tags(trim((string)($_POST['note'] ?? '')));
+
+        $today = date('Y-m-d');
+        if ($preferredDate < $today) {
+            $_SESSION['errors'] = ['Thời gian đăng ký không hợp lệ.'];
+            header('Location: ' . BASE_URL . 'contact?tab=test-drive');
+            exit;
+        }
 
         if (!in_array($province, self::PROVINCES, true)) {
             $_SESSION['errors'] = ['Tỉnh/Thành phố không hợp lệ.'];
