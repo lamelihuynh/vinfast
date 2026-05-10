@@ -14,9 +14,11 @@ class SettingsAdminController
     {
         SEO::set('Site settings');
         $settings = SiteSetting::all();
+        $products = Product::getAll(1, 100);
 
         View::render('admin/settings/index', [
             'settings' => $settings,
+            'products' => $products,
         ], 'admin');
     }
 
@@ -33,12 +35,12 @@ class SettingsAdminController
             'phone' => trim((string)($_POST['phone'] ?? '')),
             'email' => trim((string)($_POST['email'] ?? '')),
             'facebook_url' => trim((string)($_POST['facebook_url'] ?? '')),
-            'about_text' => trim((string)($_POST['about_text'] ?? '')),
+            'featured_product_id' => trim((string)($_POST['featured_product_id'] ?? '')),
         ];
 
         // Basic validation (admin side)
         $v = new Validator($payload);
-        $v->maxLen('tagline', 255)->maxLen('address', 255)->maxLen('phone', 20)->maxLen('email', 150)->maxLen('facebook_url', 255)->maxLen('about_text', 5000);
+        $v->maxLen('tagline', 255)->maxLen('address', 255)->maxLen('phone', 20)->maxLen('email', 150)->maxLen('facebook_url', 255);
         if ($v->fails()) {
             $_SESSION['errors'] = array_values($v->errors());
             header('Location: ' . ADMIN_URL . 'settings');
@@ -54,7 +56,6 @@ class SettingsAdminController
             'banner_1' => 'banner_1',
             'banner_2' => 'banner_2',
             'banner_3' => 'banner_3',
-            'about_image' => 'about_image',
         ];
 
         foreach ($fileMap as $inputName => $settingKey) {

@@ -26,7 +26,7 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
       <a href="<?= ADMIN_URL ?>dashboard">
         <?php $adminLogo = SiteSetting::imageUrl(SiteSetting::all()['logo'] ?? '', 'public/images/logo/vinfast-logo.png'); ?>
         <img src="<?= htmlspecialchars($adminLogo) ?>" alt="VinFast logo" style="max-width: 130px;">
-        <small class="text-muted d-block mt-1">Admin Panel</small>
+        <small class="text-white d-block mt-1">Admin Panel</small>
       </a>
     </div>
   </div>

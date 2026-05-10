@@ -30,7 +30,6 @@ $logoUrl = SiteSetting::imageUrl($settings['logo'] ?? '', 'public/images/logo/vi
 $banner1 = SiteSetting::imageUrl($settings['banner_1'] ?? '', 'public/images/banners/banner_01.png');
 $banner2 = SiteSetting::imageUrl($settings['banner_2'] ?? '', 'public/images/banners/banner_02.png');
 $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/banners/banner_03.png');
-$aboutImg = SiteSetting::imageUrl($settings['about_image'] ?? '', 'public/images/banners/banner_background.png');
 ?>
 
 <div class="row mt-4">
@@ -128,7 +127,7 @@ $aboutImg = SiteSetting::imageUrl($settings['about_image'] ?? '', 'public/images
                                 <input type="text" class="form-control form-control-lg" name="address" value="<?= htmlspecialchars((string)($settings['address'] ?? 'Số 1 Đường abc, Quận 1, TP.HCM')) ?>">
                             </div>
                         </div>
-                        <div class="col-lg-6 form-group">
+                        <div class="col-lg-4 form-group">
                             <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Số điện thoại Hotline</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
@@ -137,7 +136,7 @@ $aboutImg = SiteSetting::imageUrl($settings['about_image'] ?? '', 'public/images
                                 <input type="text" class="form-control form-control-lg" name="phone" value="<?= htmlspecialchars((string)($settings['phone'] ?? '1900 23 23 89')) ?>">
                             </div>
                         </div>
-                        <div class="col-lg-6 form-group">
+                        <div class="col-lg-4 form-group">
                             <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Email hỗ trợ khách hàng</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
@@ -146,45 +145,36 @@ $aboutImg = SiteSetting::imageUrl($settings['about_image'] ?? '', 'public/images
                                 <input type="email" class="form-control form-control-lg" name="email" value="<?= htmlspecialchars((string)($settings['email'] ?? 'support@vinfast.vn')) ?>">
                             </div>
                         </div>
+                        <div class="col-lg-4 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Facebook Fanpage URL</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="ti-facebook"></i></span>
+                                </div>
+                                <input type="url" class="form-control form-control-lg" name="facebook_url" value="<?= htmlspecialchars((string)($settings['facebook_url'] ?? 'https://facebook.com/VinFastAuto')) ?>">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- KHU VỰC ABOUT & SOCIAL -->
+            <!-- KHU VỰC SẢN PHẨM NỔI BẬT -->
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
-                    <h4 class="header-title text-info"><i class="fa fa-info-circle"></i> Giới thiệu công ty</h4>
-                    <p class="text-muted font-14 mb-4">Nội dung tóm tắt hiển thị trên các trang Giới thiệu.</p>
+                    <h4 class="header-title text-danger"><i class="ti-car"></i> Dòng xe nổi bật (Homepage Featured Car)</h4>
+                    <p class="text-muted font-14 mb-4">Chọn một dòng xe để hiển thị nổi bật trên trang chủ.</p>
                     
                     <div class="row">
-                        <div class="col-lg-8 form-group">
-                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Đoạn văn giới thiệu (About Text)</label>
-                            <textarea class="form-control" name="about_text" rows="8"><?= htmlspecialchars((string)($settings['about_text'] ?? 'VinFast là thương hiệu ô tô Việt Nam tiên phong...')) ?></textarea>
-                        </div>
-                        <div class="col-lg-4 form-group">
-                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Ảnh đại diện (About Image)</label>
-                            <div class="custom-file mb-3">
-                                <input type="file" class="custom-file-input" id="aboutImgUpload" name="about_image" accept="image/*">
-                                <label class="custom-file-label" for="aboutImgUpload">Chọn ảnh...</label>
-                            </div>
-                            <div class="image-preview-box rounded border p-1 bg-light text-center">
-                                <img src="<?= htmlspecialchars($aboutImg) ?>" alt="About image" class="img-fluid rounded" style="max-height: 180px; object-fit: cover;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <h4 class="header-title text-info"><i class="fa fa-share-alt"></i> Mạng xã hội</h4>
-                    <div class="row">
                         <div class="col-lg-6 form-group">
-                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Facebook Fanpage URL</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text bg-primary text-white"><i class="fa fa-facebook"></i></span>
-                                </div>
-                                <input type="url" class="form-control form-control-lg" name="facebook_url" value="<?= htmlspecialchars((string)($settings['facebook_url'] ?? 'https://facebook.com/VinFastAuto')) ?>">
-                            </div>
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Chọn dòng xe</label>
+                            <select class="form-control form-control-lg custom-select" name="featured_product_id">
+                                <option value="">-- Không chọn / Tự động --</option>
+                                <?php foreach ($products ?? [] as $product): ?>
+                                    <option value="<?= $product['id'] ?>" <?= ($settings['featured_product_id'] ?? '') == $product['id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($product['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                 </div>

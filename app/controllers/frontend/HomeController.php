@@ -29,6 +29,14 @@ class HomeController
         $featured = Product::getAll(1, 6);
         $latest   = News::getLatest(3);
 
+        $leadProduct = null;
+        if (!empty($settings['featured_product_id'])) {
+            $leadProduct = Product::getById($settings['featured_product_id']);
+        }
+        if (!$leadProduct && !empty($featured)) {
+            $leadProduct = $featured[0];
+        }
+
         // -----------------------------
         // 3) SEO
         // -----------------------------
@@ -49,6 +57,7 @@ class HomeController
             'featured' => $featured,
             'latest' => $latest,
             'scripts' => $scripts,
+            'leadProduct' => $leadProduct,
         ]);
     }
 }

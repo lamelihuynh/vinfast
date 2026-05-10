@@ -34,7 +34,6 @@ $banners = [
 ];
 
 // -------- Reuse data --------
-$leadProduct = $featured[0] ?? null;
 $compareA = $featured[0] ?? null;
 $compareB = $featured[1] ?? null;
 

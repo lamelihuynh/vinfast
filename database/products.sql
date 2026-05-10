@@ -7,6 +7,10 @@
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.0.28
 
+drop schema vinfast_db; 
+create schema vinsfast_db; 
+use vinfast_db;
+
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
