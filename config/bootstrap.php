@@ -10,11 +10,24 @@
 
 define('ROOT',          __DIR__ . '/..');
 define('APP_NAME',      'VinFast');
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-$host = $_SERVER['HTTP_HOST'];
-$scriptName = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-$rootPath = ($scriptName === '/') ? '/' : $scriptName . '/';
-define('BASE_URL', $protocol . $host . $rootPath);
+// define('BASE_URL',      'http://localhost/vinfast/');
+
+
+// Tự động lấy giao thức (http hoặc https)
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+
+// Tự động lấy tên miền hoặc IP đang truy cập
+$host = $_SERVER['HTTP_HOST']; 
+
+// Tự động lấy thư mục gốc của dự án (ví dụ: /vinfast/)
+$project_folder = str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
+
+// Kết hợp lại thành BASE_URL hoàn chỉnh
+define('BASE_URL', $protocol . $host . $project_folder);
+
+
+
+
 define('ADMIN_URL',     BASE_URL . 'admin/');
 define('SRTDASH_LIB_URL', BASE_URL . 'public/libs/srtdash/');
 define('UPLOAD_PATH',   ROOT . '/public/images/uploads/');
@@ -23,6 +36,7 @@ define('AUTH_COOKIE_SECRET', hash('sha256', ROOT . '|vinfast|auth-cookie-v1'));
 define('PER_PAGE',      10);
 define('MAX_FILE_SIZE', 5 * 1024 * 1024);            // 2 MB
 define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
+
 
 require_once ROOT . '/config/database.php';
 

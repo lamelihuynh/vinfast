@@ -20,10 +20,28 @@ Auth::requireAdmin();
 $url      = trim($_GET['url'] ?? 'dashboard', '/');
 $segments = explode('/', filter_var($url, FILTER_SANITIZE_URL));
 
-// Controller lives in app/controllers/admin/
-$ctrlName = ucfirst(strtolower($segments[0] ?? 'dashboard')) . 'AdminController';
-$method   = strtolower($segments[1] ?? 'index');
-$params   = array_slice($segments, 2);
+// Convert URL segments to controller name (e.g., 'page-content' → 'PageContent')
+$firstSegment = $segments[0] ?? 'dashboard';
+$ctrlNameParts = array_map('ucfirst', explode('-', strtolower($firstSegment)));
+$ctrlName = implode('', $ctrlNameParts) . 'AdminController';
+
+// Build method name: combine segment[1] + segment[2] if exists
+// e.g., /admin/page-content/about/save → 'aboutSave'
+//       /admin/page-content/about → 'about'
+$methodSegment1 = $segments[1] ?? 'index';
+$methodSegment2 = $segments[2] ?? '';
+if ($methodSegment2 && !is_numeric($methodSegment2)) {
+    // Combine: 'about' + 'save' → 'aboutSave'
+    $method = strtolower($methodSegment1) . ucfirst(strtolower($methodSegment2));
+    $params = array_slice($segments, 3);
+} else {
+    $methodParts = explode('-', strtolower($methodSegment1));
+    $method = $methodParts[0]; // từ đầu tiên viết thường
+    for ($i = 1; $i < count($methodParts); $i++) {
+        $method .= ucfirst($methodParts[$i]); // các từ sau viết hoa chữ cái đầu
+    }
+    $params = array_slice($segments, 2);
+}
 
 $ctrlFile = __DIR__ . "/app/controllers/admin/{$ctrlName}.php";
 

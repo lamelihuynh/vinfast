@@ -35,13 +35,28 @@ CREATE TABLE IF NOT EXISTS contacts (
   updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS faq_topics (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(120) NOT NULL,
+  slug       VARCHAR(120) NOT NULL UNIQUE,
+  icon_svg   TEXT         DEFAULT NULL,
+  sort_order SMALLINT     NOT NULL DEFAULT 0,
+  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS faqs (
   id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  topic_id   INT UNSIGNED NOT NULL,
   question   VARCHAR(500) NOT NULL,
   answer     TEXT         NOT NULL,
   sort_order SMALLINT     NOT NULL DEFAULT 0,
   is_active  TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (topic_id)
+    REFERENCES faq_topics(id)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- 2. Products & Categories
@@ -145,10 +160,10 @@ CREATE TABLE IF NOT EXISTS news_img_info (
   FOREIGN KEY(news_id) REFERENCES news(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS email {
+CREATE TABLE IF NOT EXISTS email (
   id          INT PRIMARY KEY,
   email       VARCHAR(100) NOT NULL
-} ENGINE=InnoDB
+) ENGINE=InnoDB;
 
 -- 5. Seed Initial Data
 INSERT IGNORE INTO users (name,email,password,role) VALUES
@@ -164,3 +179,27 @@ INSERT IGNORE INTO site_settings (`key`, value) VALUES
 ('phone', '1900 23 23 89'),
 ('email', 'support.vn@vinfast.com'),
 ('tagline', 'Cùng bạn bứt phá mọi giới hạn');
+
+-- 6. Page asset + awards_tables. 
+CREATE TABLE IF NOT EXISTS page_assets (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  page_type  VARCHAR(50)  NOT NULL,
+  asset_key  VARCHAR(100) NOT NULL,
+  file_path  VARCHAR(255) NOT NULL,
+  file_size  INT UNSIGNED DEFAULT 0,
+  mime_type  VARCHAR(50)  DEFAULT NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_page_asset (page_type, asset_key)
+) ENGINE=InnoDB;
+
+
+
+CREATE TABLE about_awards (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    award_year INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+

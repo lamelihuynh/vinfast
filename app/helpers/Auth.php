@@ -46,7 +46,8 @@ class Auth
     }
     public static function id(): ?int
     {
-        return $_SESSION['uid']   ?? null;
+
+    return $_SESSION['uid']   ?? null;
     }
     public static function name(): string
     {

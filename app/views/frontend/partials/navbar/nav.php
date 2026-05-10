@@ -16,6 +16,9 @@
     <a href="<?= BASE_URL ?>contact"
       class="px-5 py-3 border-b-2 <?= vf_is_active('contact') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">LIÊN
       HỆ</a>
+    <a href="<?= BASE_URL ?>faqs"
+      class="px-5 py-3 border-b-2 <?= vf_is_active('faqs') ? 'text-[#FFB81C] border-[#FFB81C] hover:text-[#FFB81C]' : 'border-transparent text-white/85 hover:text-[#FFB81C]' ?> transition">CÂU HỎI THƯỜNG GẶP
+      </a>
 
     <div class="ml-auto flex items-center gap-2 pl-4">
       <a class="px-4 py-2 text-[11px] font-bold rounded-md bg-[#FFB81C] text-vfNavy border-2 border-[#FFB81C] hover:bg-vfNavy hover:text-[#FFB81C] transition-all duration-200"
