@@ -1,0 +1,119 @@
+/* Homepage Storytelling Effects CSS */
+
+/* Remove Snap Scroll - Natural Scroll instead */
+body.is-homepage-snap, html.is-homepage-snap {
+    overflow-x: hidden;
+    height: auto;
+}
+
+.snap-container {
+    /* natural scrolling */
+    height: auto;
+    overflow: visible;
+}
+
+.snap-section {
+    min-height: 80vh;
+    padding: 60px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    opacity: 1; /* Default to visible */
+    transform: translateY(0);
+    transition: all 0.8s ease-out;
+}
+
+.snap-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Animations */
+.reveal-on-scroll {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.6s ease-out;
+}
+
+.reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fade-in-scale {
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.8s ease-out;
+}
+
+.fade-in-scale.is-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Delay Utilities */
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* Typewriter Effect */
+.typewriter-text {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid transparent;
+    width: 0;
+}
+
+.typewriter-text.is-visible {
+    animation: typing 2s steps(40, end) forwards, blink-caret .75s step-end infinite;
+    border-right-color: #FFB81C;
+}
+
+@keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: #FFB81C; }
+}
+
+/* Letter Reveal */
+.letter-reveal span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Featured Card Hover */
+.vehicle-card-hover {
+    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.vehicle-card-hover:hover {
+    transform: translateY(-15px);
+    box-shadow: 0 25px 50px -12px rgba(11, 35, 63, 0.25);
+}
+
+/* Infinite Marquee */
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.marquee-container { overflow: hidden; white-space: nowrap; position: relative; width: 100%; }
+.marquee-content { display: inline-flex; animation: marquee 40s linear infinite; }
+.marquee-item { flex-shrink: 0; width: 350px; margin: 0 15px; }
+.marquee-container:hover .marquee-content { animation-play-state: paused; }
+
+.marquee-card {
+    transition: all 0.5s ease;
+    white-space: normal; /* allow text wrap */
+    height: 100%;
+    min-height: 250px;
+}
+
+/* Hide manual snap dots if any */
+.snap-nav { display: none !important; }

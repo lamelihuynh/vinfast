@@ -174,7 +174,15 @@ class News
             $where = 'WHERE news_state = :state';
         }
 
-        $stmt = $pdo->prepare("SELECT * FROM news $where ORDER BY created_at DESC LIMIT :limit");
+        $stmt = $pdo->prepare(
+            "SELECT n.*, MIN(i.img_link) as thumbnail
+               FROM news n
+          LEFT JOIN news_img_info i ON n.id = i.news_id
+             $where
+           GROUP BY n.id
+           ORDER BY n.created_at DESC
+              LIMIT :limit"
+        );
         if ($where !== '') $stmt->bindValue(':state', $state, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();

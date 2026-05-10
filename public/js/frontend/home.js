@@ -1,41 +1,59 @@
 /**
- * public/js/frontend/home.js — Homepage JS
- * Owner: Tang Vu
- *
- * Purpose:
- * - Init Swiper hero banner
- *
- * Note:
- * - Swiper assets are injected by HomeController into $scripts (CDN)
+ * public/js/frontend/home.js — Homepage JS (Natural Storytelling Version)
  */
-document.addEventListener("DOMContentLoaded", () => {
-  const el = document.querySelector(".vfHomeHero");
-  if (!el || typeof window.Swiper !== "function") return;
+document.addEventListener('DOMContentLoaded', () => {
+    const header = document.querySelector('#vfHeader');
 
-  // Hero slider
-  // - loop + autoplay for a "premium" feel
-  // - pagination bullets + prev/next buttons
-  // - pause on hover for desktop users
-  const swiper = new window.Swiper(el, {
-    loop: true,
-    speed: 650,
-    autoplay: {
-      delay: 4500,
-      disableOnInteraction: false,
-    },
-    pagination: {
-      el: ".vfHomeHeroPagination",
-      clickable: true,
-    },
-    navigation: {
-      nextEl: ".vfHomeHeroNext",
-      prevEl: ".vfHomeHeroPrev",
-    },
-  });
+    if (typeof Swiper === 'function') {
+        // 1. Hero Slider
+        new Swiper('.vfHomeHero', {
+            loop: true,
+            effect: 'fade',
+            fadeEffect: { crossFade: true },
+            autoplay: { delay: 6000, disableOnInteraction: false },
+            pagination: { el: '.vfHomeHeroPagination', clickable: true },
+            navigation: { nextEl: '.vfHomeHeroNext', prevEl: '.vfHomeHeroPrev' }
+        });
 
-  // Pause autoplay on hover (desktop)
-  const stop = () => swiper.autoplay && swiper.autoplay.stop();
-  const start = () => swiper.autoplay && swiper.autoplay.start();
-  el.addEventListener("mouseenter", stop);
-  el.addEventListener("mouseleave", start);
+        // 2. Featured Vehicles Slider (Auto-play + Navigation)
+        new Swiper('.vfFeaturedSwiper', {
+            slidesPerView: 1,
+            spaceBetween: 25,
+            loop: true,
+            autoplay: { delay: 5000, disableOnInteraction: false },
+            navigation: {
+                nextEl: '.vfFeaturedNext',
+                prevEl: '.vfFeaturedPrev',
+            },
+            pagination: { el: '.swiper-pagination', clickable: true },
+            breakpoints: {
+                640: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 }
+            }
+        });
+    }
+
+    // 3. reveal-on-scroll Observer
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.snap-section, .reveal-on-scroll, .fade-in-scale, .typewriter-text').forEach((el) => {
+        revealObserver.observe(el);
+    });
+
+    // 5. Header Dynamic Background (on window scroll)
+    window.addEventListener('scroll', () => {
+        if (header) {
+            if (window.scrollY > 50) {
+                header.classList.add('bg-vfNavy/95', 'backdrop-blur-md', 'shadow-xl');
+            } else {
+                header.classList.remove('bg-vfNavy/95', 'backdrop-blur-md', 'shadow-xl');
+            }
+        }
+    });
 });

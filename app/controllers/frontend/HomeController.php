@@ -26,7 +26,7 @@ class HomeController
         // -----------------------------
         // 2) Query homepage data blocks
         // -----------------------------
-        $featured = Product::getAll(1, 6);
+        $featured = Product::getAll(1, 12);
         $latest   = News::getLatest(3);
 
         $leadProduct = null;

@@ -7,7 +7,7 @@
 
   <div class="px-4 py-3 space-y-2 overflow-y-auto h-[calc(100vh-72px)]">
     <form action="<?= BASE_URL ?>products" method="get" class="flex border border-white/20 rounded-md overflow-hidden mb-2">
-      <input type="text" name="q" placeholder="Tìm kiếm xe, dịch vụ..." class="w-full px-3 py-2.5 bg-white/10 text-white placeholder:text-white/40 text-sm outline-none">
+      <input type="text" name="q" placeholder="Tìm kiếm xe..." class="w-full px-3 py-2.5 bg-white/10 text-white placeholder:text-white/40 text-sm outline-none">
       <button type="submit" class="w-11 bg-vfGold text-white"><i class="fa-solid fa-magnifying-glass"></i></button>
     </form>
 

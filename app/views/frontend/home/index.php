@@ -1,28 +1,11 @@
 <?php
-
 /**
  * app/views/frontend/home/index.php
- * Owner  : Tang Vu 
- * Title  : Homepage
- *
- * Purpose: Hero: Swiper.js carousel (banners from SiteSetting). Featured vehicles grid (6 items). Latest news cards (3 items). CTA section.
- *
- * Variables available (set by controller via View::render):
- *   $settings (array), $featured (array of products), $latest (array of articles)
- *
- *
- * TODO: Replace the placeholder below with the actual HTML implementation.
- * -----------------------------------------------------------------------
- * Rules:
- *  - Always escape output: <?= htmlspecialchars($var) ?>
- *  - Include CSRF in every form: <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
- *  - Include pagination partial where needed: include ROOT."/app/views/frontend/partials/pagination.php"
+ * Final Refinements:
+ * - Flush header (no gap)
+ * - Full car image in spotlight (object-contain)
+ * - Improved icons for marquee
  */
-?>
-<?php
-// =========================================================
-// HOMEPAGE (Tailwind + Swiper) - phiên bản bám sát layout mẫu
-// =========================================================
 
 // -------- Hero assets --------
 $tagline = !empty($settings['tagline']) ? (string)$settings['tagline'] : "Kiến tạo\ntương lai xanh";
@@ -33,350 +16,347 @@ $banners = [
     SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/banners/banner_03.png'),
 ];
 
-// -------- Reuse data --------
-$compareA = $featured[0] ?? null;
-$compareB = $featured[1] ?? null;
-
-function vf_news_thumb(array $news): string
-{
-    $thumb = trim((string)($news['thumbnail'] ?? ''));
-    if ($thumb === '') return BASE_URL . 'public/images/banners/banner_background.png';
-    if (preg_match('~^https?://~i', $thumb)) return $thumb;
-    return BASE_URL . ltrim($thumb, '/');
+if (!function_exists('vf_news_thumb')) {
+    function vf_news_thumb(array $news): string
+    {
+        $thumb = trim((string)($news['thumbnail'] ?? ''));
+        if ($thumb === '') return BASE_URL . 'public/images/banners/banner_background.png';
+        if (preg_match('~^https?://~i', $thumb)) return $thumb;
+        $thumb = str_replace('\\', '/', $thumb);
+        return BASE_URL . ltrim($thumb, '/');
+    }
 }
 
-function vf_product_price(array $p): string
-{
-    return number_format((float)($p['price'] ?? 0), 0, ',', '.') . ' VNĐ';
+if (!function_exists('vf_product_price')) {
+    function vf_product_price(array $p): string
+    {
+        return number_format((float)($p['price'] ?? 0), 0, ',', '.') . ' VNĐ';
+    }
 }
 
-function vf_product_range(array $p): string
-{
-    $km = Product::extractRangeKm((array)($p['specs'] ?? []));
-    return $km > 0 ? (string)$km . ' km' : '--';
+if (!function_exists('vf_product_range')) {
+    function vf_product_range(array $p): string
+    {
+        $km = Product::extractRangeKm((array)($p['specs'] ?? []));
+        return $km > 0 ? (string)$km . ' km' : '--';
+    }
 }
 ?>
 
-<style>
-    .vfHomeHero .swiper-pagination-bullet {
-        width: 28px;
-        height: 4px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .45);
-    }
+<link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/homepage_effects.css">
 
-    .vfHomeHero .swiper-pagination-bullet-active {
-        background: #fff;
+<style>
+    /* Force header to be flush against the top */
+    #vfHeader { top: 0 !important; margin: 0 !important; }
+    #vfHeaderSpacer { display: none !important; }
+    
+    .vfHomeHero .swiper-pagination-bullet { width: 24px; height: 3px; border-radius: 999px; background: rgba(255, 255, 255, .3); transition: all 0.3s; }
+    .vfHomeHero .swiper-pagination-bullet-active { width: 40px; background: #FFB81C; }
+    
+    main + footer { display: block !important; }
+    
+    .text-refined-sm { font-size: 0.875rem; line-height: 1.5; }
+    .text-refined-xs { font-size: 0.75rem; }
+
+    /* Spotlight image container to prevent cropping */
+    .spotlight-img-container {
+        background: radial-gradient(circle at center, rgba(255,184,28,0.05) 0%, transparent 70%);
     }
 </style>
 
-<!-- HERO -->
-<section class="relative bg-slate-900">
-    <div class="swiper vfHomeHero">
-        <div class="swiper-wrapper">
-            <?php foreach ($banners as $src): ?>
-                <div class="swiper-slide">
-                    <div class="relative h-[420px] sm:h-[520px] lg:h-[600px]">
-                        <img src="<?= htmlspecialchars($src) ?>" alt="VinFast banner" class="h-full w-full object-cover">
-                        <div class="absolute inset-0 bg-gradient-to-r from-[#071a33]/85 via-[#0a2a4b]/50 to-transparent"></div>
+<div class="snap-container">
+    <!-- HERO -->
+    <section class="snap-section !p-0 relative bg-slate-900 min-h-screen">
+        <div class="swiper vfHomeHero h-full w-full">
+            <div class="swiper-wrapper h-full">
+                <?php foreach ($banners as $src): ?>
+                    <div class="swiper-slide">
+                        <div class="relative h-screen w-full">
+                            <img src="<?= htmlspecialchars($src) ?>" alt="VinFast banner" class="h-full w-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-r from-vfNavy/80 via-vfNavy/20 to-transparent"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-vfNavy/40 to-transparent"></div>
+                        </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <div class="pointer-events-none absolute inset-0 z-10">
-            <div class="mx-auto flex h-full max-w-6xl items-center px-4">
-                <div class="pointer-events-auto max-w-lg">
-                    <p class="inline-flex rounded-full bg-[#FFB81C] px-3 py-1 text-xs font-semibold text-vfNavy">VINFAST</p>
-                    <h1 class="mt-3 text-4xl font-bold leading-tight text-white sm:text-5xl break-words"><?= nl2br(htmlspecialchars($tagline)) ?></h1>
-                    <p class="mt-4 max-w-md text-sm leading-relaxed text-white/90 sm:text-base break-words"><?= nl2br(htmlspecialchars($subTagline)) ?></p>
-                    <div class="mt-8 flex flex-col items-start gap-4">
-                        <div class="flex flex-wrap gap-4">
-                            <a href="<?= BASE_URL ?>products" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-[#FFB81C] to-[#f59e0b] px-6 py-3 text-sm font-bold text-vfNavy hover:text-white shadow-[0_4px_15px_rgba(255,184,28,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(255,184,28,0.6)]">
-                                <span class="relative z-10">XEM NGAY</span>
+                <?php endforeach; ?>
+            </div>
+            <div class="pointer-events-none absolute inset-0 z-10">
+                <div class="mx-auto flex h-full max-w-6xl items-center px-4">
+                    <div class="pointer-events-auto max-w-xl">
+                        <p class="reveal-on-scroll inline-flex items-center gap-2 rounded-full bg-[#FFB81C] px-3 py-1 text-[9px] font-black text-vfNavy uppercase tracking-[0.2em]">
+                            <span class="h-1 w-1 rounded-full bg-vfNavy animate-pulse"></span> VINFAST GLOBAL
+                        </p>
+                        <h1 class="reveal-on-scroll reveal-delay-1 mt-4 text-4xl font-black leading-[1.1] text-white sm:text-6xl lg:text-7xl">
+                            <?= str_replace("\n", " ", $tagline) ?>
+                        </h1>
+                        <p class="reveal-on-scroll reveal-delay-2 mt-6 max-w-md text-base leading-relaxed text-white sm:text-lg break-words font-medium">
+                            <?= nl2br(htmlspecialchars($subTagline)) ?>
+                        </p>
+                        <div class="reveal-on-scroll reveal-delay-3 mt-10 flex flex-wrap gap-4">
+                            <a href="<?= BASE_URL ?>products" class="group relative overflow-hidden rounded-full bg-[#FFB81C] px-8 py-3.5 text-xs font-black text-vfNavy hover:bg-white transition-all duration-500 shadow-xl">
+                                <span class="relative z-10 uppercase tracking-widest">Khám phá</span>
                             </a>
-                            <a href="<?= BASE_URL ?>contact" class="rounded-full border-2 border-white/40 bg-white/5 backdrop-blur-sm px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[rgba(255,255,255,0.15)] hover:text-white/90">
-                                TƯ VẤN
+                            <a href="<?= BASE_URL ?>contact?tab=test-drive" class="inline-flex items-center justify-center rounded-full border-2 border-white/20 bg-white/5 backdrop-blur-md px-8 py-3.5 text-xs font-black text-white hover:bg-white hover:text-vfNavy transition-all duration-500">
+                                <i class="fa-solid fa-car-side mr-2"></i> LÁI THỬ
                             </a>
                         </div>
-
-                        <a href="<?= BASE_URL ?>contact?tab=test-drive" class="inline-flex items-center justify-center rounded-full border-2 border-[#FFB81C] px-6 py-3 text-sm font-bold text-[#FFB81C] transition-all duration-300 hover:-translate-y-1 hover:bg-[#FFB81C] hover:text-vfNavy hover:shadow-[0_4px_15px_rgba(255,184,28,0.4)]">
-                            <i class="fa-solid fa-car-side mr-2"></i> ĐĂNG KÝ LÁI THỬ
-                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute inset-x-0 bottom-16 z-20">
+                <div class="mx-auto flex max-w-7xl items-center justify-between px-6">
+                    <div class="vfHomeHeroPagination ml-4"></div>
+                    <div class="flex gap-4 mr-4">
+                        <button class="vfHomeHeroPrev inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white hover:bg-[#FFB81C] hover:text-vfNavy transition-all"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="vfHomeHeroNext inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white hover:bg-[#FFB81C] hover:text-vfNavy transition-all"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="absolute inset-x-0 bottom-4 z-20">
-            <div class="mx-auto flex max-w-6xl items-center justify-between px-4">
-                <div class="vfHomeHeroPagination"></div>
+    </section>
+
+    <!-- Stats Strip -->
+    <div class="relative z-30 -mt-12 mx-auto max-w-4xl px-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
+            <div class="text-center reveal-on-scroll px-2">
+                <p class="text-2xl font-black text-vfNavy"><?= htmlspecialchars((string)($settings['stat1_val'] ?? '14+')) ?></p>
+                <p class="mt-0.5 text-[9px] font-bold uppercase tracking-widest text-slate-400"><?= htmlspecialchars((string)($settings['stat1_lbl'] ?? 'Quốc gia')) ?></p>
+            </div>
+            <div class="text-center reveal-on-scroll reveal-delay-1 border-l border-slate-100 px-2">
+                <p class="text-2xl font-black text-vfNavy"><?= htmlspecialchars((string)($settings['stat2_val'] ?? '150k+')) ?></p>
+                <p class="mt-0.5 text-[9px] font-bold uppercase tracking-widest text-slate-400"><?= htmlspecialchars((string)($settings['stat2_lbl'] ?? 'Khách hàng')) ?></p>
+            </div>
+            <div class="text-center reveal-on-scroll reveal-delay-2 border-l border-slate-100 px-2">
+                <p class="text-2xl font-black text-vfNavy"><?= htmlspecialchars((string)($settings['stat3_val'] ?? '8 mẫu')) ?></p>
+                <p class="mt-0.5 text-[9px] font-bold uppercase tracking-widest text-slate-400"><?= htmlspecialchars((string)($settings['stat3_lbl'] ?? 'Xe hiện có')) ?></p>
+            </div>
+            <div class="text-center reveal-on-scroll reveal-delay-3 border-l border-slate-100 px-2">
+                <p class="text-2xl font-black text-vfNavy"><?= htmlspecialchars((string)($settings['stat4_val'] ?? '500+')) ?></p>
+                <p class="mt-0.5 text-[9px] font-bold uppercase tracking-widest text-slate-400"><?= htmlspecialchars((string)($settings['stat4_lbl'] ?? 'Showroom')) ?></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- DANH SÁCH XE -->
+    <section class="snap-section bg-white py-20">
+        <div class="mx-auto max-w-6xl px-4">
+            <div class="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+                <div class="text-center md:text-left">
+                    <h2 class="reveal-on-scroll text-3xl font-black text-vfNavy uppercase tracking-tight typewriter-text">BỘ SƯU TẬP XE ĐIỆN</h2>
+                    <p class="reveal-on-scroll reveal-delay-1 mt-2 text-slate-400 text-sm">Tinh hoa công nghệ Việt vươn tầm thế giới</p>
+                </div>
                 <div class="flex gap-2">
-                    <button class="vfHomeHeroPrev inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-                    <button class="vfHomeHeroNext inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                    <button class="vfFeaturedPrev h-10 w-10 rounded-full border border-slate-200 flex items-center justify-center hover:bg-vfNavy hover:text-white transition-all"><i class="fa-solid fa-arrow-left text-xs"></i></button>
+                    <button class="vfFeaturedNext h-10 w-10 rounded-full border border-slate-200 flex items-center justify-center hover:bg-vfNavy hover:text-white transition-all"><i class="fa-solid fa-arrow-right text-xs"></i></button>
+                </div>
+            </div>
+            
+            <div class="swiper vfFeaturedSwiper overflow-visible">
+                <div class="swiper-wrapper">
+                    <?php if (!empty($featured)): ?>
+                        <?php foreach ($featured as $index => $p): ?>
+                            <div class="swiper-slide">
+                                <article class="vehicle-card-hover group relative overflow-hidden rounded-[2rem] bg-white p-3 shadow-lg border-2 border-slate-100 transition-all duration-500 mx-1.5">
+                                    <a href="<?= BASE_URL ?>products/detail/<?= (int)($p['id'] ?? 0) ?>" class="block">
+                                        <div class="aspect-[16/11] bg-slate-50 overflow-hidden rounded-[1.5rem] relative">
+                                            <img src="<?= htmlspecialchars(ProductViewHelper::thumbUrl((array)$p)) ?>" alt="<?= htmlspecialchars((string)($p['name'] ?? '')) ?>" class="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                                        </div>
+                                        <div class="p-5">
+                                            <h3 class="text-xl font-black text-vfNavy group-hover:text-[#1a4a82] transition-colors"><?= htmlspecialchars((string)($p['name'] ?? '')) ?></h3>
+                                            <div class="mt-3 flex items-center gap-4 text-[10px] font-bold text-slate-400">
+                                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-route text-[#FFB81C]"></i> <?= htmlspecialchars(vf_product_range((array)$p)) ?></span>
+                                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-[#FFB81C]"></i> <?= htmlspecialchars($p['type'] ?? 'Xe điện') ?></span>
+                                            </div>
+                                            <div class="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+                                                <div class="flex flex-col">
+                                                    <span class="text-[9px] uppercase font-bold text-slate-300 tracking-wider">Giá niêm yết</span>
+                                                    <span class="text-lg font-black text-vfNavy"><?= htmlspecialchars(vf_product_price((array)$p)) ?></span>
+                                                </div>
+                                                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-vfNavy text-white shadow-md transition-all group-hover:bg-[#FFB81C] group-hover:text-vfNavy">
+                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </article>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Small stat strip giống mẫu -->
+    <!-- PRODUCT SPOTLIGHT (Full Image View) -->
+    <section class="snap-section bg-vfNavy py-24 text-white overflow-hidden">
+        <div class="mx-auto grid max-w-6xl gap-16 px-4 lg:grid-cols-2 lg:items-center">
+            <!-- Left Side: Content -->
+            <div class="reveal-on-scroll order-2 lg:order-1">
+                <div class="inline-flex items-center gap-3 mb-6">
+                    <span class="h-1 w-12 bg-[#FFB81C] rounded-full"></span>
+                    <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#FFB81C]">THE NEXT-GEN EV</p>
+                </div>
+                <h3 class="mt-4 text-5xl font-black text-white leading-tight reveal-on-scroll"><?= htmlspecialchars((string)(($leadProduct['name'] ?? 'VinFast VF 9'))) ?></h3>
+                <p class="mt-6 text-base text-white/60 leading-relaxed max-w-md"><?= htmlspecialchars($leadProduct['short_desc'] ?? 'Đẳng cấp xe điện thông minh toàn cầu, kiến tạo hành trình di chuyển xanh.') ?></p>
+                
+                <div class="mt-10 grid grid-cols-2 gap-8">
+                    <div class="reveal-on-scroll reveal-delay-2 flex flex-col gap-2 group">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-[#FFB81C] mb-2"><i class="fa-solid fa-battery-full text-xl"></i></div>
+                        <p class="text-[9px] text-white/40 uppercase font-black tracking-widest">Phạm vi tối đa</p>
+                        <p class="font-black text-white text-2xl"><?= htmlspecialchars(vf_product_range((array)($leadProduct ?? []))) ?></p>
+                    </div>
+                    <div class="reveal-on-scroll reveal-delay-3 flex flex-col gap-2 group">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-[#FFB81C] mb-2"><i class="fa-solid fa-tag text-xl"></i></div>
+                        <p class="text-[9px] text-white/40 uppercase font-black tracking-widest">Giá niêm yết từ</p>
+                        <p class="font-black text-white text-2xl"><?= htmlspecialchars(vf_product_price((array)($leadProduct ?? []))) ?></p>
+                    </div>
+                </div>
 
-    <div class="bg-[#071f3f]">
-        <div class="mx-auto max-w-6xl grid grid-cols-2 sm:grid-cols-4 text-center text-white">
+                <div class="mt-12 flex gap-4">
+                    <div class="rounded-2xl bg-white/5 backdrop-blur-md p-4 border border-white/10 flex-1 text-center hover:bg-white/10 transition-colors">
+                        <p class="text-[8px] uppercase text-white/40 font-black">Gia tốc</p>
+                        <p class="text-lg font-black text-[#FFB81C]">4.8s</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/5 backdrop-blur-md p-4 border border-white/10 flex-1 text-center hover:bg-white/10 transition-colors">
+                        <p class="text-[8px] uppercase text-white/40 font-black">Công suất</p>
+                        <p class="text-lg font-black text-[#FFB81C]">402hp</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/5 backdrop-blur-md p-4 border border-white/10 flex-1 text-center hover:bg-white/10 transition-colors">
+                        <p class="text-[8px] uppercase text-white/40 font-black">Chống nước</p>
+                        <p class="text-lg font-black text-[#FFB81C]">IP67</p>
+                    </div>
+                </div>
 
-            <div class="py-4 ">
-                <p class="text-xl font-bold"><?= htmlspecialchars((string)($settings['stat1_val'] ?? '14+')) ?></p>
-                <p class="text-[11px] uppercase text-white/60"><?= htmlspecialchars((string)($settings['stat1_lbl'] ?? 'Quốc gia hiện diện')) ?></p>
+                <div class="reveal-on-scroll reveal-delay-4 mt-12 flex gap-4">
+                    <a href="<?= BASE_URL ?>products" class="px-8 py-4 rounded-full bg-[#FFB81C] text-vfNavy text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg">XEM CHI TIẾT</a>
+                    <a href="<?= BASE_URL ?>contact?tab=test-drive" class="px-8 py-4 rounded-full border-2 border-white/20 text-white text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">LÁI THỬ</a>
+                </div>
             </div>
 
-            <div class="py-4 ">
-                <p class="text-xl font-bold"><?= htmlspecialchars((string)($settings['stat2_val'] ?? '150,000+')) ?></p>
-                <p class="text-[11px] uppercase text-white/60"><?= htmlspecialchars((string)($settings['stat2_lbl'] ?? 'Khách hàng tin dùng')) ?></p>
+            <!-- Right Side: Full Car Image (using object-contain to prevent cutting) -->
+            <div class="reveal-on-scroll order-1 lg:order-2 flex justify-center">
+                <div class="spotlight-img-container relative w-full aspect-[4/3] rounded-[3rem] overflow-hidden group">
+                    <img src="<?= htmlspecialchars(ProductViewHelper::thumbUrl((array)($leadProduct ?? []))) ?>" alt="Full vehicle" class="h-full w-full object-contain transition-transform duration-1000 group-hover:scale-110">
+                </div>
             </div>
-
-            <div class="py-4 ">
-                <p class="text-xl font-bold"><?= htmlspecialchars((string)($settings['stat3_val'] ?? '8 mẫu')) ?></p>
-                <p class="text-[11px] uppercase text-white/60"><?= htmlspecialchars((string)($settings['stat3_lbl'] ?? 'Xe hiện có')) ?></p>
-            </div>
-
-            <div class="py-4">
-                <p class="text-xl font-bold"><?= htmlspecialchars((string)($settings['stat4_val'] ?? '500+')) ?></p>
-                <p class="text-[11px] uppercase text-white/60"><?= htmlspecialchars((string)($settings['stat4_lbl'] ?? 'Showroom toàn cầu')) ?></p>
-            </div>
-
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- DONG XE NOI BAT -->
-<section class="bg-white py-12">
-    <div class="mx-auto max-w-6xl px-4">
-        <h2 class="text-center text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-vfNavy to-[#1a4a82] uppercase tracking-wide drop-shadow-sm">DÒNG XE NỔI BẬT</h2>
-        <p class="mt-3 text-center text-base text-slate-500">Khám phá những mẫu xe điện đang được quan tâm nhất</p>
-        <div class="mt-8 grid gap-5 md:grid-cols-3">
-            <?php if (empty($featured)): ?>
-                <p class="col-span-3 rounded-lg border border-slate-200 p-4 text-sm text-slate-500">Chưa có dữ liệu sản phẩm.</p>
-            <?php else: ?>
-                <?php foreach (array_slice($featured, 0, 3) as $p): ?>
-                    <article class="group overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                        <a href="<?= BASE_URL ?>products/detail/<?= (int)($p['id'] ?? 0) ?>" class="block">
-                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="<?= htmlspecialchars(ProductViewHelper::thumbUrl((array)$p)) ?>" alt="<?= htmlspecialchars((string)($p['name'] ?? '')) ?>" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
-                            </div>
-                            <div class="p-5">
-                                <h3 class="text-lg font-bold text-vfNavy transition-colors group-hover:text-[#1a4a82]"><?= htmlspecialchars((string)($p['name'] ?? '')) ?></h3>
-                                <p class="mt-2 text-sm text-slate-500 flex items-center gap-2">
-                                    <i class="fa-solid fa-route text-[#FFB81C]"></i> Quãng đường: <span class="font-semibold text-slate-700"><?= htmlspecialchars(vf_product_range((array)$p)) ?></span>
-                                </p>
-                                <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                                    <span class="text-base font-extrabold text-vfNavy"><?= htmlspecialchars(vf_product_price((array)$p)) ?></span>
-                                    <span class="rounded-full bg-gradient-to-r from-vfNavy to-[#1a4a82] px-4 py-1.5 text-xs font-bold text-white shadow-md transition-transform group-hover:scale-105">XEM XE</span>
+    <!-- BRAND STORY (Company Intro) -->
+    <section class="snap-section bg-white py-28 relative overflow-hidden">
+        <div class="mx-auto max-w-6xl px-4 lg:grid lg:grid-cols-2 lg:gap-20 lg:items-center">
+            <div class="reveal-on-scroll relative mb-12 lg:mb-0">
+                <div class="aspect-square rounded-[3rem] overflow-hidden shadow-2xl border-4 border-slate-50">
+                    <img src="<?= htmlspecialchars($banners[0]) ?>" class="h-full w-full object-cover fade-in-scale">
+                </div>
+                <div class="absolute -bottom-8 -right-8 w-60 aspect-[4/3] rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl hidden sm:block">
+                    <img src="<?= htmlspecialchars($banners[1]) ?>" class="h-full w-full object-cover">
+                </div>
+            </div>
+            
+            <div class="reveal-on-scroll">
+                <div class="inline-flex items-center gap-3 mb-6">
+                    <div class="h-1 w-8 bg-[#FFB81C] rounded-full"></div>
+                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-vfNavy">HÀNH TRÌNH TIÊN PHONG</span>
+                </div>
+                
+                <h3 class="text-4xl font-black text-vfNavy leading-tight mb-8 reveal-on-scroll" style="font-family: 'Lora', serif;">
+                    VinFast - Dẫn Đầu Kỷ Nguyên Xe Điện
+                </h3>
+                
+                <div class="space-y-6 text-base text-slate-500 leading-relaxed">
+                    <p class="font-bold text-vfNavy/80">
+                        VinFast là công ty thành viên thuộc tập đoàn Vingroup, một trong những Tập đoàn Kinh tế tư nhân đa ngành lớn nhất Châu Á.
+                    </p>
+                    <p>
+                        Với triết lý <span class="text-vfNavy font-black italic">“Đặt khách hàng làm trọng tâm”</span>, VinFast không ngừng sáng tạo để tạo ra các sản phẩm đẳng cấp và xuất sắc cho mọi người.
+                    </p>
+                    <p>
+                        Chúng tôi kiến tạo tương lai di chuyển thông minh và bền vững, đưa thương hiệu Việt vươn tầm quốc tế.
+                    </p>
+                </div>
+                
+                <div class="mt-12">
+                    <a href="<?= BASE_URL ?>about" class="fade-in-scale inline-flex items-center gap-4 text-vfNavy font-black uppercase tracking-widest group text-xs">
+                        TÌM HIỂU THÊM 
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-vfNavy text-white transition-all group-hover:translate-x-2 group-hover:bg-[#FFB81C] group-hover:text-vfNavy">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TẬN HƯỞNG GIÁ TRỊ VƯỢT TRỘI -->
+    <section class="snap-section bg-[#f8fafc] py-20 overflow-hidden">
+        <div class="mx-auto max-w-6xl px-4 mb-12 text-center">
+            <h2 class="reveal-on-scroll text-3xl font-black text-vfNavy uppercase tracking-tight typewriter-text">GIÁ TRỊ VƯỢT TRỘI</h2>
+            <p class="reveal-on-scroll reveal-delay-1 mt-4 text-slate-400 text-sm max-w-xl mx-auto">Hệ sinh thái thông minh đồng hành cùng bạn trên mọi nẻo đường</p>
+        </div>
+
+        <div class="marquee-container py-8">
+            <div class="marquee-content">
+                <?php 
+                $marquee_items = [
+                    ['icon' => 'award', 'title' => 'An toàn 5 sao', 'desc' => 'Đạt chuẩn an toàn quốc tế ASEAN NCAP & EURO NCAP.'],
+                    ['icon' => 'leaf', 'title' => 'Tương lai xanh', 'desc' => 'Kiến tạo môi trường di chuyển không phát thải.'],
+                    ['icon' => 'shield-heart', 'title' => 'Bảo hành 10 năm', 'desc' => 'Cam kết chất lượng dài hạn nhất thị trường Việt.'],
+                    ['icon' => 'mobile-screen-button', 'title' => 'VinFast App', 'desc' => 'Điều khiển xe và đặt lịch sạc ngay trên điện thoại.'],
+                    ['icon' => 'charging-station', 'title' => 'Trạm sạc 63 tỉnh', 'desc' => 'Hệ thống trạm sạc lớn nhất phủ sóng toàn quốc.'],
+                    ['icon' => 'robot', 'title' => 'Trợ lý ảo Vivi', 'desc' => 'Giao tiếp thông minh, hỗ trợ rảnh tay tuyệt đối.'],
+                    ['icon' => 'truck-fast', 'title' => 'Cứu hộ 24/7', 'desc' => 'Dịch vụ cứu hộ và sửa chữa lưu động nhanh chóng.'],
+                    ['icon' => 'bolt', 'title' => 'Hiệu suất cao', 'desc' => 'Vận hành mạnh mẽ từ động cơ điện thế hệ mới.'],
+                ];
+                $all_items = array_merge($marquee_items, $marquee_items);
+                foreach ($all_items as $index => $item): ?>
+                <div class="marquee-item group">
+                    <div class="marquee-card rounded-[2.5rem] bg-white p-8 text-center shadow-md border-2 border-slate-100 group-hover:border-[#FFB81C] transition-all duration-500 group-hover:-translate-y-4">
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-xl text-vfNavy group-hover:bg-[#FFB81C] transition-all">
+                            <i class="fa-solid fa-<?= $item['icon'] ?>"></i>
+                        </div>
+                        <h4 class="mt-6 text-lg font-black text-vfNavy group-hover:text-vfNavy transition-colors uppercase tracking-tight"><?= $item['title'] ?></h4>
+                        <p class="mt-4 text-base text-slate-500 leading-relaxed font-medium"><?= $item['desc'] ?></p>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+
+    <!-- TIN TỨC MỚI NHẤT -->
+    <section class="snap-section bg-white py-20">
+        <div class="mx-auto max-w-6xl px-4">
+            <div class="reveal-on-scroll mb-12 flex items-end justify-between">
+                <div>
+                    <h2 class="text-3xl font-black text-vfNavy typewriter-text uppercase tracking-tight">TIN TỨC MỚI NHẤT</h2>
+                    <p class="text-slate-400 text-sm mt-1">Cập nhật hơi thở công nghệ từ VinFast</p>
+                </div>
+                <a href="<?= BASE_URL ?>news" class="group flex items-center gap-2 text-[10px] font-black text-vfNavy hover:text-[#FFB81C] transition-colors border-b border-vfNavy/10 pb-1">
+                    XEM TẤT CẢ <i class="fa-solid fa-arrow-right text-[8px] group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+            
+            <div class="grid gap-8 md:grid-cols-3">
+                <?php if (!empty($latest)): ?>
+                    <?php foreach (array_slice($latest, 0, 3) as $index => $n): ?>
+                        <article class="vehicle-card-hover reveal-on-scroll reveal-delay-<?= $index ?> group overflow-hidden rounded-[2.5rem] bg-white shadow-lg border border-slate-100 transition-all duration-700">
+                            <a href="<?= BASE_URL ?>news/read/<?= htmlspecialchars((string)($n['slug'] ?? '')) ?>" class="block">
+                                <div class="overflow-hidden aspect-[16/10] relative">
+                                    <img src="<?= htmlspecialchars(vf_news_thumb((array)$n)) ?>" alt="<?= htmlspecialchars((string)($n['title'] ?? '')) ?>" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
                                 </div>
-                            </div>
-                        </a>
-                    </article>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </div>
-</section>
-
-<!-- PRODUCT SPOTLIGHT -->
-<section class="bg-[#0a2342] py-12 text-white">
-    <div class="mx-auto grid max-w-6xl gap-6 px-4 lg:grid-cols-12 lg:items-center">
-        <div class="lg:col-span-7">
-            <div class="overflow-hidden rounded-xl border border-white/10 bg-white">
-                <img src="<?= htmlspecialchars(ProductViewHelper::thumbUrl((array)($leadProduct ?? []))) ?>" alt="Lead vehicle" class="h-full w-full object-cover">
+                                <div class="p-7">
+                                    <p class="text-[9px] font-black text-[#FFB81C] uppercase tracking-[0.2em] mb-3">Tin tức &bull; <?= date('d/m/Y', strtotime($n['created_at'] ?? 'now')) ?></p>
+                                    <h3 class="line-clamp-2 text-lg font-black text-vfNavy group-hover:text-[#FFB81C] transition-colors leading-snug h-14 overflow-hidden"><?= htmlspecialchars((string)($n['title'] ?? '')) ?></h3>
+                                    <div class="mt-6 flex items-center gap-2 text-[10px] font-bold text-slate-300">
+                                        Xem chi tiết <i class="fa-solid fa-arrow-right-long transition-transform group-hover:translate-x-2"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
-        <div class="lg:col-span-5 flex flex-col justify-center">
-            <div class="inline-flex items-center gap-2">
-                <span class="h-1 w-8 bg-[#FFB81C] rounded-full"></span>
-                <p class="text-sm font-bold uppercase tracking-widest text-[#FFB81C]">DÒNG XE NỔI BẬT</p>
-            </div>
-            <h3 class="mt-4 text-4xl font-extrabold text-white drop-shadow-md"><?= htmlspecialchars((string)(($leadProduct['name'] ?? 'VinFast VF Series'))) ?></h3>
-            <div class="mt-6 space-y-4 text-base text-white/90">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-[#FFB81C]"><i class="fa-solid fa-battery-full"></i></div>
-                    <p>Quãng đường: <span class="font-bold text-white"><?= htmlspecialchars(vf_product_range((array)($leadProduct ?? []))) ?></span></p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-[#FFB81C]"><i class="fa-solid fa-tag"></i></div>
-                    <p>Giá từ: <span class="font-bold text-white"><?= htmlspecialchars(vf_product_price((array)($leadProduct ?? []))) ?></span></p>
-                </div>
-            </div>
-            <div class="mt-8">
-                <a href="<?= BASE_URL ?>products" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFB81C] to-[#f59e0b] px-8 py-3.5 text-sm font-bold text-vfNavy hover:text-white shadow-[0_4px_15px_rgba(255,184,28,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(255,184,28,0.6)]">
-                    XEM CHI TIẾT <i class="fa-solid fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- TAI SAO CHON VINFAST -->
-<section class="bg-[#f8fafc] py-12">
-    <div class="mx-auto max-w-6xl px-4">
-        <h2 class="text-center text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-vfNavy to-[#1a4a82] uppercase tracking-wide drop-shadow-sm">TẠI SAO CHỌN XE ĐIỆN VINFAST</h2>
-        <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="group rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f8fafc] text-2xl text-vfNavy transition-colors group-hover:bg-[#FFB81C] group-hover:text-white">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <p class="mt-4 text-base font-bold text-vfNavy">Hiệu suất tối ưu</p>
-                <p class="mt-2 text-sm text-slate-500">Vận hành mạnh mẽ, êm ái và không tiếng ồn.</p>
-            </div>
-            <div class="group rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f8fafc] text-2xl text-vfNavy transition-colors group-hover:bg-[#FFB81C] group-hover:text-white">
-                    <i class="fa-solid fa-shield-halved"></i>
-                </div>
-                <p class="mt-4 text-base font-bold text-vfNavy">An toàn vượt trội</p>
-                <p class="mt-2 text-sm text-slate-500">Đạt chuẩn an toàn quốc tế, công nghệ hỗ trợ lái tiên tiến.</p>
-            </div>
-            <div class="group rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f8fafc] text-2xl text-vfNavy transition-colors group-hover:bg-[#FFB81C] group-hover:text-white">
-                    <i class="fa-solid fa-screwdriver-wrench"></i>
-                </div>
-                <p class="mt-4 text-base font-bold text-vfNavy">Dịch vụ toàn diện</p>
-                <p class="mt-2 text-sm text-slate-500">Bảo hành 10 năm, xưởng dịch vụ phủ khắp toàn quốc.</p>
-            </div>
-            <div class="group rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f8fafc] text-2xl text-vfNavy transition-colors group-hover:bg-[#FFB81C] group-hover:text-white">
-                    <i class="fa-solid fa-leaf"></i>
-                </div>
-                <p class="mt-4 text-base font-bold text-vfNavy">Hướng đến bền vững</p>
-                <p class="mt-2 text-sm text-slate-500">Không phát thải, góp phần kiến tạo tương lai xanh.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- HỆ SINH THÁI THÔNG MINH -->
-<section class="bg-white py-16">
-    <div class="mx-auto max-w-6xl px-4">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-vfNavy to-[#1a4a82] uppercase tracking-wide drop-shadow-sm">Hệ Sinh Thái Thông Minh</h2>
-            <p class="mt-4 text-slate-500 max-w-2xl mx-auto">Trải nghiệm vượt trên một phương tiện di chuyển với hệ sinh thái công nghệ, dịch vụ đẳng cấp thế giới được tích hợp hoàn hảo.</p>
-        </div>
-        <div class="grid gap-8 md:grid-cols-3">
-            <div class="group relative overflow-hidden rounded-2xl bg-slate-50 p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-white ring-1 ring-slate-100">
-                <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-vfNavy to-[#1a4a82] text-white shadow-lg transition-transform group-hover:scale-110 group-hover:-rotate-3">
-                    <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
-                </div>
-                <h3 class="mb-3 text-xl font-bold text-vfNavy">Ứng dụng VinFast</h3>
-                <p class="text-sm text-slate-600 leading-relaxed">Điều khiển xe từ xa, theo dõi tình trạng pin, định vị xe và quản lý lịch sử bảo dưỡng dễ dàng chỉ với một thao tác vuốt trên điện thoại di động.</p>
-            </div>
-            <div class="group relative overflow-hidden rounded-2xl bg-slate-50 p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-white ring-1 ring-slate-100">
-                <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-vfNavy to-[#1a4a82] text-white shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3">
-                    <i class="fa-solid fa-charging-station text-2xl"></i>
-                </div>
-                <h3 class="mb-3 text-xl font-bold text-vfNavy">Hạ tầng trạm sạc</h3>
-                <p class="text-sm text-slate-600 leading-relaxed">Hệ thống trạm sạc công cộng phủ sóng khắp 63 tỉnh thành, dọc các tuyến quốc lộ và cao tốc, mang lại sự an tâm tuyệt đối trên mọi hành trình.</p>
-            </div>
-            <div class="group relative overflow-hidden rounded-2xl bg-slate-50 p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-white ring-1 ring-slate-100">
-                <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-vfNavy to-[#1a4a82] text-white shadow-lg transition-transform group-hover:scale-110 group-hover:-rotate-3">
-                    <i class="fa-solid fa-robot text-2xl"></i>
-                </div>
-                <h3 class="mb-3 text-xl font-bold text-vfNavy">Trợ lý ảo thông minh</h3>
-                <p class="text-sm text-slate-600 leading-relaxed">Tương tác bằng giọng nói tiếng Việt đa vùng miền. Hỗ trợ điều hướng, gọi điện, giải trí và kiểm soát các tính năng xe một cách hoàn toàn rảnh tay.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- BRAND STORY -->
-<section class="bg-[#f8fafc] py-20 relative overflow-hidden">
-    <!-- Decorative background element -->
-    <div class="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-gradient-to-br from-[#1a4a82]/5 to-vfNavy/5 blur-3xl pointer-events-none"></div>
-    <div class="absolute -left-40 -bottom-40 h-96 w-96 rounded-full bg-gradient-to-tr from-[#FFB81C]/5 to-transparent blur-3xl pointer-events-none"></div>
-
-    <div class="mx-auto grid max-w-6xl gap-12 px-4 lg:grid-cols-12 lg:items-center relative z-10">
-        <!-- Image Grid -->
-        <div class="grid grid-cols-2 gap-4 lg:col-span-5">
-            <div class="group relative overflow-hidden rounded-2xl shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-vfNavy/20">
-                <img src="<?= htmlspecialchars($banners[0]) ?>" alt="Story 1" class="h-40 w-full object-cover transition-transform duration-700 group-hover:scale-110 sm:h-48">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-            </div>
-            <div class="group relative mt-8 overflow-hidden rounded-2xl shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-vfNavy/20">
-                <img src="<?= htmlspecialchars($banners[1]) ?>" alt="Story 2" class="h-40 w-full object-cover transition-transform duration-700 group-hover:scale-110 sm:h-48">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-            </div>
-            <div class="group relative col-span-2 overflow-hidden rounded-2xl shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#FFB81C]/20">
-                <img src="<?= htmlspecialchars($banners[2]) ?>" alt="Story 3" class="h-48 w-full object-cover transition-transform duration-700 group-hover:scale-110 sm:h-64">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-            </div>
-        </div>
-
-        <!-- Content -->
-        <div class="lg:col-span-7 lg:pl-8">
-            <div class="inline-flex items-center gap-3 rounded-full bg-white px-4 py-1.5 shadow-sm border border-slate-100 mb-6">
-                <span class="flex h-2 w-2 rounded-full bg-[#FFB81C] animate-pulse"></span>
-                <span class="text-[11px] font-bold uppercase tracking-widest text-vfNavy">CÂU CHUYỆN VINFAST</span>
-            </div>
-
-            <h3 class="text-3xl font-extrabold text-vfNavy sm:text-4xl leading-tight">
-                Tiên phong vì một <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#1a4a82] to-vfNavy">Việt Nam xanh hơn</span> mỗi ngày
-            </h3>
-
-            <p class="mt-6 text-base leading-relaxed text-slate-600">
-                <?= nl2br(htmlspecialchars(!empty($settings['about_text']) ? $settings['about_text'] : 'Không chỉ là phương tiện di chuyển, VinFast mang đến một lối sống mới. Chúng tôi cam kết phát triển hệ sinh thái xe điện toàn diện, kiến tạo chuẩn mực đẳng cấp toàn cầu và đóng góp trực tiếp vào mục tiêu giảm phát thải, bảo vệ môi trường sống.')) ?>
-            </p>
-
-            <div class="mt-8 grid gap-4 sm:grid-cols-2">
-                <div class="flex items-start gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f8fafc] text-vfNavy">
-                        <i class="fa-solid fa-earth-americas text-lg"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-vfNavy">Tầm nhìn toàn cầu</h4>
-                        <p class="mt-1 text-xs text-slate-500 leading-snug">Vươn tầm quốc tế, khẳng định trí tuệ Việt.</p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f8fafc] text-vfNavy">
-                        <i class="fa-solid fa-handshake-angle text-lg"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-vfNavy">Tận tâm phục vụ</h4>
-                        <p class="mt-1 text-xs text-slate-500 leading-snug">Dịch vụ xuất sắc từ trái tim.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-10">
-                <a href="<?= BASE_URL ?>about" class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-vfNavy bg-transparent px-8 py-3 text-sm font-bold text-vfNavy transition-all duration-300 hover:bg-vfNavy hover:text-white hover:shadow-lg">
-                    TÌM HIỂU THÊM VỀ CHÚNG TÔI <i class="fa-solid fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- TESTIMONIAL ĐÃ ĐƯỢC XÓA THEO YÊU CẦU -->
-
-<!-- TIN TUC -->
-<section class="bg-[#f8fafc] py-12">
-    <div class="mx-auto max-w-6xl px-4">
-        <div class="mb-6 flex items-end justify-between">
-            <h2 class="text-2xl font-bold text-vfNavy">TIN TỨC MỚI NHẤT</h2>
-            <a href="<?= BASE_URL ?>news" class="text-sm font-semibold text-vfNavy hover:underline">Xem tất cả</a>
-        </div>
-        <div class="grid gap-5 md:grid-cols-3">
-            <?php if (empty($latest)): ?>
-                <p class="col-span-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">Chưa có bài viết.</p>
-            <?php else: ?>
-                <?php foreach ($latest as $n): ?>
-                    <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-                        <a href="<?= BASE_URL ?>news/read/<?= htmlspecialchars((string)($n['slug'] ?? '')) ?>" class="block">
-                            <img src="<?= htmlspecialchars(vf_news_thumb((array)$n)) ?>" alt="<?= htmlspecialchars((string)($n['title'] ?? '')) ?>" class="aspect-[16/10] w-full object-cover">
-                            <div class="p-4">
-                                <p class="text-[11px] uppercase text-slate-500"><?= htmlspecialchars((string)($n['created_at'] ?? '')) ?></p>
-                                <h3 class="mt-2 line-clamp-2 text-sm font-semibold text-vfNavy"><?= htmlspecialchars((string)($n['title'] ?? '')) ?></h3>
-                            </div>
-                        </a>
-                    </article>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </div>
-</section>
+    </section>
+</div>
+<!-- Scripts are loaded via HomeController -->

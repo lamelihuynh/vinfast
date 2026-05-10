@@ -8,7 +8,7 @@
     <?php $avatarUrl = Auth::avatar() !== '' ? BASE_URL . ltrim((string)Auth::avatar(), '/') : ''; ?>
 
     <form action="<?= BASE_URL ?>products" method="get" class="hidden md:flex flex-1 max-w-xl mx-auto border border-slate-200 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-vfNavy/20 focus-within:border-vfNavy transition">
-      <input type="text" name="q" placeholder="Tìm kiếm xe, dịch vụ..." class="w-full px-4 py-2 text-[13px] text-slate-700 outline-none">
+      <input type="text" name="q" placeholder="Tìm kiếm xe..." class="w-full px-4 py-2 text-[13px] text-slate-700 outline-none">
       <button type="submit" class="px-4 bg-[#0B233F] text-white hover:bg-[#0a1f35] transition flex items-center justify-center"><i class="fa-solid fa-magnifying-glass text-[14px]"></i></button>
     </form>
 

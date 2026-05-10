@@ -161,7 +161,7 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
             <!-- KHU VỰC SẢN PHẨM NỔI BẬT -->
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
-                    <h4 class="header-title text-danger"><i class="ti-car"></i> Dòng xe nổi bật (Homepage Featured Car)</h4>
+                    <h4 class="header-title text-danger"><i class="ti-car"></i>  Dòng xe nổi bật (Homepage Featured Car)</h4>
                     <p class="text-muted font-14 mb-4">Chọn một dòng xe để hiển thị nổi bật trên trang chủ.</p>
                     
                     <div class="row">
