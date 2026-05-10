@@ -58,8 +58,8 @@ if ($powerText === '') {
           <p class="text-[11px] font-bold"><?= number_format((float)($p['price'] ?? 0), 0, ',', '.') ?> VND</p>
         </div>
         <div class="bg-white/10 rounded-lg p-2">
-          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]">✓</span><span class="text-[9px]">Trạng thái</span></div>
-          <p class="text-[11px] font-bold">Còn kinh doanh</p>
+          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]">✓</span><span class="text-[9px]">Vận tốc tối đa</span></div>
+          <p class="text-[11px] font-bold"><?= htmlspecialchars($specs['max_speed'] ?? 'N/A') ?></p>
         </div>
       </div>
 

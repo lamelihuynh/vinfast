@@ -83,9 +83,14 @@ class DashboardAdminController
         try {
             $sql = "SELECT DATE_FORMAT(o.created_at, '%Y-%m') AS ym,
 						   COUNT(*) AS orders,
-						   COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN p.price * 0.10 ELSE 0 END), 0) AS revenue
+                           COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN
+                               COALESCE(
+                                   CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_base_amount')) AS DECIMAL(18,2)),
+                                   CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_amount')) AS DECIMAL(18,2)),
+                                   0
+                               )
+                           ELSE 0 END), 0) AS revenue
 					FROM orders o
-					JOIN products p ON p.id = o.product_id
 					WHERE o.created_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL :months MONTH)
 					GROUP BY ym
 					ORDER BY ym ASC";
@@ -206,14 +211,14 @@ class DashboardAdminController
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            return array_map(static function (array $row): array {
+            return array_map(function (array $row): array {
                 $orderId = (int)($row['id'] ?? 0);
                 return [
                     'id' => $orderId,
                     'code' => 'VF-ORD-' . str_pad((string)$orderId, 4, '0', STR_PAD_LEFT),
                     'customer' => (string)($row['user_name'] ?? 'Khach hang'),
                     'product' => (string)($row['product_name'] ?? ''),
-                    'deposit' => (float)($row['price'] ?? 0) * 0.10,
+                    'deposit' => $this->extractDepositFromNote($row['note'] ?? null),
                     'status' => (string)($row['status'] ?? 'pending'),
                     'created_at' => (string)($row['created_at'] ?? ''),
                 ];
@@ -310,14 +315,38 @@ class DashboardAdminController
         global $pdo;
 
         try {
-            $sql = "SELECT COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN p.price * 0.10 ELSE 0 END), 0) AS revenue
-					FROM orders o
-					JOIN products p ON p.id = o.product_id";
+            $sql = "SELECT COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN
+							COALESCE(
+								CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_base_amount')) AS DECIMAL(18,2)),
+								CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_amount')) AS DECIMAL(18,2)),
+								0
+							)
+						ELSE 0 END), 0) AS revenue
+					FROM orders o";
             $stmt = $pdo->query($sql);
             return (float)$stmt->fetchColumn();
         } catch (Throwable $e) {
             return 0;
         }
+    }
+
+    private function extractDepositFromNote($note): float
+    {
+        $raw = trim((string)$note);
+        if ($raw === '') {
+            return 0;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return 0;
+        }
+
+        if (isset($decoded['deposit_base_amount'])) {
+            return max(0, (float)$decoded['deposit_base_amount']);
+        }
+
+        return max(0, (float)($decoded['deposit_amount'] ?? 0));
     }
 
     private function mockRecentContacts(): array

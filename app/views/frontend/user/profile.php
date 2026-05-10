@@ -81,9 +81,6 @@ $hasNotice = !empty($_SESSION['flash']) || !empty($_SESSION['errors']);
                                 </div>
                             </div>
 
-                            <div class="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                                Mẹo: dùng tên thật và email chính để nhận thông báo về đơn hàng, bảo dưỡng và chương trình ưu đãi.
-                            </div>
 
                             <div class="flex justify-end">
                                 <button type="submit" class="inline-flex items-center rounded-xl bg-[#1a2240] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#233060]">Lưu hồ sơ</button>

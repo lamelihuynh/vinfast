@@ -10,7 +10,7 @@ $cardItems = [
     [
         'label' => 'Doanh thu cọc',
         'value' => number_format((float)($summary['deposit_revenue'] ?? 0), 0, ',', '.') . ' VND',
-        'sub' => '10% giá trị xe không hủy đơn',
+        'sub' => 'Tổng tiền cọc của đơn chưa hủy',
         'icon' => 'ti-wallet',
         'class' => 'bg-warning',
     ],

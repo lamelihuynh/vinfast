@@ -258,17 +258,17 @@ class ProductAdminController
     {
         return [
             'category_id' => (int)($_POST['category_id'] ?? 0),
-            'name' => trim((string)($_POST['name'] ?? '')),
-            'slug' => $this->slugify((string)($_POST['slug'] ?? ''), (string)($_POST['name'] ?? '')),
+            'name' => $this->cleanText($_POST['name'] ?? ''),
+            'slug' => $this->slugify((string)($_POST['slug'] ?? ''), $this->cleanText($_POST['name'] ?? '')),
             'price' => (float)($_POST['price'] ?? 0),
-            'description' => trim((string)($_POST['description'] ?? '')),
-            'range' => trim((string)($_POST['range'] ?? '')),
-            'power' => trim((string)($_POST['power'] ?? '')),
-            'acceleration' => trim((string)($_POST['acceleration'] ?? '')),
-            'max_speed' => trim((string)($_POST['max_speed'] ?? '')),
-            'battery' => trim((string)($_POST['battery'] ?? '')),
+            'description' => $this->cleanText($_POST['description'] ?? ''),
+            'range' => $this->cleanText($_POST['range'] ?? ''),
+            'power' => $this->cleanText($_POST['power'] ?? ''),
+            'acceleration' => $this->cleanText($_POST['acceleration'] ?? ''),
+            'max_speed' => $this->cleanText($_POST['max_speed'] ?? ''),
+            'battery' => $this->cleanText($_POST['battery'] ?? ''),
             'deposit_amount' => max(0, (int)($_POST['deposit_amount'] ?? 15000000)),
-            'exterior_colors_raw' => trim((string)($_POST['exterior_colors_raw'] ?? '')),
+            'exterior_colors_raw' => $this->cleanText($_POST['exterior_colors_raw'] ?? ''),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
         ];
     }
@@ -308,6 +308,11 @@ class ProductAdminController
     private function strLength(string $value): int
     {
         return function_exists('mb_strlen') ? mb_strlen($value) : strlen($value);
+    }
+
+    private function cleanText(mixed $value): string
+    {
+        return trim(strip_tags((string)$value));
     }
 
     private function buildSpecs(array $payload): array

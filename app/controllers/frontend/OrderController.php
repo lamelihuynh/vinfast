@@ -138,18 +138,18 @@ class OrderController
             }
 
             $formData = [
-                'full_name' => trim((string)($_POST['full_name'] ?? '')),
-                'phone' => trim((string)($_POST['phone'] ?? '')),
-                'cccd' => trim((string)($_POST['cccd'] ?? '')),
-                'email' => trim((string)($_POST['email'] ?? '')),
-                'province' => trim((string)($_POST['province'] ?? '')),
-                'showroom' => trim((string)($_POST['showroom'] ?? '')),
-                'salesperson' => trim((string)($_POST['salesperson'] ?? '')),
-                'voucher' => trim((string)($_POST['voucher'] ?? '')),
-                'pay_method' => trim((string)($_POST['pay_method'] ?? 'card-intl')),
-                'agree_terms' => trim((string)($_POST['agree_terms'] ?? '')),
-                'variant_name' => trim((string)($_POST['variant_name'] ?? '')),
-                'interior_code' => strtoupper(trim((string)($_POST['interior_code'] ?? ''))),
+                'full_name' => $this->cleanText($_POST['full_name'] ?? ''),
+                'phone' => $this->cleanText($_POST['phone'] ?? ''),
+                'cccd' => $this->cleanText($_POST['cccd'] ?? ''),
+                'email' => $this->cleanText($_POST['email'] ?? ''),
+                'province' => $this->cleanText($_POST['province'] ?? ''),
+                'showroom' => $this->cleanText($_POST['showroom'] ?? ''),
+                'salesperson' => $this->cleanText($_POST['salesperson'] ?? ''),
+                'voucher' => $this->cleanText($_POST['voucher'] ?? ''),
+                'pay_method' => $this->cleanText($_POST['pay_method'] ?? 'card-intl'),
+                'agree_terms' => $this->cleanText($_POST['agree_terms'] ?? ''),
+                'variant_name' => $this->cleanText($_POST['variant_name'] ?? ''),
+                'interior_code' => strtoupper($this->cleanText($_POST['interior_code'] ?? '')),
                 'step' => (int)($_POST['step'] ?? 3),
             ];
 
@@ -226,7 +226,7 @@ class OrderController
                 ],
                 'variant_name' => (string)$formData['variant_name'],
                 'interior_code' => (string)$formData['interior_code'],
-                'deposit_amount' => $depositAmount + max(0, (int)($selectedColor['surcharge'] ?? 0)),
+                'deposit_amount' => $depositAmount,
                 'deposit_base_amount' => $depositAmount,
                 'deposit_non_refundable' => $depositNonRefundable,
                 'payment_status' => 'pending_verify',
@@ -263,7 +263,7 @@ class OrderController
                 'province' => (string)$formData['province'],
                 'showroom' => (string)$formData['showroom'],
                 'payMethod' => (string)$formData['pay_method'],
-                'depositAmount' => $depositAmount + max(0, (int)($selectedColor['surcharge'] ?? 0)),
+                'depositAmount' => $depositAmount,
                 'depositBaseAmount' => $depositAmount,
                 'depositNonRefundable' => $depositNonRefundable,
                 'paymentStatus' => 'pending_verify',
@@ -307,6 +307,11 @@ class OrderController
         View::render('frontend/order/confirmation', [
             'order' => $order,
         ]);
+    }
+
+    private function cleanText(mixed $value): string
+    {
+        return trim(strip_tags((string)$value));
     }
 
     public function index(): void
