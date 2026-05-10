@@ -25,6 +25,7 @@ $isTestDriveTab = $tab === 'test-drive';
   /* ===== Contact Page Tab Styles ===== */
   .vf-contact-tabs {
     display: flex;
+    flex-wrap: wrap;
     border-bottom: 2px solid #e2e8f0;
     margin-bottom: 1.5rem;
   }

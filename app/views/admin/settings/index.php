@@ -188,7 +188,7 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
                     
                     <div class="row">
                         <!-- Stat 1 -->
-                        <div class="col-md-3 form-group border-right border-light">
+                        <div class="col-sm-6 col-md-3 form-group mb-4 mb-md-0">
                             <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 1</label>
                             <div class="mb-2">
                                 <small class="text-muted font-weight-bold text-uppercase">Giá trị (Ví dụ: 14+)</small>
@@ -201,7 +201,7 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
                         </div>
 
                         <!-- Stat 2 -->
-                        <div class="col-md-3 form-group border-right border-light">
+                        <div class="col-sm-6 col-md-3 form-group mb-4 mb-md-0">
                             <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 2</label>
                             <div class="mb-2">
                                 <small class="text-muted font-weight-bold text-uppercase">Giá trị</small>
@@ -214,7 +214,7 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
                         </div>
 
                         <!-- Stat 3 -->
-                        <div class="col-md-3 form-group border-right border-light">
+                        <div class="col-sm-6 col-md-3 form-group mb-4 mb-md-0">
                             <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 3</label>
                             <div class="mb-2">
                                 <small class="text-muted font-weight-bold text-uppercase">Giá trị</small>
@@ -227,7 +227,7 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
                         </div>
 
                         <!-- Stat 4 -->
-                        <div class="col-md-3 form-group">
+                        <div class="col-sm-6 col-md-3 form-group">
                             <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Thống kê 4</label>
                             <div class="mb-2">
                                 <small class="text-muted font-weight-bold text-uppercase">Giá trị</small>
@@ -244,8 +244,8 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
 
             <!-- ACTION BUTTONS -->
             <div class="card shadow-sm border-0 mb-5">
-                <div class="card-body d-flex gap-3 justify-content-end bg-light rounded">
-                    <a class="btn btn-flat btn-outline-secondary btn-lg px-4" href="<?= ADMIN_URL ?>settings">
+                <div class="card-body d-flex flex-column flex-sm-row justify-content-end bg-light rounded">
+                    <a class="btn btn-flat btn-outline-secondary btn-lg px-4 mb-3 mb-sm-0 mr-sm-3" href="<?= ADMIN_URL ?>settings">
                         <i class="ti-reload"></i> Huỷ thay đổi
                     </a>
                     <button class="btn btn-flat btn-primary btn-lg px-5" type="submit">
