@@ -22,17 +22,7 @@
                             <input type="text" class="form-control" name="name" id="modal_name" required>
                         </div>
                         <div class="col-md-5">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label mb-0">Danh mục <span class="text-danger">*</span></label>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-2" id="btnOpenCreateCategory">
-                                        <i class="fa-solid fa-plus me-1"></i>Thêm danh mục
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" id="btnOpenDeleteCategory" title="Xóa danh mục đã chọn">
-                                        <i class="fa-solid fa-trash me-1"></i>Xóa
-                                    </button>
-                                </div>
-                            </div>
+                            <label class="form-label mb-1">Danh mục <span class="text-danger">*</span></label>
                             <select class="form-select" name="category_id" id="modal_category_id" required>
                                 <option value="">Chọn danh mục</option>
                                 <?php foreach ($cats as $c): ?>
@@ -130,62 +120,6 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
                     <button type="submit" class="btn btn-primary" id="productModalSubmitBtn">Lưu</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Create Category Modal (for Product Modal flow) -->
-<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="createCategoryForm" class="d-flex flex-column">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fa-solid fa-folder-plus me-2"></i>Thêm danh mục mới
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Tên danh mục <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="createCategoryName" name="name" placeholder="Ví dụ: Sedan điện" required>
-                    </div>
-                    <div id="createCategoryFeedback" class="small d-none"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary" id="createCategorySubmitBtn">
-                        <i class="fa-solid fa-floppy-disk me-1"></i>Lưu danh mục
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Category Modal -->
-<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="deleteCategoryForm" class="d-flex flex-column">
-                <div class="modal-header border-danger">
-                    <h5 class="modal-title text-danger">
-                        <i class="fa-solid fa-trash me-2"></i>Xóa danh mục
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Bạn có chắc muốn xóa danh mục <strong id="deleteCategoryName"></strong>?</p>
-                    <p class="small text-muted">Nếu danh mục đang có sản phẩm, thao tác sẽ bị từ chối.</p>
-                    <div id="deleteCategoryFeedback" class="small d-none mt-2"></div>
-                    <input type="hidden" id="deleteCategoryId" name="id" value="0">
-                    <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-danger" id="deleteCategorySubmitBtn">Xóa danh mục</button>
                 </div>
             </form>
         </div>
