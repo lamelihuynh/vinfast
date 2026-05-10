@@ -27,42 +27,42 @@ if (isset($_SESSION['errors'])) {
         </p>
 
         <div class="space-y-2 text-[13px]">
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Sản phẩm</span>
-                <span class="text-right font-semibold text-slate-800"><?= htmlspecialchars($productName) ?></span>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800"><?= htmlspecialchars($productName) ?></span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Phiên bản</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-variant>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-variant>
                     <?= htmlspecialchars((string)($selectedVariant['name'] ?? $productName)) ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Màu ngoại thất</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-color>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-color>
                     <?= htmlspecialchars($colorName !== '' ? $colorName : $colorCode) ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Giá xe</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-price>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-price>
                     <?= htmlspecialchars(number_format((float)($selectedVariant['price'] ?? 0), 0, ',', '.')) ?> VNĐ
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Đặt cọc</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-deposit>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-deposit>
                     <?= htmlspecialchars(number_format((float)($depositAmount ?? 15000000), 0, ',', '.')) ?> VNĐ
                 </span>
             </div>
 
-            <div class="hidden flex items-center justify-between gap-3" data-summary-color-surcharge-wrap>
+            <div class="hidden flex items-start justify-between gap-3" data-summary-color-surcharge-wrap>
                 <span class="text-slate-500 min-w-[120px]">Phụ thu màu</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-color-surcharge>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-color-surcharge>
                     <?= htmlspecialchars(number_format((float)($selectedColorSurcharge ?? 0), 0, ',', '.')) ?> VNĐ
                 </span>
             </div>
@@ -73,44 +73,44 @@ if (isset($_SESSION['errors'])) {
         </p>
 
         <div class="space-y-2 text-[13px]">
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Họ tên</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-name>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-name>
                     <?= htmlspecialchars($formData['full_name'] ?? '') ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">SĐT</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-phone>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-phone>
                     <?= htmlspecialchars($formData['phone'] ?? '') ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">CCCD</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-cccd>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-cccd>
                     <?= htmlspecialchars($formData['cccd'] ?? '') ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Email</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-email>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-email>
                     <?= htmlspecialchars($formData['email'] ?? '') ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Tỉnh thành</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-province>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-province>
                     <?= htmlspecialchars($formData['province'] ?? '') ?>
                 </span>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start justify-between gap-3">
                 <span class="text-slate-500 min-w-[120px]">Showroom</span>
-                <span class="text-right font-semibold text-slate-800" data-summary-showroom>
+                <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-showroom>
                     <?= htmlspecialchars($formData['showroom'] ?? '') ?>
                 </span>
             </div>

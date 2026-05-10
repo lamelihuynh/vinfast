@@ -19,7 +19,8 @@
                     <div class="row g-3 align-items-start">
                         <div class="col-md-7">
                             <label class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" id="modal_name" required>
+                            <input type="text" class="form-control" name="name" id="modal_name" maxlength="120" required>
+                            <small class="text-muted">Tối đa 120 ký tự.</small>
                         </div>
                         <div class="col-md-5">
                             <label class="form-label mb-1">Danh mục <span class="text-danger">*</span></label>
@@ -38,7 +39,8 @@
 
                         <div class="col-12">
                             <label class="form-label">Mô tả</label>
-                            <textarea class="form-control" rows="3" name="description" id="modal_description"></textarea>
+                            <textarea class="form-control" rows="3" name="description" id="modal_description" maxlength="2000"></textarea>
+                            <small class="text-muted">Tối đa 2000 ký tự.</small>
                         </div>
 
                         <div class="col-12">
@@ -46,23 +48,23 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Quãng đường</label>
-                            <input type="text" class="form-control" name="range" id="modal_range">
+                            <input type="text" class="form-control" name="range" id="modal_range" maxlength="120">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Công suất</label>
-                            <input type="text" class="form-control" name="power" id="modal_power">
+                            <input type="text" class="form-control" name="power" id="modal_power" maxlength="120">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Tăng tốc</label>
-                            <input type="text" class="form-control" name="acceleration" id="modal_acceleration">
+                            <input type="text" class="form-control" name="acceleration" id="modal_acceleration" maxlength="120">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Vận tốc tối đa</label>
-                            <input type="text" class="form-control" name="max_speed" id="modal_max_speed">
+                            <input type="text" class="form-control" name="max_speed" id="modal_max_speed" maxlength="120">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Pin / Dung lượng</label>
-                            <input type="text" class="form-control" name="battery" id="modal_battery">
+                            <input type="text" class="form-control" name="battery" id="modal_battery" maxlength="120">
                         </div>
 
                         <div class="col-md-6">

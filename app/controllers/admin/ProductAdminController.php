@@ -282,6 +282,17 @@ class ProductAdminController
         if (!$payload['name']) {
             $errors[] = 'Product name is required.';
         }
+        if ($this->strLength((string)$payload['name']) > 120) {
+            $errors[] = 'Product name must be at most 120 characters.';
+        }
+        if ($this->strLength((string)$payload['description']) > 2000) {
+            $errors[] = 'Description must be at most 2000 characters.';
+        }
+        foreach (['range', 'power', 'acceleration', 'max_speed', 'battery'] as $field) {
+            if ($this->strLength((string)($payload[$field] ?? '')) > 120) {
+                $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be at most 120 characters.';
+            }
+        }
         if (!$payload['slug']) {
             $errors[] = 'Slug is required.';
         }
@@ -292,6 +303,11 @@ class ProductAdminController
             $errors[] = 'Slug already exists.';
         }
         return $errors;
+    }
+
+    private function strLength(string $value): int
+    {
+        return function_exists('mb_strlen') ? mb_strlen($value) : strlen($value);
     }
 
     private function buildSpecs(array $payload): array

@@ -185,9 +185,9 @@ $scripts = '';
                         ): ?>
                             <div class="flex items-start gap-2.5">
                                 <span class="mt-0.5 flex-shrink-0 text-gray-400"><i class="fa-solid <?= htmlspecialchars($row['icon']) ?> text-[12px]"></i></span>
-                                <div class="flex-1 flex justify-between gap-3">
+                                <div class="flex min-w-0 flex-1 justify-between gap-3">
                                     <span class="text-gray-500" style="font-size: 12px;"><?= htmlspecialchars($row['label']) ?></span>
-                                    <span class="text-right text-gray-800" style="font-size: 12px; font-weight: 500;"><?= htmlspecialchars((string)$row['value']) ?></span>
+                                    <span class="min-w-0 break-words text-right text-gray-800" style="font-size: 12px; font-weight: 500;"><?= htmlspecialchars((string)$row['value']) ?></span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -200,8 +200,8 @@ $scripts = '';
                         <h3 class="text-[#1a2240]" style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">SHOWROOM NHẬN XE</h3>
                     </div>
                     <div class="px-5 py-4">
-                        <p class="text-[#1a2240]" style="font-size: 13px; font-weight: 600;"><?= htmlspecialchars($showroom !== '' ? $showroom : '—') ?></p>
-                        <p class="mt-1 text-gray-500" style="font-size: 11px;"><?= htmlspecialchars($province !== '' ? $province : '—') ?></p>
+                        <p class="break-words text-[#1a2240]" style="font-size: 13px; font-weight: 600;"><?= htmlspecialchars($showroom !== '' ? $showroom : '—') ?></p>
+                        <p class="mt-1 break-words text-gray-500" style="font-size: 11px;"><?= htmlspecialchars($province !== '' ? $province : '—') ?></p>
                     </div>
                 </div>
 
