@@ -18,6 +18,8 @@
  */
 class Product
 {
+    private static ?bool $hasColorTable = null;
+
     private static function bindNamedParams(PDOStatement $stmt, array $params): void
     {
         foreach ($params as $key => $value) {
@@ -122,14 +124,179 @@ class Product
             $price,
             json_encode($images),
             $isActive
-        ]);
+        ]) ? (int)$pdo->lastInsertId() : 0;
     }
     private static function formatProduct($product)
     {
         if (!$product) return null;
         $product['specs'] = json_decode($product['specs'] ?? '', true) ?? [];
         $product['images'] = json_decode($product['images'] ?? '', true) ?? [];
+
+        $productId = (int)($product['id'] ?? 0);
+        if ($productId > 0) {
+            $product['exterior_colors'] = self::getExteriorColorsByProductId($productId);
+        } else {
+            $product['exterior_colors'] = [];
+        }
+
         return $product;
+    }
+
+    private static function colorTableExists(): bool
+    {
+        if (self::$hasColorTable !== null) {
+            return self::$hasColorTable;
+        }
+
+        global $pdo;
+
+        try {
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name');
+            $stmt->execute([':table_name' => 'product_colors']);
+            self::$hasColorTable = (int)$stmt->fetchColumn() > 0;
+        } catch (Throwable $e) {
+            self::$hasColorTable = false;
+        }
+
+        return self::$hasColorTable;
+    }
+
+    private static function normalizeColorRows(array $rows): array
+    {
+        $normalized = [];
+
+        foreach ($rows as $index => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $code = strtoupper(trim((string)($row['code'] ?? $row['color_code'] ?? '')));
+            $name = trim((string)($row['name'] ?? $row['color_name'] ?? ''));
+            if ($code === '' || $name === '') {
+                continue;
+            }
+
+            $hex = strtoupper(trim((string)($row['hex'] ?? $row['color_hex'] ?? '')));
+            $image = trim((string)($row['image'] ?? $row['image_path'] ?? ''));
+            $sortOrder = (int)($row['sortOrder'] ?? $row['sort_order'] ?? $index);
+
+            $normalized[] = [
+                'code' => $code,
+                'name' => $name,
+                'image' => $image,
+                'hex' => $hex !== '' ? (strpos($hex, '#') === 0 ? $hex : '#' . $hex) : '',
+                'surcharge' => max(0, (int)($row['surcharge'] ?? 0)),
+                'isDefault' => !empty($row['isDefault'] ?? $row['is_default'] ?? false),
+                'sortOrder' => $sortOrder,
+            ];
+        }
+
+        usort($normalized, static function (array $left, array $right): int {
+            $leftOrder = (int)($left['sortOrder'] ?? 0);
+            $rightOrder = (int)($right['sortOrder'] ?? 0);
+            if ($leftOrder === $rightOrder) {
+                return strcasecmp((string)($left['code'] ?? ''), (string)($right['code'] ?? ''));
+            }
+
+            return $leftOrder <=> $rightOrder;
+        });
+
+        $hasDefault = false;
+        foreach ($normalized as $row) {
+            if (!empty($row['isDefault'])) {
+                $hasDefault = true;
+                break;
+            }
+        }
+
+        if (!$hasDefault && !empty($normalized)) {
+            $normalized[0]['isDefault'] = true;
+        }
+
+        return $normalized;
+    }
+
+    public static function getExteriorColorsByProductId(int $productId): array
+    {
+        if ($productId > 0 && self::colorTableExists()) {
+            global $pdo;
+
+            try {
+                $stmt = $pdo->prepare('SELECT color_code AS code, color_name AS name, color_hex AS hex, image_path AS image, surcharge, sort_order, is_default FROM product_colors WHERE product_id = ? ORDER BY sort_order ASC, id ASC');
+                $stmt->execute([$productId]);
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($rows)) {
+                    return self::normalizeColorRows($rows);
+                }
+            } catch (Throwable $e) {
+                // Fall through to empty result below.
+            }
+        }
+
+        return [];
+    }
+
+    public static function syncExteriorColors(int $productId, array $rows): bool
+    {
+        global $pdo;
+
+        if ($productId <= 0) {
+            return false;
+        }
+
+        if (!self::colorTableExists()) {
+            return true;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $delete = $pdo->prepare('DELETE FROM product_colors WHERE product_id = ?');
+            $delete->execute([$productId]);
+
+            if (!empty($rows)) {
+                $insert = $pdo->prepare('INSERT INTO product_colors (product_id, color_code, color_name, color_hex, image_path, surcharge, sort_order, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                foreach (array_values($rows) as $index => $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+
+                    $code = strtoupper(trim((string)($row['code'] ?? '')));
+                    $name = trim((string)($row['name'] ?? ''));
+                    if ($code === '' || $name === '') {
+                        continue;
+                    }
+
+                    $hex = trim((string)($row['hex'] ?? ''));
+                    $hex = $hex !== '' ? (strpos($hex, '#') === 0 ? $hex : '#' . $hex) : null;
+                    $image = trim((string)($row['image'] ?? ''));
+                    $image = $image !== '' ? ltrim($image, '/') : null;
+                    $surcharge = max(0, (int)($row['surcharge'] ?? 0));
+                    $sortOrder = isset($row['sortOrder']) ? (int)$row['sortOrder'] : $index;
+                    $isDefault = !empty($row['isDefault']) ? 1 : 0;
+
+                    $insert->execute([
+                        $productId,
+                        $code,
+                        $name,
+                        $hex,
+                        $image,
+                        $surcharge,
+                        $sortOrder,
+                        $isDefault,
+                    ]);
+                }
+            }
+
+            $pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            return false;
+        }
     }
     public static function getById($id)
     {

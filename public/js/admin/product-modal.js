@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var inputMaxSpeed = document.getElementById('modal_max_speed');
   var inputBattery = document.getElementById('modal_battery');
   var inputDepositAmount = document.getElementById('modal_deposit_amount');
-  var inputExteriorColorsRaw = document.getElementById('modal_exterior_colors_raw');
   var inputIsActive = document.getElementById('modal_is_active');
   var inputImages = document.getElementById('modal_images');
   var inputMainImage = document.getElementById('modal_main_image');
@@ -42,40 +41,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var newImageObjectUrls = [];
 
   var slugTouched = false;
-
-  function colorRowsToTextarea(rows) {
-    if (!Array.isArray(rows)) return '';
-
-    function normalizePath(path) {
-      var value = String(path || '').trim().replace(/\\/g, '/');
-      var match = value.match(/(?:^|[A-Za-z]:)?(?:.*\/)?public\/images\/(.+)$/i);
-      if (match) {
-        value = match[1] || '';
-      }
-      return value.replace(/^\/+/, '');
-    }
-
-    return rows
-      .map(function (row) {
-        if (!row || typeof row !== 'object') return '';
-        var code = String(row.code || '').trim().toUpperCase();
-        var name = String(row.name || '').trim();
-        var image = normalizePath(row.image || '');
-        var hex = String(row.hex || '').trim();
-        var surcharge = Number(row.surcharge || 0);
-        if (!code || !name) return '';
-
-        var parts = [code, name];
-        if (image) parts.push(image);
-        if (hex) parts.push(hex);
-        if (surcharge > 0) parts.push(String(Math.max(0, Math.floor(surcharge))));
-        return parts.join('|');
-      })
-      .filter(function (line) {
-        return line !== '';
-      })
-      .join('\n');
-  }
 
   function slugify(text) {
     return (text || '')
@@ -202,7 +167,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMaxSpeed.value = '';
     inputBattery.value = '';
     if (inputDepositAmount) inputDepositAmount.value = '15000000';
-    if (inputExteriorColorsRaw) inputExteriorColorsRaw.value = '';
     inputIsActive.checked = true;
     inputImages.value = '';
     inputMainImage.value = '';
@@ -240,13 +204,11 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMaxSpeed.value = state.max_speed || '';
     inputBattery.value = state.battery || '';
     if (inputDepositAmount) inputDepositAmount.value = String(state.deposit_amount || 15000000);
-    if (inputExteriorColorsRaw) inputExteriorColorsRaw.value = state.exterior_colors_raw || '';
     inputIsActive.checked = Number(state.is_active || 0) === 1 || state.is_active === true || state.is_active === '1';
 
     var images = Array.isArray(state.existing_images) ? state.existing_images : (productLike && Array.isArray(productLike.images) ? productLike.images : []);
     var colors = Array.isArray(state.exterior_colors) ? state.exterior_colors : (productLike && Array.isArray(productLike.exterior_colors) ? productLike.exterior_colors : []);
     renderColorImageTable({ images: images, exterior_colors: colors });
-    serializeTableToTextarea();
     clearNewImagesPreview();
     refreshMainIndicators();
   }
@@ -266,9 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMaxSpeed.value = product.max_speed || '';
     inputBattery.value = product.battery || '';
     if (inputDepositAmount) inputDepositAmount.value = String(product.deposit_amount || 15000000);
-    if (inputExteriorColorsRaw) {
-      inputExteriorColorsRaw.value = colorRowsToTextarea(product.exterior_colors || []);
-    }
     // render table editor for existing images
     renderColorImageTable(product);
     inputIsActive.checked = Number(product.is_active || 0) === 1;
@@ -276,10 +235,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputMainImage.value = '';
     inputMainNewIndex.value = '';
     slugTouched = true;
-
-    // existing images are managed via the color-image table now
-    // ensure textarea and main image are synced from the table
-    serializeTableToTextarea();
 
     clearNewImagesPreview();
     refreshMainIndicators();
@@ -321,10 +276,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
       tr.innerHTML =
         '<td><img src="' + (window.VF_PRODUCT_MODAL_BASE_URL || '') + 'public/images/' + rel + '" alt="" class="img-fluid" style="height:40px;object-fit:cover;border-radius:4px"></td>' +
-        '<td class="align-middle"><div class="text-truncate" style="max-width:180px">' + escapeHtml(filename) + '</div><input type="hidden" class="color-table-code" value="' + escapeHtml(codeValue) + '"></td>' +
-        '<td class="align-middle"><input type="text" class="form-control form-control-sm color-table-name" placeholder="VD: Xanh dương" value="' + escapeHtml(existing.name || '') + '"></td>' +
-        '<td class="align-middle"><input type="text" class="form-control form-control-sm color-table-hex" placeholder="VD: #0000FF" value="' + escapeHtml(existing.hex || '') + '"></td>' +
-        '<td class="align-middle"><input type="number" min="0" step="1000" class="form-control form-control-sm color-table-surcharge" placeholder="VD: 5000000" value="' + (surchargeValue > 0 ? String(Math.max(0, Math.floor(surchargeValue))) : '') + '"></td>' +
+        '<td class="align-middle"><div class="text-truncate" style="max-width:180px">' + escapeHtml(filename) + '</div><input type="hidden" name="color_code[]" class="color-table-code" value="' + escapeHtml(codeValue) + '"><input type="hidden" name="color_image[]" value="' + escapeHtml(rel) + '"></td>' +
+        '<td class="align-middle"><input type="text" name="color_name[]" class="form-control form-control-sm color-table-name" placeholder="VD: Xanh dương" value="' + escapeHtml(existing.name || '') + '"></td>' +
+        '<td class="align-middle"><input type="text" name="color_hex[]" class="form-control form-control-sm color-table-hex" placeholder="VD: #0000FF" value="' + escapeHtml(existing.hex || '') + '"></td>' +
+        '<td class="align-middle"><input type="number" name="color_surcharge[]" min="0" step="1000" class="form-control form-control-sm color-table-surcharge" placeholder="VD: 5000000" value="' + (surchargeValue > 0 ? String(Math.max(0, Math.floor(surchargeValue))) : '') + '"></td>' +
         '<td class="align-middle text-center">' +
           '<input type="radio" name="modal_default_image" class="form-check-input" value="' + escapeHtml(rel) + '" ' + (existing.isDefault || idx === 0 ? 'checked' : '') + '>' +
         '</td>' +
@@ -345,7 +300,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function autoMatchTableCodes() {
+  var btnAuto = document.getElementById('btnAutoMatchColors');
+  if (btnAuto) btnAuto.addEventListener('click', function () { 
     var table = document.getElementById('colorImageTable');
     if (!table) return;
     table.querySelectorAll('tbody tr').forEach(function (tr) {
@@ -357,63 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
         codeInput.value = basename.toUpperCase();
       }
     });
-  }
-
-  function serializeTableToTextarea() {
-    if (!inputExteriorColorsRaw) return;
-    var table = document.getElementById('colorImageTable');
-    if (!table) return;
-    var lines = [];
-    table.querySelectorAll('tbody tr').forEach(function (tr) {
-      var rel = tr.getAttribute('data-rel') || '';
-      var code = (tr.querySelector('.color-table-code') || {}).value || '';
-      var name = (tr.querySelector('.color-table-name') || {}).value || '';
-      var hex = (tr.querySelector('.color-table-hex') || {}).value || '';
-      var surcharge = (tr.querySelector('.color-table-surcharge') || {}).value || '';
-      code = String(code || '').trim().toUpperCase();
-      name = String(name || '').trim();
-      hex = String(hex || '').trim();
-      surcharge = String(surcharge || '').trim();
-      if (!code || !name) {
-        return;
-      }
-      var parts = [code, name];
-      if (rel) parts.push(rel);
-      if (hex) parts.push(hex);
-      if (surcharge !== '') parts.push(surcharge.replace(/\D+/g, ''));
-      lines.push(parts.join('|'));
-    });
-    
-    
-    inputExteriorColorsRaw.value = lines.join('\n');
-    // set main image from checked radio in the table (if any)
-    var checked = document.querySelector('input[name="modal_default_image"]:checked');
-    if (checked && checked.value) {
-      inputMainImage.value = String(checked.value || '').replace(/^\/+/, '');
-      inputMainNewIndex.value = '';
-    } else if (lines.length === 0) {
-      inputMainImage.value = '';
-    } else {
-      // fallback: first existing_images[] value present in table
-      var firstRel = (table.querySelector('input[name="existing_images[]"]') || {}).value || '';
-      if (firstRel) inputMainImage.value = String(firstRel).replace(/^\/+/, '');
-    }
-    return true;
-  }
-
-  // wire auto-match and sync buttons
-  var btnAuto = document.getElementById('btnAutoMatchColors');
-  if (btnAuto) btnAuto.addEventListener('click', function () { 
-    autoMatchTableCodes(); 
   });
-
-  // ensure table serialized before submit
-  var modalForm = document.getElementById('productModalForm');
-  if (modalForm) {
-    modalForm.addEventListener('submit', function () {
-      serializeTableToTextarea();
-    });
-  }
 
   if (openCreateBtn) {
     openCreateBtn.addEventListener('click', function () {
