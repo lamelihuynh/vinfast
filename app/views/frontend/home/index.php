@@ -60,7 +60,15 @@ if (!function_exists('vf_product_range')) {
 
     /* Spotlight image container to prevent cropping */
     .spotlight-img-container {
-        background: radial-gradient(circle at center, rgba(255,184,28,0.05) 0%, transparent 70%);
+        background: radial-gradient(circle at center, <?= htmlspecialchars($settings['featured_color'] ?? 'rgba(255,184,28,0.1)') ?>33 0%, transparent 70%);
+    }
+    
+    .featured-accent {
+        color: <?= htmlspecialchars($settings['featured_color'] ?? '#FFB81C') ?> !important;
+    }
+    
+    .featured-bg-accent {
+        background-color: <?= htmlspecialchars($settings['featured_color'] ?? '#FFB81C') ?> !important;
     }
 </style>
 
@@ -192,20 +200,20 @@ if (!function_exists('vf_product_range')) {
             <!-- Left Side: Content -->
             <div class="reveal-on-scroll order-2 lg:order-1">
                 <div class="inline-flex items-center gap-3 mb-6">
-                    <span class="h-1 w-12 bg-[#FFB81C] rounded-full"></span>
-                    <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#FFB81C]">THE NEXT-GEN EV</p>
+                    <span class="h-1 w-12 featured-bg-accent rounded-full"></span>
+                    <p class="text-[10px] font-black uppercase tracking-[0.3em] featured-accent">THE NEXT-GEN EV</p>
                 </div>
                 <h3 class="mt-4 text-5xl font-black text-white leading-tight reveal-on-scroll letter-reveal"><?= htmlspecialchars((string)(($leadProduct['name'] ?? 'VinFast VF 9'))) ?></h3>
                 <p class="mt-6 text-base text-white/60 leading-relaxed max-w-md"><?= htmlspecialchars($leadProduct['short_desc'] ?? 'Đẳng cấp xe điện thông minh toàn cầu, kiến tạo hành trình di chuyển xanh.') ?></p>
                 
                 <div class="mt-10 grid grid-cols-2 gap-8">
                     <div class="reveal-on-scroll reveal-delay-2 flex flex-col gap-2 group">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-[#FFB81C] mb-2"><i class="fa-solid fa-battery-full text-xl"></i></div>
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 featured-accent mb-2"><i class="fa-solid fa-battery-full text-xl"></i></div>
                         <p class="text-[9px] text-white/40 uppercase font-black tracking-widest">Phạm vi tối đa</p>
                         <p class="font-black text-white text-2xl"><?= htmlspecialchars(vf_product_range((array)($leadProduct ?? []))) ?></p>
                     </div>
                     <div class="reveal-on-scroll reveal-delay-3 flex flex-col gap-2 group">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-[#FFB81C] mb-2"><i class="fa-solid fa-tag text-xl"></i></div>
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 featured-accent mb-2"><i class="fa-solid fa-tag text-xl"></i></div>
                         <p class="text-[9px] text-white/40 uppercase font-black tracking-widest">Giá niêm yết từ</p>
                         <p class="font-black text-white text-2xl"><?= htmlspecialchars(vf_product_price((array)($leadProduct ?? []))) ?></p>
                     </div>
@@ -214,20 +222,20 @@ if (!function_exists('vf_product_range')) {
                 <div class="mt-12 flex gap-4">
                     <div class="rounded-2xl bg-white/5 backdrop-blur-md p-4 border border-white/10 flex-1 text-center hover:bg-white/10 transition-colors">
                         <p class="text-[8px] uppercase text-white/40 font-black">Gia tốc</p>
-                        <p class="text-lg font-black text-[#FFB81C]">4.8s</p>
+                        <p class="text-lg font-black featured-accent">4.8s</p>
                     </div>
                     <div class="rounded-2xl bg-white/5 backdrop-blur-md p-4 border border-white/10 flex-1 text-center hover:bg-white/10 transition-colors">
                         <p class="text-[8px] uppercase text-white/40 font-black">Công suất</p>
-                        <p class="text-lg font-black text-[#FFB81C]">402hp</p>
+                        <p class="text-lg font-black featured-accent">402hp</p>
                     </div>
                     <div class="rounded-2xl bg-white/5 backdrop-blur-md p-4 border border-white/10 flex-1 text-center hover:bg-white/10 transition-colors">
                         <p class="text-[8px] uppercase text-white/40 font-black">Chống nước</p>
-                        <p class="text-lg font-black text-[#FFB81C]">IP67</p>
+                        <p class="text-lg font-black featured-accent">IP67</p>
                     </div>
                 </div>
 
                 <div class="reveal-on-scroll reveal-delay-4 mt-12 flex gap-4">
-                    <a href="<?= BASE_URL ?>products" class="px-8 py-4 rounded-full bg-[#FFB81C] text-vfNavy text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg">XEM CHI TIẾT</a>
+                    <a href="<?= BASE_URL ?>products" class="px-8 py-4 rounded-full featured-bg-accent text-vfNavy text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg">XEM CHI TIẾT</a>
                     <a href="<?= BASE_URL ?>contact?tab=test-drive" class="px-8 py-4 rounded-full border-2 border-white/20 text-white text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">LÁI THỬ</a>
                 </div>
             </div>
