@@ -217,7 +217,7 @@ $isTestDriveTab = $tab === 'test-drive';
                 </div>
 
                 <div>
-                  <label class="vf-form-label" for="c_phone">Số điện thoại (tuỳ chọn)</label>
+                  <label class="vf-form-label" for="c_phone">Số điện thoại <span class="text-red-500">*</span></label>
                   <input id="c_phone" name="phone" class="vf-form-input" placeholder="VD: 09xxxxxxxx" />
                 </div>
 
