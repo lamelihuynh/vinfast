@@ -87,7 +87,7 @@ foreach ($images as $imgRel) {
     $imageUrls[] = $resolveImageUrl((string)$imgRel);
 }
 
-$exteriorColorsRaw = is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [];
+$exteriorColorsRaw = is_array($product['exterior_colors'] ?? null) ? $product['exterior_colors'] : [];
 $colorOptions = [];
 foreach ($exteriorColorsRaw as $row) {
     if (!is_array($row)) {
@@ -199,7 +199,7 @@ if (empty($featureList)) {
     ];
 }
 
-$excludeKeys = ['features', 'variants', 'exterior_colors', 'interior_colors', 'images', 'deposit_amount', 'deposit_non_refundable'];
+$excludeKeys = ['features', 'variants', 'interior_colors', 'images', 'deposit_amount', 'deposit_non_refundable'];
 
 $specTranslations = [
     'range' => 'Phạm vi di chuyển',

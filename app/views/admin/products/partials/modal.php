@@ -71,11 +71,6 @@
                             <label class="form-label">Số tiền đặt cọc (VND)</label>
                             <input type="number" min="0" step="1000" class="form-control" name="deposit_amount" id="modal_deposit_amount" value="15000000">
                         </div>
-
-
-                        <!-- Hidden field for exterior colors (auto-filled from table by JS) -->
-                        <input type="hidden" name="exterior_colors_raw" id="modal_exterior_colors_raw" value="">
-
                         <div class="col-12">
                             <label class="form-label">Tải ảnh mới</label>
                             <input type="file" class="form-control" name="images[]" id="modal_images" accept="image/jpeg,image/png,image/webp" multiple>

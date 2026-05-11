@@ -26,7 +26,7 @@ class OrderController
         $categoryId = (int)($product['category_id'] ?? 0);
 
         $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
-        $exteriorColors = is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [];
+        $exteriorColors = is_array($product['exterior_colors'] ?? null) ? $product['exterior_colors'] : [];
         $selectedCode = strtoupper(trim((string)($_POST['color_code'] ?? $_GET['color'] ?? '')));
 
         $selectedColor = null;

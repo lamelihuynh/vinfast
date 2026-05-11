@@ -101,6 +101,7 @@ class ProductAdminController
         return array_map(function (array $p): array {
             $specs = is_array($p['specs'] ?? null) ? $p['specs'] : [];
             $images = is_array($p['images'] ?? null) ? $p['images'] : [];
+            $exteriorColors = is_array($p['exterior_colors'] ?? null) ? $p['exterior_colors'] : [];
 
             $localImages = [];
             foreach ($images as $img) {
@@ -127,7 +128,7 @@ class ProductAdminController
                 'max_speed' => (string)($specs['max_speed'] ?? ''),
                 'battery' => (string)($specs['battery'] ?? ''),
                 'deposit_amount' => max(0, (int)($specs['deposit_amount'] ?? 15000000)),
-                'exterior_colors' => is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [],
+                'exterior_colors' => $exteriorColors,
                 'images' => array_values($localImages),
             ];
         }, $products);
@@ -191,7 +192,10 @@ class ProductAdminController
 
     private function persistCreate(array $payload, array $allImages): void
     {
-        Product::create(...$this->buildProductMutationArgs($payload, $allImages));
+        $productId = (int)Product::create(...$this->buildProductMutationArgs($payload, $allImages));
+        if ($productId > 0) {
+            Product::syncExteriorColors($productId, $this->buildExteriorColorRows($payload));
+        }
     }
 
     private function persistUpdate(int $id, array $existing, array $payload, array $allImages): void
@@ -200,6 +204,7 @@ class ProductAdminController
         $removedImages = array_values(array_diff($oldImages, $allImages));
 
         Product::updateById($id, ...$this->buildProductMutationArgs($payload, $allImages));
+        Product::syncExteriorColors($id, $this->buildExteriorColorRows($payload));
 
         foreach ($removedImages as $img) {
             $this->deleteUploadedImage((string)$img);
@@ -268,7 +273,7 @@ class ProductAdminController
             'max_speed' => $this->cleanText($_POST['max_speed'] ?? ''),
             'battery' => $this->cleanText($_POST['battery'] ?? ''),
             'deposit_amount' => max(0, (int)($_POST['deposit_amount'] ?? 15000000)),
-            'exterior_colors_raw' => $this->cleanText($_POST['exterior_colors_raw'] ?? ''),
+            'modal_default_image' => $this->cleanText($_POST['modal_default_image'] ?? ''),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
         ];
     }
@@ -315,6 +320,65 @@ class ProductAdminController
         return trim(strip_tags((string)$value));
     }
 
+    private function buildExteriorColorRows(array $payload): array
+    {
+        $defaultImage = ltrim(trim((string)($payload['modal_default_image'] ?? '')), '/');
+        $codes = is_array($_POST['color_code'] ?? null) ? $_POST['color_code'] : [];
+        $names = is_array($_POST['color_name'] ?? null) ? $_POST['color_name'] : [];
+        $hexes = is_array($_POST['color_hex'] ?? null) ? $_POST['color_hex'] : [];
+        $surcharges = is_array($_POST['color_surcharge'] ?? null) ? $_POST['color_surcharge'] : [];
+        $images = is_array($_POST['existing_images'] ?? null) ? $_POST['existing_images'] : [];
+
+        $rows = [];
+        $rowCount = max(count($codes), count($names), count($hexes), count($surcharges), count($images));
+        for ($i = 0; $i < $rowCount; $i++) {
+            $code = strtoupper(trim((string)($codes[$i] ?? '')));
+            $name = trim((string)($names[$i] ?? ''));
+            if ($code === '' || $name === '') {
+                continue;
+            }
+
+            $image = ltrim(trim((string)($images[$i] ?? '')), '/');
+            $row = [
+                'code' => $code,
+                'name' => $name,
+                'sortOrder' => $i,
+            ];
+
+            if ($image !== '') {
+                $row['image'] = $image;
+            }
+            $hex = strtoupper(trim((string)($hexes[$i] ?? '')));
+            if ($hex !== '') {
+                $row['hex'] = str_starts_with($hex, '#') ? $hex : '#' . $hex;
+            }
+
+            $surcharge = max(0, (int)preg_replace('/\D+/', '', (string)($surcharges[$i] ?? '')));
+            if ($surcharge > 0) {
+                $row['surcharge'] = $surcharge;
+            }
+
+            $row['isDefault'] = $defaultImage !== '' && $image !== '' && $image === $defaultImage;
+            $rows[] = $row;
+        }
+
+        if (!empty($rows) && $defaultImage !== '') {
+            $hasDefault = false;
+            foreach ($rows as $row) {
+                if (!empty($row['isDefault'])) {
+                    $hasDefault = true;
+                    break;
+                }
+            }
+
+            if (!$hasDefault) {
+                $rows[0]['isDefault'] = true;
+            }
+        }
+
+        return $rows;
+    }
+
     private function buildSpecs(array $payload): array
     {
         $specs = [
@@ -326,16 +390,6 @@ class ProductAdminController
             'deposit_amount' => max(0, (int)($payload['deposit_amount'] ?? 15000000)),
             'deposit_non_refundable' => 1,
         ];
-
-        $exteriorColors = $this->parseExteriorColors($payload['exterior_colors_raw'] ?? '');
-        $family = $this->resolveImageFamilyFromPayload($payload);
-        if ($family !== '' && !empty($exteriorColors)) {
-            $exteriorColors = $this->enrichExteriorColorImages($exteriorColors, $family);
-        }
-
-        if (!empty($exteriorColors)) {
-            $specs['exterior_colors'] = $exteriorColors;
-        }
 
         return array_filter($specs, static function ($v): bool {
             if (is_string($v)) {
@@ -352,133 +406,6 @@ class ProductAdminController
 
             return false;
         });
-    }
-
-    private function parseExteriorColors(string $raw): array
-    {
-        if ($raw === '') {
-            return [];
-        }
-
-        $lines = preg_split('/\r\n|\r|\n/', $raw) ?: [];
-        $out = [];
-
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '') {
-                continue;
-            }
-
-            $line = preg_replace('/^\s*[-*]\s+/u', '', $line);
-            $line = preg_replace('/^\s*\d+[\.)]\s+/u', '', $line);
-            $line = preg_replace('/^t[êe]n\s*m[àa]u\s*:\s*/iu', '', $line);
-            $line = trim((string)$line);
-            if ($line === '') {
-                continue;
-            }
-
-            $code = '';
-            $name = '';
-            $image = '';
-            $hex = '';
-            $surcharge = 0;
-
-            if (preg_match('/(?:^|[\s|])((?:[A-Za-z]:)?[^|]+\.(?:webp|jpg|jpeg|png))\b/i', $line, $mImage)) {
-                $image = $this->normalizeColorImagePath((string)$mImage[1]);
-                $basename = pathinfo($image, PATHINFO_FILENAME);
-                if (is_string($basename) && $basename !== '') {
-                    $code = strtoupper($basename);
-                }
-            }
-
-            if (preg_match('/#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\b/', $line, $mHex)) {
-                $hex = '#' . strtoupper((string)$mHex[1]);
-            }
-
-            $parts = array_values(array_filter(array_map('trim', explode('|', $line)), static function ($v): bool {
-                return $v !== '';
-            }));
-
-            if (count($parts) >= 2) {
-                $first = strtoupper((string)$parts[0]);
-                $second = strtoupper((string)$parts[1]);
-
-                if (preg_match('/^(?!WEBP$|JPG$|JPEG$|PNG$)[A-Z0-9]{3,5}$/', $first)) {
-                    $code = $first;
-                    $name = (string)$parts[1];
-                } elseif (preg_match('/^(?!WEBP$|JPG$|JPEG$|PNG$)[A-Z0-9]{3,5}$/', $second)) {
-                    $name = (string)$parts[0];
-                    $code = $second;
-                }
-
-                for ($i = 2; $i < count($parts); $i++) {
-                    $token = trim((string)$parts[$i]);
-                    if ($token === '') {
-                        continue;
-                    }
-
-                    if ($hex === '' && preg_match('/^#?[A-Fa-f0-9]{3,6}$/', $token)) {
-                        $hex = '#' . strtoupper(ltrim($token, '#'));
-                        continue;
-                    }
-
-                    if ($image === '' && preg_match('/(?:^|\/)[A-Za-z0-9._-]+\.(?:webp|jpg|jpeg|png)$/i', $token)) {
-                        $image = $this->normalizeColorImagePath($token);
-                        continue;
-                    }
-
-                    if ($surcharge <= 0 && preg_match('/^[0-9][0-9.,]*$/', $token)) {
-                        $surcharge = max(0, (int)preg_replace('/\D+/', '', $token));
-                    }
-                }
-            }
-
-            if ($name === '') {
-                $name = $line;
-                if ($image !== '') {
-                    $name = trim(str_ireplace($image, '', $name));
-                }
-                if ($code !== '') {
-                    $name = trim(preg_replace('/\b' . preg_quote($code, '/') . '\b/i', '', $name));
-                }
-                $name = trim((string)$name, " \t\n\r\0\x0B:-");
-            }
-
-            if ($code === '' && preg_match('/\b([A-Za-z0-9]{3,5})\b/', $line, $mCode)) {
-                $candidateCode = strtoupper((string)$mCode[1]);
-                if (!preg_match('/^(WEBP|JPG|JPEG|PNG)$/', $candidateCode) && preg_match('/^[A-Z0-9]{3,5}$/', $candidateCode)) {
-                    $code = $candidateCode;
-                }
-            }
-
-            if ($code === '' || $name === '') {
-                continue;
-            }
-
-            $row = [
-                'code' => strtoupper($code),
-                'name' => $name,
-            ];
-
-            if ($image !== '') {
-                $row['image'] = $this->normalizeColorImagePath($image);
-            }
-            if ($hex !== '') {
-                $row['hex'] = $hex;
-            }
-            if ($surcharge > 0) {
-                $row['surcharge'] = $surcharge;
-            }
-
-            $out[strtoupper($code)] = $row;
-        }
-
-        return array_values($out);
-    }
-
-    private function normalizeColorImagePath(string $path): string
-    {
-        return ImageHelper::normalizePath($path);
     }
 
     private function resolveMainImage(array $allImages, array $newImages): string
@@ -535,6 +462,46 @@ class ProductAdminController
         return $uploaded;
     }
 
+    /**
+     * Determine the upload subdirectory for a product's images.
+     * Priority:
+     *  1. Slug from the current payload (e.g. "vinfast-vf3-eco")
+     *  2. Slug of the existing DB record (for edits with unchanged slug)
+     *  3. First image path that already contains an "uploads/products/…" subdir
+     *  4. Raw slug as-is (fallback)
+     */
+    private function resolveImageFamilyFromPayload(array $payload, array $existing): string
+    {
+        // 1. Use the slug being saved (trimmed, lowercased)
+        $slug = strtolower(trim((string)($payload['slug'] ?? '')));
+        if ($slug !== '') {
+            return $slug;
+        }
+
+        // 2. Fall back to existing record's slug
+        $existingSlug = strtolower(trim((string)($existing['slug'] ?? '')));
+        if ($existingSlug !== '') {
+            return $existingSlug;
+        }
+
+        // 3. Try to extract subdir from an existing image path
+        //    e.g. "uploads/products/vinfast-vf3-eco/ce18.webp" → "vinfast-vf3-eco"
+        $existingImages = is_array($existing['images'] ?? null) ? $existing['images'] : [];
+        foreach ($existingImages as $img) {
+            if (!is_string($img)) {
+                continue;
+            }
+            if (preg_match('~uploads/products/([^/]+)/~i', $img, $m)) {
+                return strtolower($m[1]);
+            }
+        }
+
+        // 4. Last resort: derive from product name via ImageHelper
+        $name = (string)($payload['name'] ?? '');
+        $family = ImageHelper::extractFamily($name);
+        return $family !== '' ? 'vinfast-' . $family : 'products';
+    }
+
     private function buildProductMutationArgs(array $payload, array $allImages): array
     {
         return [
@@ -547,51 +514,6 @@ class ProductAdminController
             $allImages,
             (int)$payload['is_active'],
         ];
-    }
-
-    private function resolveImageFamilyFromPayload(array $payload, array $existing = []): string
-    {
-        $candidates = array_filter([
-            strtolower(trim((string)($existing['slug'] ?? ''))),
-            strtolower(trim((string)($payload['slug'] ?? ''))),
-        ]);
-
-        foreach ($candidates as $slug) {
-            if (preg_match('/^[a-z0-9-]+$/', $slug)) {
-                return $slug;
-            }
-        }
-
-        foreach ([$existing['name'] ?? null, $payload['name'] ?? null] as $candidate) {
-            if ($candidate && ($family = $this->extractImageFamily((string)$candidate))) {
-                return $family;
-            }
-        }
-
-        return '';
-    }
-
-    private function extractImageFamily(string $text): string
-    {
-        return ImageHelper::extractFamily($text);
-    }
-
-    private function enrichExteriorColorImages(array $rows, string $family): array
-    {
-        return array_map(function (array $row) use ($family): array {
-            if (!is_array($row) || ($code = strtoupper(trim((string)($row['code'] ?? '')))) === '') {
-                return $row;
-            }
-            if (trim((string)($row['image'] ?? '')) === '' && ($resolved = $this->resolveColorImageInFamily($family, $code))) {
-                $row['image'] = $resolved;
-            }
-            return $row;
-        }, $rows);
-    }
-
-    private function resolveColorImageInFamily(string $family, string $code): string
-    {
-        return ImageHelper::findColorImageInFamily($family, $code);
     }
 
     private function deleteUploadedImage(string $relative): void

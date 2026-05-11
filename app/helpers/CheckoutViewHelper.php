@@ -25,7 +25,7 @@ class CheckoutViewHelper
 
         $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
         $images = is_array($product['images'] ?? null) ? $product['images'] : [];
-        $rawExteriorColors = is_array($specs['exterior_colors'] ?? null) ? $specs['exterior_colors'] : [];
+        $rawExteriorColors = is_array($product['exterior_colors'] ?? null) ? $product['exterior_colors'] : [];
         $rawInteriorColors = is_array($specs['interior_colors'] ?? null) ? $specs['interior_colors'] : [];
         $rawVariants = is_array($specs['variants'] ?? null) ? $specs['variants'] : [];
 
