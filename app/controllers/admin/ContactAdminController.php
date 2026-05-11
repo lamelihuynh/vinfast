@@ -12,13 +12,14 @@
  * View and manage customer contact messages AND test drive registrations.
  * Admin can mark messages as read/replied, or update test drive status.
  */
-class ContactAdminController {
+class ContactAdminController
+{
 
     public function index(): void
     {
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $section = trim((string)($_GET['section'] ?? 'contacts'));
-        $status  = trim((string)($_GET['status'] ?? ''));
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $section = trim((string) ($_GET['section'] ?? 'contacts'));
+        $status = trim((string) ($_GET['status'] ?? ''));
 
         if (!in_array($section, ['contacts', 'test-drives'], true)) {
             $section = 'contacts';
@@ -27,10 +28,10 @@ class ContactAdminController {
         if ($section === 'test-drives') {
             $total = TestDrive::countAll($status);
             $counts = [
-                'all'       => TestDrive::countAll(),
-                'pending'   => TestDrive::countAll('pending'),
+                'all' => TestDrive::countAll(),
+                'pending' => TestDrive::countAll('pending'),
                 'confirmed' => TestDrive::countAll('confirmed'),
-                'done'      => TestDrive::countAll('done'),
+                'done' => TestDrive::countAll('done'),
                 'cancelled' => TestDrive::countAll('cancelled'),
             ];
             $pg = new Pagination($total, $page, 7);
@@ -38,12 +39,12 @@ class ContactAdminController {
         } else {
             $total = Contact::countAll($status);
             $counts = [
-                'all'     => Contact::countAll(),
-                'unread'  => Contact::countAll('unread'),
-                'read'    => Contact::countAll('read'),
+                'all' => Contact::countAll(),
+                'unread' => Contact::countAll('unread'),
+                'read' => Contact::countAll('read'),
                 'replied' => Contact::countAll('replied'),
             ];
-            $pg = new Pagination($total, $page, PER_PAGE);
+            $pg = new Pagination($total, $page, 7);
             $items = Contact::getPaginated($pg->current, $pg->perPage, $status);
         }
 
@@ -59,8 +60,8 @@ class ContactAdminController {
         SEO::set('Customer contacts');
         View::render('admin/contacts/index', [
             'section' => $section,
-            'status'  => $status,
-            'counts'  => $counts,
+            'status' => $status,
+            'counts' => $counts,
             'items' => $items,
             'pg' => $pg,
             'pageUrl' => $pageUrl,
@@ -70,8 +71,8 @@ class ContactAdminController {
     public function setstatus(int $id): void
     {
         Auth::verifyCsrf();
-        $status = (string)($_POST['status'] ?? 'read');
-        Contact::setStatus((int)$id, $status);
+        $status = (string) ($_POST['status'] ?? 'read');
+        Contact::setStatus((int) $id, $status);
 
         $_SESSION['flash'] = 'Đã cập nhật trạng thái.';
         header('Location: ' . ADMIN_URL . 'contacts?section=contacts');
@@ -81,7 +82,7 @@ class ContactAdminController {
     public function delete(int $id): void
     {
         Auth::verifyCsrf();
-        Contact::deleteById((int)$id);
+        Contact::deleteById((int) $id);
 
         $_SESSION['flash'] = 'Đã xoá liên hệ.';
         header('Location: ' . ADMIN_URL . 'contacts?section=contacts');
@@ -91,8 +92,8 @@ class ContactAdminController {
     public function settestdrivestatus(int $id): void
     {
         Auth::verifyCsrf();
-        $status = (string)($_POST['status'] ?? 'confirmed');
-        TestDrive::setStatus((int)$id, $status);
+        $status = (string) ($_POST['status'] ?? 'confirmed');
+        TestDrive::setStatus((int) $id, $status);
 
         $_SESSION['flash'] = 'Đã cập nhật trạng thái đăng ký lái thử.';
         header('Location: ' . ADMIN_URL . 'contacts?section=test-drives');
@@ -102,7 +103,7 @@ class ContactAdminController {
     public function deletetestdrive(int $id): void
     {
         Auth::verifyCsrf();
-        TestDrive::deleteById((int)$id);
+        TestDrive::deleteById((int) $id);
 
         $_SESSION['flash'] = 'Đã xoá đăng ký lái thử.';
         header('Location: ' . ADMIN_URL . 'contacts?section=test-drives');
