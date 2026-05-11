@@ -254,23 +254,32 @@ $priceText = number_format((float)($product['price'] ?? 0), 0, ',', '.');
 
 $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 $productsCssVersion = AssetHelper::getVersion('public/css/frontend/products.css');
+
+// Prepare truncated product name for breadcrumb/h1 if needed
+$displayProductName = $productName;
+if (function_exists('mb_strlen')) {
+    $displayProductName = mb_strlen($productName, 'UTF-8') > 80 ? mb_substr($productName, 0, 80, 'UTF-8') . '...' : $productName;
+} else {
+    $displayProductName = strlen($productName) > 80 ? substr($productName, 0, 80) . '...' : $productName;
+}
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/products.css?v=<?= htmlspecialchars($productsCssVersion) ?>">
+<link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/homepage_effects.css">
 
 <section id="vfProductDetail" class="min-h-screen bg-white">
     <div class="mx-auto w-full max-w-[1200px] px-4 pb-6 pt-3 lg:px-6 lg:pt-4">
-        <nav class="mb-2 flex items-center gap-2 text-[12px] text-slate-400" aria-label="Breadcrumb">
+        <nav class="mb-2 mt-3 lg:mt-4 flex items-center gap-2 text-[12px] text-slate-400" aria-label="Breadcrumb">
             <a href="<?= BASE_URL ?>products" class="text-slate-500 no-underline hover:text-blue-600">Sản phẩm</a>
             <i class="fa-solid fa-chevron-right text-[10px]"></i>
-            <span class="text-slate-700"><?= htmlspecialchars($productName) ?></span>
+            <span class="text-slate-700 flex-1 min-w-0" title="<?= htmlspecialchars($productName) ?>" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($displayProductName) ?></span>
         </nav>
 
         <div class="vf-pd-top-layout mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-[58%_42%]">
-            <div class="vf-pd-col-gallery min-w-0">
+            <div class="vf-pd-col-gallery min-w-0 reveal-on-scroll">
                 <?php include ROOT . '/app/views/frontend/products/partials/detail/gallery.php'; ?>
             </div>
-            <div class="vf-pd-col-summary min-w-0">
+            <div class="vf-pd-col-summary min-w-0 reveal-on-scroll reveal-delay-1">
                 <?php include ROOT . '/app/views/frontend/products/partials/detail/summary.php'; ?>
             </div>
         </div>
@@ -280,3 +289,4 @@ $productsCssVersion = AssetHelper::getVersion('public/css/frontend/products.css'
 </section>
 
 <script src="<?= BASE_URL ?>public/js/frontend/products.js?v=<?= htmlspecialchars($productsJsVersion) ?>"></script>
+<script src="<?= BASE_URL ?>public/js/frontend/homepage_effects.js"></script>

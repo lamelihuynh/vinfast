@@ -134,7 +134,11 @@
                 if (!el) {
                     return;
                 }
-                el.textContent = value && String(value).trim() !== '' ? value : emptyValue;
+                var text = value && String(value).trim() !== '' ? String(value) : emptyValue;
+                el.textContent = text;
+                try {
+                    el.setAttribute('title', text);
+                } catch (e) {}
             };
 
             setText('orderCode', order.orderCode || '');

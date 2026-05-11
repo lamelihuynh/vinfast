@@ -16,8 +16,17 @@ $checkoutUrl = Auth::check()
 <div class="min-w-0">
 	<div class="mb-2 flex items-start justify-between gap-3">
 		<div>
-			<p class="mb-1 text-[11px] font-semibold uppercase tracking-[1px] text-amber-600"><?= htmlspecialchars(strtoupper($categoryText)) ?></p>
-			<h1 class="m-0 text-2xl font-bold leading-tight text-slate-900 lg:text-[28px]"><?= htmlspecialchars($productName) ?></h1>
+			<?php
+			$catText = (string)($categoryText ?? '');
+			$pName = (string)($productName ?? '');
+			if (function_exists('mb_strlen')) {
+				$displayH1 = mb_strlen($pName, 'UTF-8') > 80 ? mb_substr($pName, 0, 80, 'UTF-8') . '...' : $pName;
+			} else {
+				$displayH1 = strlen($pName) > 80 ? substr($pName, 0, 80) . '...' : $pName;
+			}
+			?>
+			<p class="mb-1 text-[11px] font-semibold uppercase tracking-[1px] text-amber-600 reveal-on-scroll"><?= htmlspecialchars(strtoupper($catText)) ?></p>
+			<h1 class="m-0 text-2xl font-bold leading-tight text-slate-900 lg:text-[28px] reveal-on-scroll reveal-delay-1 letter-reveal" title="<?= htmlspecialchars($pName) ?>" style="max-width:100%;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($displayH1) ?></h1>
 		</div>
 	</div>
 

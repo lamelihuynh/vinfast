@@ -79,7 +79,8 @@ $initialBasePriceText = number_format($initialBasePrice, 0, ',', '.') . ' VNĐ';
                         data-switch-product
                         data-switch-product-quick
                         class="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition <?= $isVariantActive ? 'border-vfNavy bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50' ?>">
-                        <span class="text-[12px] font-semibold text-slate-800"><?= htmlspecialchars((string)($variantItem['name'] ?? 'VinFast')) ?></span>
+                        <?php $vsName = (string)($variantItem['name'] ?? 'VinFast'); ?>
+                        <span class="text-[12px] font-semibold text-slate-800 block truncate max-w-[65%]" title="<?= htmlspecialchars($vsName) ?>"><?= htmlspecialchars($vsName) ?></span>
                         <span class="text-[12px] font-semibold text-vfNavy"><?= htmlspecialchars((string)($variantItem['priceText'] ?? '0 VNĐ')) ?></span>
                     </button>
                 <?php endforeach; ?>
@@ -101,7 +102,7 @@ $initialBasePriceText = number_format($initialBasePrice, 0, ',', '.') . ' VNĐ';
                         data-variant-name="<?= htmlspecialchars($vName) ?>"
                         data-variant-price="<?= htmlspecialchars((string)$vPrice) ?>"
                         class="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition <?= $isVariantActive ? 'border-vfNavy bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50' ?>">
-                        <span class="text-[12px] font-semibold text-slate-800"><?= htmlspecialchars($vName) ?></span>
+                        <span class="text-[12px] font-semibold text-slate-800 block truncate max-w-[65%]" title="<?= htmlspecialchars($vName) ?>"><?= htmlspecialchars($vName) ?></span>
                         <span class="text-[12px] font-semibold text-vfNavy"><?= htmlspecialchars(number_format($vPrice, 0, ',', '.')) ?> VNĐ</span>
                     </button>
                 <?php endforeach; ?>

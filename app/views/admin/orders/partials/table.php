@@ -65,14 +65,32 @@ $extractOrderDetail = $extractOrderDetail ?? function ($v) {
                                             <div class="small text-muted">#<?= $id ?></div>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold"><?= htmlspecialchars((string)($detailPayload['customerName'] ?? $order['user_name'] ?? '')) ?></div>
-                                            <div class="small text-muted"><?= htmlspecialchars((string)($detailPayload['email'] ?? '')) ?></div>
-                                            <?php if (($detailPayload['phone'] ?? '') !== ''): ?>
-                                                <div class="small text-muted"><?= htmlspecialchars((string)$detailPayload['phone']) ?></div>
+                                            <?php
+                                            $custName = (string)($detailPayload['customerName'] ?? $order['user_name'] ?? '');
+                                            $custEmail = (string)($detailPayload['email'] ?? '');
+                                            $custPhone = (string)($detailPayload['phone'] ?? '');
+                                            if (function_exists('mb_strlen')) {
+                                                $displayCustName = mb_strlen($custName, 'UTF-8') > 28 ? mb_substr($custName, 0, 28, 'UTF-8') . '...' : $custName;
+                                            } else {
+                                                $displayCustName = strlen($custName) > 28 ? substr($custName, 0, 28) . '...' : $custName;
+                                            }
+                                            ?>
+                                            <div class="fw-semibold" title="<?= htmlspecialchars($custName) ?>" style="max-width:220px;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($displayCustName) ?></div>
+                                            <div class="small text-muted" title="<?= htmlspecialchars($custEmail) ?>" style="max-width:220px;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($custEmail) ?></div>
+                                            <?php if ($custPhone !== ''): ?>
+                                                <div class="small text-muted"><?= htmlspecialchars($custPhone) ?></div>
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold"><?= htmlspecialchars((string)($order['product_name'] ?? '')) ?></div>
+                                            <?php
+                                            $prodName = (string)($order['product_name'] ?? '');
+                                            if (function_exists('mb_strlen')) {
+                                                $displayProdName = mb_strlen($prodName, 'UTF-8') > 32 ? mb_substr($prodName, 0, 32, 'UTF-8') . '...' : $prodName;
+                                            } else {
+                                                $displayProdName = strlen($prodName) > 32 ? substr($prodName, 0, 32) . '...' : $prodName;
+                                            }
+                                            ?>
+                                            <div class="fw-semibold" title="<?= htmlspecialchars($prodName) ?>" style="max-width:260px;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($displayProdName) ?></div>
                                             <div class="small text-muted"><?= number_format((float)($order['price'] ?? 0), 0, ',', '.') ?> VND</div>
                                         </td>
                                         <td>
@@ -110,9 +128,9 @@ $extractOrderDetail = $extractOrderDetail ?? function ($v) {
                     </table>
                 </div>
             </div>
-            <?php 
+            <?php
             $itemName = 'đơn hàng';
-            include ROOT . '/app/views/admin/partials/pagination.php'; 
+            include ROOT . '/app/views/admin/partials/pagination.php';
             ?>
         </div>
     </div>

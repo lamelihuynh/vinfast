@@ -2,10 +2,12 @@
 
 /**
  * app/views/admin/orders/partials/filters.php
- * Expects: $status, $q
+ * Expects: $status, $q, $date_from, $date_to
  */
 $status = trim((string)($status ?? 'all'));
 $q = trim((string)($q ?? ''));
+$dateFrom = trim((string)($date_from ?? ''));
+$dateTo = trim((string)($date_to ?? ''));
 ?>
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <h5 class="mb-0">Quản lý đơn hàng</h5>
@@ -28,6 +30,22 @@ $q = trim((string)($q ?? ''));
             <option value="done" <?= $status === 'done' ? 'selected' : '' ?>>Hoàn tất</option>
             <option value="cancelled" <?= $status === 'cancelled' ? 'selected' : '' ?>>Đã hủy</option>
         </select>
+    </div>
+    <div class="col-md-2">
+        <input
+            type="date"
+            name="date_from"
+            class="form-control"
+            placeholder="Từ ngày"
+            value="<?= htmlspecialchars($dateFrom) ?>">
+    </div>
+    <div class="col-md-2">
+        <input
+            type="date"
+            name="date_to"
+            class="form-control"
+            placeholder="Đến ngày"
+            value="<?= htmlspecialchars($dateTo) ?>">
     </div>
     <div class="col-md-2 d-grid">
         <button type="submit" class="btn btn-primary">Lọc đơn</button>

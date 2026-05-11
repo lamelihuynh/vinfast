@@ -61,8 +61,5 @@ foreach ($trend as $month) {
         <div class="col-xl-7 col-12 mb-4 mb-xl-0">
             <?php include ROOT . '/app/views/admin/dashboard/partials/model-stats.php'; ?>
         </div>
-        <div class="col-xl-5 col-12">
-            <?php include ROOT . '/app/views/admin/dashboard/partials/contacts-and-actions.php'; ?>
-        </div>
     </div>
 </div>

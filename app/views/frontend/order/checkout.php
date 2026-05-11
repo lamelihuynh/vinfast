@@ -11,7 +11,10 @@ extract($checkout, EXTR_SKIP);
 
 $checkoutJsVersion = AssetHelper::getVersion('public/js/frontend/checkout.js');
 $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . htmlspecialchars($checkoutJsVersion) . '"></script>';
+$scripts .= '<script src="' . BASE_URL . 'public/js/frontend/homepage_effects.js"></script>';
 ?>
+
+<link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/homepage_effects.css">
 
 <section class="min-h-screen bg-slate-50 py-8">
     <div class="mx-auto w-full max-w-6xl px-4 lg:px-6">
@@ -22,7 +25,7 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
             data-color-surcharge="<?= (int)$selectedColorSurcharge ?>"
             data-showrooms='<?= htmlspecialchars(json_encode($showrooms), ENT_QUOTES) ?>'>
 
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 flex-1 reveal-on-scroll lg:sticky lg:top-8 lg:self-start">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div class="grid grid-cols-1 lg:grid-cols-[132px_1fr]">
                         <div class="border-b bg-white p-3 lg:border-b-0 lg:border-r">
@@ -76,10 +79,15 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                 </div>
             </div>
 
-            <div class="w-full lg:w-[380px] lg:flex-shrink-0">
+            <div class="w-full lg:w-[380px] lg:flex-shrink-0 reveal-on-scroll reveal-delay-1">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div class="border-b px-4 pt-4">
-                        <div class="flex items-center gap-2 pb-3">
+                    <!-- Scroll Progress Bar -->
+                    <div class="h-1 w-full bg-slate-200 overflow-hidden rounded-t-2xl">
+                        <div id="scrollProgressBar" class="h-full w-0 bg-gradient-to-r from-vfNavy to-blue-500 transition-all duration-300"></div>
+                    </div>
+
+                    <div class="sticky top-0 z-10 border-b bg-white px-4 pt-3 pb-3">
+                        <div class="flex items-center gap-2">
                             <?php for ($step = 1; $step <= 3; $step++): ?>
                                 <span data-step-tab="<?= $step ?>"
                                     class="pointer-events-none px-2 py-1 text-[11px] font-semibold <?= $currentStep === $step ? 'bg-slate-100 text-vfNavy' : 'text-slate-400' ?>">
@@ -97,7 +105,7 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
                         </div>
                     </div>
 
-                    <div class="p-4">
+                    <div class="max-h-[calc(100vh-200px)] overflow-y-auto p-4" id="checkoutFormContainer">
                         <form id="<?= $checkoutFormId ?>" method="post" action="<?= BASE_URL ?>order/checkout/<?= $productId ?>">
                             <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
                             <input type="hidden" name="step" value="<?= (int)$currentStep ?>" data-step-input>
@@ -112,3 +120,22 @@ $scripts = '<script src="' . BASE_URL . 'public/js/frontend/checkout.js?v=' . ht
         </div>
     </div>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('checkoutFormContainer');
+        const progressBar = document.getElementById('scrollProgressBar');
+
+        if (container && progressBar) {
+            function updateScrollProgress() {
+                const scrollHeight = container.scrollHeight - container.clientHeight;
+                const scrollTop = container.scrollTop;
+                const scrollPercent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+                progressBar.style.width = scrollPercent + '%';
+            }
+
+            container.addEventListener('scroll', updateScrollProgress);
+            updateScrollProgress();
+        }
+    });
+</script>

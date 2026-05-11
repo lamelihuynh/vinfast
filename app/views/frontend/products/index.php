@@ -29,6 +29,7 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/products.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/homepage_effects.css">
 
 <section class="products-page bg-slate-50 min-h-screen py-5">
   <div class="w-full px-3 lg:px-5 xl:px-6">
@@ -48,7 +49,7 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
       <div class="products-content flex-1 min-w-0">
         <div class="products-toolbar mb-4 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <h1 class="text-2xl font-bold text-slate-900">Sản phẩm</h1>
+            <h1 class="text-2xl font-bold text-slate-900 reveal-on-scroll letter-reveal">Sản phẩm</h1>
             <p class="text-sm text-slate-500"><?= $total ?> sản phẩm</p>
           </div>
 
@@ -81,9 +82,12 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
               </a>
             </div>
           <?php else: ?>
+            <?php $cardIndex = 0; ?>
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 mb-8">
               <?php foreach ($products as $p): ?>
+                <?php $delayClass = $cardIndex % 5 === 0 ? '' : 'reveal-delay-' . (($cardIndex % 5)); ?>
                 <?php include ROOT . '/app/views/frontend/products/partials/card.php'; ?>
+                <?php $cardIndex++; ?>
               <?php endforeach; ?>
             </div>
           <?php endif; ?>
@@ -96,3 +100,4 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 </section>
 
 <script src="<?= BASE_URL ?>public/js/frontend/products.js?v=<?= htmlspecialchars($productsJsVersion) ?>"></script>
+<script src="<?= BASE_URL ?>public/js/frontend/homepage_effects.js"></script>

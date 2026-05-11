@@ -68,8 +68,8 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Số tiền đặt cọc (VND)</label>
-                            <input type="number" min="0" step="1000" class="form-control" name="deposit_amount" id="modal_deposit_amount" value="15000000">
+                            <label class="form-label">Số tiền đặt cọc (VND) <span class="text-danger">*</span></label>
+                            <input type="number" min="0" step="1000" class="form-control" name="deposit_amount" id="modal_deposit_amount" required placeholder="Nhập số tiền đặt cọc">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Tải ảnh mới</label>
@@ -95,9 +95,6 @@
                                     </thead>
                                     <tbody></tbody>
                                 </table>
-                            </div>
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAutoMatchColors">Auto-match từ filename</button>
                             </div>
                         </div>
 

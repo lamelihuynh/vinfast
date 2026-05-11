@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inputAcceleration.value = '';
     inputMaxSpeed.value = '';
     inputBattery.value = '';
-    if (inputDepositAmount) inputDepositAmount.value = '15000000';
+    if (inputDepositAmount) inputDepositAmount.value = '';
     inputIsActive.checked = true;
     inputImages.value = '';
     inputMainImage.value = '';
@@ -177,21 +177,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function fillFormFromState(state) {
-    var productLike = null;
-    if (state && Number(state.id || 0) > 0) {
-      productLike = products.find(function (item) {
-        return Number(item.id) === Number(state.id);
-      }) || null;
-    }
+    // Determine if this is edit or create mode based on state.id
+    var isEditMode = state && Number(state.id || 0) > 0;
 
-    if (productLike) {
-      fillFormForEdit(productLike);
+    if (isEditMode) {
+      titleEl.textContent = 'Chỉnh sửa sản phẩm';
+      submitBtn.textContent = 'Lưu thay đổi';
+      slugTouched = true;  // Lock slug to prevent auto-regeneration
     } else {
-      resetFormForCreate();
       titleEl.textContent = 'Thêm sản phẩm mới';
       submitBtn.textContent = 'Tạo sản phẩm';
+      slugTouched = false;
     }
 
+    // Fill form with state data
     inputId.value = String(Number(state.id || 0));
     inputName.value = state.name || '';
     inputCategory.value = String(state.category_id || '');
@@ -203,11 +202,18 @@ document.addEventListener('DOMContentLoaded', function () {
     inputAcceleration.value = state.acceleration || '';
     inputMaxSpeed.value = state.max_speed || '';
     inputBattery.value = state.battery || '';
-    if (inputDepositAmount) inputDepositAmount.value = String(state.deposit_amount || 15000000);
+    if (inputDepositAmount) {
+      if (isEditMode) {
+        inputDepositAmount.value = String(state.deposit_amount || '');
+      } else {
+        inputDepositAmount.value = '';
+      }
+    }
     inputIsActive.checked = Number(state.is_active || 0) === 1 || state.is_active === true || state.is_active === '1';
 
-    var images = Array.isArray(state.existing_images) ? state.existing_images : (productLike && Array.isArray(productLike.images) ? productLike.images : []);
-    var colors = Array.isArray(state.exterior_colors) ? state.exterior_colors : (productLike && Array.isArray(productLike.exterior_colors) ? productLike.exterior_colors : []);
+    // Use state images/colors if available, otherwise empty
+    var images = Array.isArray(state.existing_images) ? state.existing_images : [];
+    var colors = Array.isArray(state.exterior_colors) ? state.exterior_colors : [];
     renderColorImageTable({ images: images, exterior_colors: colors });
     clearNewImagesPreview();
     refreshMainIndicators();

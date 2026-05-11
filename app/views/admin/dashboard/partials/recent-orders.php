@@ -40,7 +40,7 @@ $statusLabel = static function (string $status): string {
                                 <td><?= htmlspecialchars((string)($order['customer'] ?? '')) ?></td>
                                 <td><?= htmlspecialchars((string)($order['product'] ?? '')) ?></td>
                                 <td class="text-right"><?= htmlspecialchars(number_format((float)($order['deposit'] ?? 0), 0, ',', '.')) ?></td>
-                                <td class="text-center"><span class="badge badge-pill badge-<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($statusLabel($status)) ?></span></td>
+                                <td class="text-center"><span class="badge bg-secondary text-white<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($statusLabel($status)) ?></span></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

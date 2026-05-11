@@ -37,7 +37,15 @@
                                     <?php $thumbUrl = ProductViewHelper::thumbUrl($p); ?>
                                     <img src="<?= htmlspecialchars($thumbUrl) ?>" alt="<?= htmlspecialchars((string)$p['name']) ?>" class="rounded" style="width:35px;height:35px;object-fit:cover;">
                                     <div class="text-start">
-                                        <small class="d-block fw-semibold"><?= htmlspecialchars(substr((string)$p['name'], 0, 20)) ?></small>
+                                        <?php
+                                        $rawName = (string)($p['name'] ?? '');
+                                        if (function_exists('mb_strlen')) {
+                                            $displayName = mb_strlen($rawName, 'UTF-8') > 30 ? mb_substr($rawName, 0, 30, 'UTF-8') . '...' : $rawName;
+                                        } else {
+                                            $displayName = strlen($rawName) > 30 ? substr($rawName, 0, 30) . '...' : $rawName;
+                                        }
+                                        ?>
+                                        <small class="d-block fw-semibold"><?= htmlspecialchars($displayName) ?></small>
                                         <small class="text-muted"><?= htmlspecialchars((string)($p['slug'] ?? 'no-slug')) ?></small>
                                     </div>
                                 </div>

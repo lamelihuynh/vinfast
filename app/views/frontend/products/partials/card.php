@@ -16,7 +16,7 @@ if ($powerText === '') {
   $powerText = 'N/A';
 }
 ?>
-<div class="flip-card bg-transparent" tabindex="0">
+<div class="flip-card bg-transparent reveal-on-scroll <?= $delayClass ?? '' ?>" tabindex="0">
   <div class="flip-card-inner">
     <!-- FRONT -->
     <div class="flip-card-face card-front bg-white rounded-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
@@ -30,7 +30,15 @@ if ($powerText === '') {
         </div>
 
         <div class="p-4">
-          <h4 class="text-slate-900 mb-0.5 text-[14px] font-bold"><?= htmlspecialchars($p['name'] ?? '') ?></h4>
+          <?php
+          $name = (string)($p['name'] ?? '');
+          if (function_exists('mb_strlen')) {
+            $displayName = mb_strlen($name, 'UTF-8') > 40 ? mb_substr($name, 0, 40, 'UTF-8') . '...' : $name;
+          } else {
+            $displayName = strlen($name) > 40 ? substr($name, 0, 40) . '...' : $name;
+          }
+          ?>
+          <h4 class="text-slate-900 mb-0.5 text-[14px] font-bold" title="<?= htmlspecialchars($name) ?>" style="max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($displayName) ?></h4>
           <p class="text-slate-400 mb-1.5 text-[11px]"><?= htmlspecialchars($categoryText) ?></p>
           <p class="text-vfGold mt-2 mb-2 text-[15px] font-bold"><?= number_format((float)($p['price'] ?? 0), 0, ',', '.') ?> VND</p>
         </div>
@@ -41,7 +49,15 @@ if ($powerText === '') {
     <div class="flip-card-face flip-card-back bg-[#1a2240] rounded-md overflow-hidden flex flex-col p-4 text-white">
       <div class="mb-3">
         <p class="text-[#c8a22e] mb-0.5 text-[10px] font-bold tracking-wider"><?= htmlspecialchars(strtoupper($categoryText)) ?></p>
-        <p class="text-[15px] font-extrabold"><?= htmlspecialchars($p['name'] ?? '') ?></p>
+        <?php
+        $backName = (string)($p['name'] ?? '');
+        if (function_exists('mb_strlen')) {
+          $displayBackName = mb_strlen($backName, 'UTF-8') > 48 ? mb_substr($backName, 0, 48, 'UTF-8') . '...' : $backName;
+        } else {
+          $displayBackName = strlen($backName) > 48 ? substr($backName, 0, 48) . '...' : $backName;
+        }
+        ?>
+        <p class="text-[15px] font-extrabold" title="<?= htmlspecialchars($backName) ?>" style="max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($displayBackName) ?></p>
       </div>
 
       <div class="grid grid-cols-2 gap-2 mb-3 flex-1">

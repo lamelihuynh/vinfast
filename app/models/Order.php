@@ -306,7 +306,29 @@ class Order
             $params[':q4'] = '%' . $q . '%';
         }
 
+        $dateFrom = trim((string)($filters['date_from'] ?? ''));
+        if ($dateFrom !== '' && self::isValidDate($dateFrom)) {
+            $where[] = 'DATE(o.created_at) >= :date_from';
+            $params[':date_from'] = $dateFrom;
+        }
+
+        $dateTo = trim((string)($filters['date_to'] ?? ''));
+        if ($dateTo !== '' && self::isValidDate($dateTo)) {
+            $where[] = 'DATE(o.created_at) <= :date_to';
+            $params[':date_to'] = $dateTo;
+        }
+
         return [$where, $params];
+    }
+
+    private static function isValidDate(string $dateStr): bool
+    {
+        $dateStr = trim($dateStr);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr) !== 1) {
+            return false;
+        }
+        $dt = \DateTime::createFromFormat('Y-m-d', $dateStr);
+        return $dt !== false && $dt->format('Y-m-d') === $dateStr;
     }
 
     private static function bindParams(PDOStatement $stmt, array $params): void
