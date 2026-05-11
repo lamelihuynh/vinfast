@@ -1,6 +1,6 @@
 <?php
-$productsForModal = $productsForModal ?? [];
-$old = is_array($old ?? null) ? $old : [];
+$productsForModal = isset($productsForModal) && is_array($productsForModal) ? $productsForModal : [];
+$old = isset($old) && is_array($old) ? $old : [];
 $productModalJsVersion = AssetHelper::getVersion('public/js/admin/product-modal.js');
 ?>
 <script id="productModalData" type="application/json">

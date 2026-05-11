@@ -1,4 +1,5 @@
 <div class="card-body border-bottom pb-3">
+    <?php $cats = isset($cats) && is_array($cats) ? $cats : []; ?>
     <div class="pb-3 mb-3  d-flex align-items-center justify-content-between">
         <h5 class="header-title mb-0">Bảng Quản Lý Sản Phẩm</h5>
         <button type="button" id="openCreateProductBtn" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#productModal">

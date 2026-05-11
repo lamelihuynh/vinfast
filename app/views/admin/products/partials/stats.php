@@ -1,5 +1,5 @@
 <?php
-$summary = is_array($summary ?? null) ? $summary : [];
+$summary = isset($summary) && is_array($summary) ? $summary : [];
 ?>
 <div class="row g-3 mb-4">
     <div class="col-6 col-xl-3">
