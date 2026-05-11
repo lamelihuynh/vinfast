@@ -73,6 +73,7 @@ class PageContentAdminController
             $awardImages[$year] = $asset['file_path'];
         }
 
+        $awards  = $this->aboutAward->all(); 
         View::render('admin/pages/about-edit', [
             'aboutText' => $aboutText,
             'aboutImage' => $aboutImage,
@@ -80,6 +81,7 @@ class PageContentAdminController
             'timelineImages' => $timelineImages,
             'timelineTexts' => $timelineTexts,
             'awardImages' => $awardImages,
+            'awards'=> $awards 
         ], 'admin');
     }
 
@@ -245,6 +247,71 @@ public function deleteAsset(): void
     } else {
         echo json_encode(['success' => false, 'message' => 'Không thể xóa ảnh hoặc ảnh không tồn tại.']);
     }
+    exit;
+}
+
+
+public function addAward(): void
+{
+    Auth::requireAdmin();
+
+    $title = trim($_POST['title'] ?? '');
+    $year = (int)($_POST['award_year'] ?? 0);
+
+    if (!$title || !$year || !isset($_FILES['image'])) {
+        $_SESSION['error'] = 'Thiếu dữ liệu';
+        header('Location: ' . ADMIN_URL . 'page-content/about');
+        exit;
+    }
+
+    $assetKey = 'award_' . uniqid();
+
+    $result = $this->pageAsset->upload(
+        'about',
+        $assetKey,
+        $_FILES['image']
+    );
+
+    if (!$result['success']) {
+        $_SESSION['error'] = $result['message'];
+        header('Location: ' . ADMIN_URL . 'page-content/about');
+        exit;
+    }
+
+    $this->aboutAward->create(
+        $title,
+        $year,
+        $result['asset']['file_path']
+    );
+
+    $_SESSION['success'] = 'Thêm giải thưởng thành công';
+
+    header('Location: ' . ADMIN_URL . 'page-content/about#awards-pane');
+    exit;
+}
+
+public function aboutdeleteAward(): void
+{
+    Auth::requireAdmin();
+
+    $id = (int)($_GET['id'] ?? 0);
+
+    header('Content-Type: application/json');
+
+    if (!$id) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'ID không hợp lệ'
+        ]);
+        exit;
+    }
+
+    $result = $this->aboutAward->delete($id);
+
+    echo json_encode([
+        'success' => $result
+    ]);
+
     exit;
 }
 }

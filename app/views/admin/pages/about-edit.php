@@ -199,47 +199,143 @@ $csrf = Auth::CsrfToken();
 
         <!-- Awards Tab -->
         <div class="tab-pane fade" id="awards-pane" role="tabpanel">
-            <div class="card">
-                    <h5>Ảnh Giải Thưởng</h5>
-                </div>
-                    <p class="text-muted">Tải lên ảnh giải thưởng cho từng năm (2017-202)</p>
-                    
-                    <div class="row">
-                        <?php foreach ([2023, 2022, 2021, 2020, 2019, 2018] as $year): ?>
-                            <div class="col-md-6 mb-4">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h6 class="card-title">Năm <?= $year ?></h6>
-                                        
-                                        <?php if (isset($awardImages[$year])): ?>
-                                            <img src="<?= htmlspecialchars($awardImages[$year]) ?>" alt="Award <?= $year ?>" style="max-width: 100%; height: auto; border-radius: 4px; margin-bottom: 10px;">
-                                            <br>
-                                            <small class="text-muted"><?= htmlspecialchars($awardImages[$year]) ?></small>
-                                        <?php else: ?>
-                                            <div style="width: 100%; height: 150px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                                                <span class="text-muted">Chưa có ảnh</span>
-                                            </div>
-                                        <?php endif; ?>
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>Giải Thưởng</h5>
 
-                                        <div class="mt-2">
-                                            <input type="file" class="form-control form-control-sm award-upload" accept="image/*" 
-                                                   data-year="<?= $year ?>" style="display: none;">
-                                            <button type="button" class="btn btn-sm btn-outline-primary award-upload-btn" data-year="<?= $year ?>">
-                                                <i class="fas fa-upload"></i> <?= isset($awardImages[$year]) ? 'Thay' : 'Tải' ?> Ảnh
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+            <button class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#awardModal">
+                <i class="fas fa-plus"></i>
+                Thêm giải thưởng
+            </button>
+        </div>
+
+        <div class="card-body">
+            <div class="row">
+
+                <?php foreach ($awards as $award): ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+
+                            <img src="<?= UPLOAD_URL . htmlspecialchars($award['image_path']) ?>"
+                                 class="card-img-top"
+                                 style="height:220px; object-fit:cover;">
+
+                            <div class="card-body">
+                                <h6><?= htmlspecialchars($award['title']) ?></h6>
+
+                                <small class="text-muted">
+                                    Năm <?= (int)$award['award_year'] ?>
+                                </small>
                             </div>
-                        <?php endforeach; ?>
+
+                            <div class="card-footer">
+                                <button
+                                    class="btn btn-sm btn-danger btn-delete-award"
+                                    data-id="<?= $award['id'] ?>">
+                                    <i class="fas fa-trash"></i>
+                                    Xóa
+                                </button>
+                            </div>
+
+                        </div>
                     </div>
-                </div>
+                <?php endforeach; ?>
+
+            </div>
+        </div>
+    </div>
+        </div>
+
+        <div class="modal fade" id="awardModal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="POST"
+                    action="<?= ADMIN_URL ?>page-content/addaward"
+                    enctype="multipart/form-data"
+                    class="modal-content">
+
+                    <input type="hidden"
+                        name="csrf_token"
+                        value="<?= htmlspecialchars($csrf) ?>">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">Thêm giải thưởng</h5>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label>Tên giải thưởng</label>
+
+                            <input type="text"
+                                name="title"
+                                class="form-control"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Năm</label>
+
+                            <input type="number"
+                                name="award_year"
+                                class="form-control"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Ảnh</label>
+
+                            <input type="file"
+                                name="image"
+                                class="form-control"
+                                accept="image/*"
+                                required>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-primary">
+                            Lưu
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+
+
+
             </div>
         </div>
     </div>
 </div>
 
 <script>
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-delete-award');
+
+    if (!btn) return;
+
+    const id = btn.dataset.id;
+
+    if (!confirm('Xóa giải thưởng này?')) return;
+
+    fetch(`<?= ADMIN_URL ?>page-content/about/deleteaward?id=${id}`, {
+        method: 'POST'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    });
+});
+
 document.addEventListener('click', function(e) {
     if (e.target.closest('.btn-upload-trigger') || e.target.closest('.timeline-upload-btn') || e.target.closest('.award-upload-btn')) {
         e.preventDefault();
