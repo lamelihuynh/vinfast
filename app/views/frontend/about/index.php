@@ -8,7 +8,7 @@
  */
 
 $heroPath = '/public/images/uploads/about-page/hero_image.jpg';
-$version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
+//$version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
 $total = count($timeline ?? []);
 ?>
 
