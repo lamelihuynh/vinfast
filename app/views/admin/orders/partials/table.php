@@ -32,7 +32,6 @@ $extractOrderDetail = $extractOrderDetail ?? function ($v) {
                                 <th>Sản phẩm</th>
                                 <th>Loại</th>
                                 <th>Thanh toán</th>
-                                <th>Trạng thái</th>
                                 <th>Ngày tạo</th>
                                 <th>Chi tiết</th>
                             </tr>
@@ -40,14 +39,13 @@ $extractOrderDetail = $extractOrderDetail ?? function ($v) {
                         <tbody>
                             <?php if (empty($orders)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Không có đơn hàng phù hợp.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">Không có đơn hàng phù hợp.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($orders as $order): ?>
                                     <?php
                                     $id = (int)($order['id'] ?? 0);
                                     $orderCode = 'VF-ORD-' . str_pad((string)$id, 6, '0', STR_PAD_LEFT);
-                                    $orderStatus = trim((string)($order['status'] ?? 'pending'));
                                     $phone = $extractPhone($order['note'] ?? '');
                                     $createdAt = trim((string)($order['created_at'] ?? ''));
                                     $detailPayload = $extractOrderDetail($order);
@@ -101,11 +99,6 @@ $extractOrderDetail = $extractOrderDetail ?? function ($v) {
                                         <td>
                                             <span class="badge text-black <?= htmlspecialchars($paymentStatusBadge) ?>">
                                                 <?= htmlspecialchars($paymentStatusLabel) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge text-black <?= htmlspecialchars($badgeByStatus($orderStatus)) ?>">
-                                                <?= htmlspecialchars($labelByStatus($orderStatus)) ?>
                                             </span>
                                         </td>
                                         <td>
