@@ -79,87 +79,6 @@ class NewsAdminController
         ], 'admin');
     }
 
-    public function save(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . ADMIN_URL . 'news');
-            exit;
-        }
-
-        Auth::verifyCsrf();
-
-        $id = (int) ($_POST['id'] ?? 0);
-        $title      = trim($_POST['title'] ?? '');
-        $body       = $_POST['body'] ?? ''; 
-        $catalog    = $_POST['catalog'] ?? null;
-        $news_state = $_POST['news_state'] ?? 'Hiển thị';
-        $meta_title = trim($_POST['meta_title'] ?? $title);
-        $meta_desc  = trim($_POST['meta_description'] ?? '');
-
-        $slug = trim($_POST['slug'] ?? '');
-        $slug = ($slug === '') ? $this->createSlug($title) : $this->createSlug($slug);
-
-        $originalSlug = $slug;
-        $count = 1;
-        while (News::isSlugExists($slug, $id)) {
-            $slug = $originalSlug . '-' . $count;
-            $count++;
-        }
-
-        $tagsInput = $_POST['tags'] ?? '';
-        $tags = array_filter(array_map('trim', explode(',', $tagsInput)));
-
-        $images = [];
-        $img_link = null;
-
-        if (!empty($_FILES['thumbnail']) && ($_FILES['thumbnail']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-            try {
-                $tmpPath = $_FILES['thumbnail']['tmp_name'];
-                $fileName = time() . '_' . basename($_FILES['thumbnail']['name']);
-                $uploadDir = ROOT . '/public/uploads/news/';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-                
-                if (move_uploaded_file($tmpPath, $uploadDir . $fileName)) {
-                    $img_link = '/public/uploads/news/' . $fileName;
-                }
-            } catch (Throwable $e) {
-                $_SESSION['errors'] = [$e->getMessage()];
-                header('Location: ' . ADMIN_URL . 'news');
-                exit;
-            }
-        }
-        
-        if (!$img_link && !empty($_POST['old_thumbnail'])) {
-            $img_link = $_POST['old_thumbnail'];
-        }
-
-        if ($img_link) {
-            $dbLink = str_replace('/', '\\', $img_link);
-            $images[] = ['img_link' => $dbLink, 'img_des' => $title];
-        }
-
-        $data = [
-            'title'            => $title,
-            'slug'             => $slug,
-            'body'             => $body,
-            'catalog'          => $catalog,
-            'news_state'       => $news_state,
-            'meta_title'       => $meta_title,
-            'meta_description' => $meta_desc
-        ];
-
-        if ($id > 0) {
-            News::update($id, $data, $tags, $images);
-            $_SESSION['flash'] = 'Cập nhật bài viết thành công.';
-        } else {
-            News::create($data, $tags, $images);
-            $_SESSION['flash'] = 'Đã thêm bài viết mới.';
-        }
-
-        header('Location: ' . ADMIN_URL . 'news');
-        exit;
-    }
-
     public function delete(int $id): void
     {
         Auth::verifyCsrf();
@@ -255,6 +174,57 @@ class NewsAdminController
             $finalBodyParts = [];
             $imagesData = [];
 
+            $oldThumbnail = trim($_POST['old_thumbnail'] ?? '');
+            $thumbDbPath = '';
+
+            if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
+                $fileTmpPath = $_FILES['thumbnail']['tmp_name'];
+                $originalName = basename($_FILES['thumbnail']['name']); 
+                $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                
+                if ($oldThumbnail !== '') {
+                    $oldThumbPathAbs = ROOT . '/' . ltrim(str_replace('\\', '/', $oldThumbnail), '/');
+                    if (file_exists($oldThumbPathAbs)) {
+                        $oldBasename = pathinfo($oldThumbPathAbs, PATHINFO_FILENAME);
+                        if (strpos(strtolower($oldBasename), 'thumbnail') === 0) {
+                            $oldExt = strtolower(pathinfo($oldThumbPathAbs, PATHINFO_EXTENSION));
+                            rename($oldThumbPathAbs, $uploadDir . $nextImgIndex . '.' . $oldExt);
+                            $nextImgIndex++;
+                        }
+                    }
+                }
+
+                $newThumbName = 'thumbnail.' . $fileExtension;
+                $destPath = $uploadDir . $newThumbName;
+                if (@move_uploaded_file($fileTmpPath, $destPath)) {
+                    $thumbDbPath = "public/images/news/{$id}/{$newThumbName}";
+                }
+
+            } elseif ($oldThumbnail !== '') {
+                $oldThumbPathAbs = ROOT . '/' . ltrim(str_replace('\\', '/', $oldThumbnail), '/');
+                if (file_exists($oldThumbPathAbs)) {
+                    $oldBasename = pathinfo($oldThumbPathAbs, PATHINFO_FILENAME);
+                    
+                    if (strpos(strtolower($oldBasename), 'thumbnail') !== 0) {
+                        $ext = strtolower(pathinfo($oldThumbPathAbs, PATHINFO_EXTENSION));
+                        $newThumbName = 'thumbnail.' . $ext;
+                        copy($oldThumbPathAbs, $uploadDir . $newThumbName);
+                        $thumbDbPath = "public/images/news/{$id}/{$newThumbName}";
+                    } else {
+                        $thumbDbPath = "public/images/news/{$id}/" . basename($oldThumbnail);
+                    }
+                } else {
+                    $thumbDbPath = "public/images/news/{$id}/" . basename($oldThumbnail);
+                }
+            }
+
+            if ($thumbDbPath !== '') {
+                $imagesData[] = [
+                    'img_link' => $thumbDbPath, 
+                    'img_des'  => 'Thumbnail'
+                ];
+            }
+
             foreach ($blocks as $index => $block) {
                 $type = $block['type'];
 
@@ -274,31 +244,24 @@ class NewsAdminController
                         $fileTmpPath = $_FILES['block_files']['tmp_name'][$index];
                         $originalName = basename($_FILES['block_files']['name'][$index]); 
                         
-                        if (file_exists($uploadDir . $originalName)) {
-                            $webPath = "public/images/news/{$id}/{$originalName}";
-                            $dbPath  = "public\\images\\news\\{$id}\\{$originalName}";
-                        } 
-
-                        else {
-                            $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-                            $newFileName = $nextImgIndex . '.' . $fileExtension;
-                            $nextImgIndex++; 
-                            
-                            $destPath = $uploadDir . $newFileName;
-                            if (@move_uploaded_file($fileTmpPath, $destPath)) {
-                                $webPath = "public/images/news/{$id}/{$newFileName}";
-                                $dbPath  = "public\\images\\news\\{$id}\\{$newFileName}";
-                            }
+                        // Đánh số từ $nextImgIndex
+                        $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                        $newFileName = $nextImgIndex . '.' . $fileExtension;
+                        $nextImgIndex++; 
+                        
+                        $destPath = $uploadDir . $newFileName;
+                        if (@move_uploaded_file($fileTmpPath, $destPath)) {
+                            $webPath = "public/images/news/{$id}/{$newFileName}";
+                            $dbPath  = "public/images/news/{$id}/{$newFileName}";
                         }
                     } 
-
                     else {
                         $oldLink = trim($block['old_link'] ?? '');
                         if ($oldLink !== '') {
+                            // Chuyển đường dẫn thành chuẩn Web /
                             $fileName = basename(str_replace('\\', '/', $oldLink));
-                            
                             $webPath = "public/images/news/{$id}/{$fileName}";
-                            $dbPath  = "public\\images\\news\\{$id}\\{$fileName}";
+                            $dbPath  = "public/images/news/{$id}/{$fileName}";
                         }
                     }
 

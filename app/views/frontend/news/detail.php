@@ -53,8 +53,10 @@ $sort = $_GET['sort'] ?? 'newest';
 </script>
 
 <style>
+    /* THAY ĐỔI CSS TẠI ĐÂY ĐỂ VĂN BẢN HIỂN THỊ TỰ NHIÊN NHẤT */
     .article-body {
-        word-break: break-all; 
+        overflow-wrap: anywhere; 
+        word-wrap: break-word;
     }
     .article-body p { 
         font-size: 1.125rem; 
@@ -62,7 +64,8 @@ $sort = $_GET['sort'] ?? 'newest';
         color: #374151; 
         margin-bottom: 1.5rem; 
         text-align: left; 
-        word-break: break-all; 
+        overflow-wrap: anywhere; 
+        word-wrap: break-word;
     }
     .article-body figure { margin: 2.5rem 0; text-align: center; }
     .article-body figure img { width: 100%; max-height: 600px; object-fit: cover; border-radius: 0.5rem; }
@@ -227,7 +230,7 @@ $sort = $_GET['sort'] ?? 'newest';
                           </div>
                         </div>
                         
-                        <p class="text-sm leading-relaxed text-slate-700 mb-4 text-left" style="word-break: break-all;">
+                        <p class="text-sm leading-relaxed text-slate-700 mb-4 text-left" style="overflow-wrap: anywhere; word-wrap: break-word;">
                           <?= nl2br(htmlspecialchars($rv['body'])) ?>
                         </p>
 

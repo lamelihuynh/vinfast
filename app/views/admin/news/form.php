@@ -54,11 +54,26 @@
             
             <div class="flex-1 space-y-6">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <label class="block font-bold text-gray-700 mb-2">Tiêu đề bài viết <span class="text-red-500">*</span></label>
-                    <input type="text" id="newsTitle" name="title" required 
-                           value="<?= htmlspecialchars($article['title'] ?? '') ?>" 
-                           placeholder="Nhập tiêu đề..." 
-                           class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
+                    <div class="mb-6">
+                        <label class="block font-bold text-gray-700 mb-2">Tiêu đề bài viết <span class="text-red-500">*</span></label>
+                        <input type="text" id="newsTitle" name="title" required 
+                               value="<?= htmlspecialchars($article['title'] ?? '') ?>" 
+                               placeholder="Nhập tiêu đề..." 
+                               class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-6">
+                        <label class="block font-bold text-gray-700 mb-2">Hình ảnh hiển thị (Thumbnail) <span class="text-red-500">*</span></label>
+                        
+                        <div id="thumbnailPreviewContainer" class="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg inline-block hidden">
+                            <p class="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wider">Ảnh hiển thị hiện tại:</p>
+                            <img id="thumbnailPreview" src="" alt="Thumbnail" class="h-32 w-auto object-cover rounded shadow-sm border border-gray-300">
+                        </div>
+                        
+                        <input type="hidden" id="oldThumbnail" name="old_thumbnail" value="">
+                        <input type="file" id="newsThumbnail" accept="image/*" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer outline-none transition">
+                        <p class="text-xs text-gray-400 mt-2">Ảnh này sẽ đại diện cho bài viết ở trang chủ và danh sách quản trị.</p>
+                    </div>
                 </div>
 
                 <div id="blocksContainer" class="space-y-4">
@@ -107,7 +122,6 @@
 
 <script>
     const container = document.getElementById('blocksContainer');
-    
     const rawBody = <?= $safeBody ?>;
     const existingImages = <?= $safeImages ?>;
 
@@ -132,6 +146,42 @@
         return textArea.value;
     }
 
+    const thumbPreviewContainer = document.getElementById('thumbnailPreviewContainer');
+    const thumbPreviewImg = document.getElementById('thumbnailPreview');
+    const thumbFileInput = document.getElementById('newsThumbnail');
+    const oldThumbInput = document.getElementById('oldThumbnail');
+
+    // BÓC TÁCH THUMBNAIL TỪ MẢNG ẢNH
+    let thumbIndex = existingImages.findIndex(img => img.img_link.toLowerCase().includes('thumbnail'));
+    let thumbData = null;
+    if (thumbIndex !== -1) {
+        thumbData = existingImages.splice(thumbIndex, 1)[0];
+    } else if (existingImages.length > 0) {
+        // Fallback: Lấy ảnh đầu tiên nếu ko có chữ thumbnail
+        thumbData = existingImages.splice(0, 1)[0];
+    }
+
+    if (thumbData) {
+        const safeUrl = String(thumbData.img_link).replace(/\\\\/g, '/').replace(/\\/g, '/');
+        const displayUrl = safeUrl.startsWith('http') ? safeUrl : '<?= BASE_URL ?>' + safeUrl;
+        
+        oldThumbInput.value = thumbData.img_link;
+        thumbPreviewImg.src = displayUrl;
+        thumbPreviewContainer.classList.remove('hidden');
+    }
+
+    // Preview khi chọn ảnh Thumbnail mới
+    thumbFileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                thumbPreviewImg.src = e.target.result;
+                thumbPreviewContainer.classList.remove('hidden');
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
     function initBlocks() {
         if (!rawBody) {
             addTextBlock(); 
@@ -150,7 +200,7 @@
                     addTextBlock(decodeHTMLEntities(textContent.trim()));
                     hasBlocks = true;
                 } else if (node.tagName.toLowerCase() === 'figure') {
-                    const imgData = existingImages.shift();
+                    const imgData = existingImages.shift(); // Lấy ảnh tiếp theo cho block
                     if (imgData) {
                         addImageBlock(imgData.img_link, imgData.img_des);
                     } else {
@@ -169,7 +219,6 @@
         }
     }
 
-    // ĐÃ ÉP KIỂU break-all CHO Ô NHẬP TEXT ĐỂ CHỮ KHÔNG BỊ RỚT DÒNG VÔ LÝ
     function addTextBlock(content = "") {
         const blockHTML = `
             <div class="block-item bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-blue-500 relative group" data-type="text">
@@ -181,7 +230,7 @@
                         <button type="button" onclick="this.closest('.block-item').remove()" class="text-red-400 hover:text-red-600 ml-2">✕ Xóa</button>
                     </div>
                 </div>
-                <textarea class="block-content w-full border border-gray-200 rounded p-3 min-h-[100px] focus:ring-1 focus:ring-blue-500 transition" placeholder="Nhập nội dung đoạn văn (Tối thiểu 10 ký tự)..." style="word-break: break-all; white-space: pre-wrap;"></textarea>
+                <textarea class="block-content w-full border border-gray-200 rounded p-3 min-h-[100px] focus:ring-1 focus:ring-blue-500 transition outline-none" placeholder="Nhập nội dung đoạn văn (Tối thiểu 10 ký tự)..." style="word-break: break-all; white-space: pre-wrap;"></textarea>
             </div>
         `;
         container.insertAdjacentHTML('beforeend', blockHTML);
@@ -210,7 +259,7 @@
         const blockHTML = `
             <div class="block-item bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-emerald-500 relative group" data-type="image">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="font-bold text-sm text-emerald-600 uppercase tracking-wider">Hình ảnh</span>
+                    <span class="font-bold text-sm text-emerald-600 uppercase tracking-wider">Hình ảnh nội dung</span>
                     <div class="space-x-2">
                         <button type="button" onclick="moveUp(this)" class="text-gray-400 hover:text-gray-800">▲</button>
                         <button type="button" onclick="moveDown(this)" class="text-gray-400 hover:text-gray-800">▼</button>
@@ -221,10 +270,10 @@
                 ${imgPreview}
                 <div class="mb-3">
                     <label class="block text-xs text-gray-500 font-medium mb-1">${url ? 'Tải ảnh mới lên (để thay thế ảnh hiện tại)' : 'Chọn ảnh để tải lên'}</label>
-                    <input type="file" accept="image/*" class="block-file block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer transition">
+                    <input type="file" accept="image/*" class="block-file block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer outline-none transition">
                 </div>
                 <input type="hidden" class="block-old-link" value="${url}">
-                <input type="text" class="block-desc w-full border border-gray-200 rounded p-2 text-sm focus:ring-1 focus:ring-emerald-500" placeholder="Nhập mô tả hình ảnh (không bắt buộc)...">
+                <input type="text" class="block-desc w-full border border-gray-200 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500" placeholder="Nhập mô tả hình ảnh (không bắt buộc)...">
             </div>
         `;
         container.insertAdjacentHTML('beforeend', blockHTML);
@@ -251,8 +300,23 @@
         let imageBlockIndex = 0;
         let firstErrorElement = null;
 
+        thumbFileInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+        if (!oldThumbInput.value && thumbFileInput.files.length === 0) {
+            isValid = false;
+            thumbFileInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+            errorMessages.push(`- Hình ảnh hiển thị: Vui lòng chọn một hình ảnh làm Thumbnail cho bài viết.`);
+            if (!firstErrorElement) firstErrorElement = thumbFileInput;
+        } else if (thumbFileInput.files.length > 0) {
+            const file = thumbFileInput.files[0];
+            if (!file.type.startsWith('image/')) {
+                isValid = false;
+                thumbFileInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                errorMessages.push(`- Hình ảnh hiển thị: File tải lên không hợp lệ.`);
+                if (!firstErrorElement) firstErrorElement = thumbFileInput;
+            }
+        }
+
         const blocks = document.querySelectorAll('.block-item');
-        
         blocks.forEach((block) => {
             const type = block.dataset.type;
 
@@ -260,7 +324,6 @@
                 textBlockIndex++;
                 const contentNode = block.querySelector('.block-content');
                 const textLength = contentNode.value.trim().length; 
-                
                 contentNode.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
 
                 if (textLength < 10) {
@@ -280,7 +343,7 @@
                     if (!file.type.startsWith('image/')) {
                         isValid = false;
                         fileInput.classList.add('border-red-500', 'border', 'rounded');
-                        errorMessages.push(`- Hình ảnh thứ ${imageBlockIndex}: File tải lên không hợp lệ. Chỉ chấp nhận các định dạng hình ảnh.`);
+                        errorMessages.push(`- Hình ảnh nội dung thứ ${imageBlockIndex}: File tải lên không hợp lệ.`);
                         if (!firstErrorElement) firstErrorElement = fileInput;
                     }
                 }
@@ -304,7 +367,12 @@
         formData.append('title', document.getElementById('newsTitle').value);
         formData.append('catalog', document.getElementById('newsCatalog').value);
         formData.append('news_state', document.getElementById('newsState').value);
-        
+
+        if (thumbFileInput.files.length > 0) {
+            formData.append('thumbnail', thumbFileInput.files[0]);
+        }
+        formData.append('old_thumbnail', oldThumbInput.value);
+
         blocks.forEach((block, index) => {
             const type = block.dataset.type;
             formData.append(`blocks[${index}][type]`, type);
@@ -323,7 +391,7 @@
         });
 
         try {
-            const response = await fetch('/vinfast/admin/news/save_builder', {
+            const response = await fetch('<?= ADMIN_URL ?>news/save_builder', {
                 method: 'POST',
                 body: formData
             });
@@ -332,7 +400,7 @@
             if(result.status === 'success') {
                 showCustomAlert('success', 'Hoàn thành!', 'Lưu bài viết thành công! Đang chuyển hướng...');
                 setTimeout(() => {
-                    window.location.href = '/vinfast/admin/news';
+                    window.location.href = '<?= ADMIN_URL ?>news';
                 }, 1500);
             } else {
                 showCustomAlert('danger', 'Lỗi!', 'Lỗi từ máy chủ: ' + result.message);

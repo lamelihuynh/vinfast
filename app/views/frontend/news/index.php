@@ -21,12 +21,6 @@
 ?>
 <!-- TODO: Implement News Listing -->
 <?php
-/**
- * app/views/frontend/news/index.php
- * Cập nhật: Thêm Animation "Fade Up" mượt mà cho các khối tin tức
- */
-?>
-<?php
 $host = 'localhost';
 $db   = 'vinfast_db';
 $user = 'root';
@@ -50,8 +44,37 @@ try {
     ");
     $rawNews = $stmtNews->fetchAll();
 
+    $baseDir = $_SERVER['DOCUMENT_ROOT'] . '/vinfast/public/images/news/';
+
     foreach ($rawNews as $row) {
         $cleanBody = strip_tags($row['body']);
+        
+        $thumbUrl = '';
+        $extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $newsDir = $baseDir . $row['id'] . '/';
+
+        foreach ($extensions as $ext) {
+            if (file_exists($newsDir . 'thumbnail.' . $ext)) {
+                $thumbUrl = '/vinfast/public/images/news/' . $row['id'] . '/thumbnail.' . $ext;
+                break;
+            }
+        }
+
+        if ($thumbUrl === '') {
+            foreach ($extensions as $ext) {
+                if (file_exists($newsDir . '1.' . $ext)) {
+                    $thumbUrl = '/vinfast/public/images/news/' . $row['id'] . '/1.' . $ext;
+                    break;
+                }
+            }
+        }
+
+        if ($thumbUrl === '') {
+            $dbImage = !empty($row['img_link']) ? str_replace('\\', '/', $row['img_link']) : '';
+            $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($dbImage, '/'));
+            $thumbUrl = !empty($cleanPath) ? '/vinfast/' . $cleanPath : 'https://via.placeholder.com/600x350/E5E7EB/9CA3AF?text=No+Image';
+        }
+
         $newsArray[] = [
             'id'      => $row['id'],
             'slug'    => $row['slug'], 
@@ -59,7 +82,7 @@ try {
             'date'    => explode(' ', $row['created_at'])[0],
             'title'   => $row['title'],
             'desc'    => mb_substr($cleanBody, 0, 150) . '...',
-            'image'   => $row['img_link'] ?: 'https://via.placeholder.com/600x350/E5E7EB/9CA3AF?text=No+Image'
+            'image'   => $thumbUrl
         ];
     }
 
@@ -84,7 +107,6 @@ try {
         }
     </script>
     <style>
-        /* HIỆU ỨNG ANIMATION ĐẨY LÊN CHO TIN TỨC */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
@@ -222,16 +244,14 @@ try {
             const end = start + ITEMS_PER_PAGE;
             const paginatedNews = filteredData.slice(start, end);
 
-            // Bắt đầu chuỗi HTML và biến delay để tạo hiệu ứng nối tiếp
             let htmlContent = '';
             let delay = 0; 
 
             paginatedNews.forEach(news => {
                 const parts = news.date.split('-');
                 const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-                const detailUrl = `<?= BASE_URL ?>news/read/${news.slug}`;
+                const detailUrl = `/vinfast/news/read/${news.slug}`;
 
-                // Gắn class fade-up-item và animation-delay vào mỗi article
                 htmlContent += `
                     <article class="group flex flex-col h-full fade-up-item" style="opacity: 0; animation-delay: ${delay}ms;">
                         <a href="${detailUrl}" class="overflow-hidden rounded-xl mb-4 block cursor-pointer">
@@ -257,10 +277,9 @@ try {
                         </a>
                     </article>
                 `;
-                delay += 75; // Tăng delay cho thẻ tiếp theo trượt lên sau
+                delay += 75; 
             });
 
-            // Gán HTML vào lưới một lần duy nhất để animation chạy mượt mà
             grid.innerHTML = htmlContent;
 
             updatePaginationButtons(filteredData.length);
@@ -332,7 +351,7 @@ try {
         function renderSidebarExtras() {
             const featuredContainer = document.getElementById('featured-news');
             newsDB.slice(0, 4).forEach(news => {
-                const detailUrl = `<?= BASE_URL ?>news/read/${news.slug}`;
+                const detailUrl = `/vinfast/news/read/${news.slug}`;
                 featuredContainer.innerHTML += `
                     <a href="${detailUrl}" class="group block cursor-pointer">
                         <img src="${news.image}" class="w-full h-20 object-cover rounded-lg mb-2">
@@ -370,7 +389,7 @@ try {
         let formData = new FormData();
         formData.append('email', email);
 
-        fetch('<?= BASE_URL ?>news/subscribe', {
+        fetch('/vinfast/news/subscribe', {
             method: 'POST',
             body: formData
         })

@@ -18,7 +18,6 @@
  */
 ?>
 <?php
-
 $totalNews     = News::count();
 $publishedNews = News::count('', '', 'Hiển thị');
 $hiddenNews    = News::count('', '', 'Ẩn');
@@ -51,7 +50,7 @@ $sort = $_GET['sort'] ?? 'time';
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-white h-100 shadow-sm" style="background-color: #64748b !important; border-radius: 8px; border: none;">
+                <div class="card text-white h-100 shadow-sm" style="background-color: #64748b !important; border: none;">
                     <div class="card-body p-4">
                         <div class="text-white-50 text-uppercase font-weight-bold mb-2" style="font-size: 13px;">Đã ẩn</div>
                         <h2 class="font-weight-bold text-white mb-0" style="font-size: 2.5rem;"><?= number_format($hiddenNews) ?></h2>
@@ -62,19 +61,25 @@ $sort = $_GET['sort'] ?? 'time';
 
         <div class="card mb-4 shadow-sm" style="border-radius: 8px; border: none;">
             <div class="card-body">
-                <form action="<?= ADMIN_URL ?>news" method="GET" class="d-flex align-items-center w-100" style="gap: 15px;">
-                    <input type="text" name="q" value="<?= htmlspecialchars($q ?? '') ?>" placeholder="Tìm tiêu đề..." class="form-control" style="max-width: 300px;">
-                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-                    <?php if (!empty($q)): ?>
-                        <a href="<?= ADMIN_URL ?>news" class="text-danger ml-2">Xóa lọc</a>
-                    <?php endif; ?>
-                    
-                    <div class="ml-auto d-flex align-items-center" style="gap: 15px;">
-                        <select name="sort" class="form-control" onchange="this.form.submit()" style="min-width: 200px; cursor: pointer; border: 1px solid #ced4da; background-color: #f8f9fa;">
-                            <option value="time" <?= $sort === 'time' ? 'selected' : '' ?>>Sắp xếp: Thời gian đăng</option>
-                            <option value="id_asc" <?= $sort === 'id_asc' ? 'selected' : '' ?>>Sắp xếp: ID Tăng dần</option>
-                        </select>
-                        <a href="<?= ADMIN_URL ?>news/create" class="btn btn-success text-nowrap">+ Thêm bài viết</a>
+                <form action="<?= ADMIN_URL ?>news" method="GET" class="w-100 m-0">
+                    <div class="row align-items-center" style="row-gap: 15px;">
+                        
+                        <div class="col-12 col-md-5 d-flex align-items-center" style="gap: 10px;">
+                            <input type="text" name="q" value="<?= htmlspecialchars($q ?? '') ?>" placeholder="Tìm tiêu đề..." class="form-control">
+                            <button type="submit" class="btn btn-primary text-nowrap">Tìm kiếm</button>
+                            <?php if (!empty($q)): ?>
+                                <a href="<?= ADMIN_URL ?>news" class="text-danger text-nowrap">Xóa lọc</a>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="col-12 col-md-7 d-flex flex-column flex-sm-row justify-content-md-end align-items-stretch align-items-sm-center" style="gap: 10px;">
+                            <select name="sort" class="form-control" onchange="this.form.submit()" style="max-width: 100%; width: auto; cursor: pointer; border: 1px solid #ced4da; background-color: #f8f9fa;">
+                                <option value="time" <?= $sort === 'time' ? 'selected' : '' ?>>Sắp xếp: Thời gian đăng</option>
+                                <option value="id_asc" <?= $sort === 'id_asc' ? 'selected' : '' ?>>Sắp xếp: ID Tăng dần</option>
+                            </select>
+                            <a href="<?= ADMIN_URL ?>news/create" class="btn btn-success text-nowrap text-center">+ Thêm bài viết</a>
+                        </div>
+                        
                     </div>
                 </form>
             </div>
@@ -111,12 +116,35 @@ $sort = $_GET['sort'] ?? 'time';
                                             
                                             <td class="text-left align-middle" style="max-width: 250px;">
                                                 <div class="d-flex align-items-center">
+                                                    
                                                     <?php 
-                                                        $thumbnail = !empty($art['thumbnail']) ? $art['thumbnail'] : (!empty($art['img_link']) ? $art['img_link'] : '');
-                                                        $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($thumbnail, '/'));
-                                                        $imgUrl = !empty($cleanPath) ? BASE_URL . $cleanPath : 'https://via.placeholder.com/150x100?text=No+Image';
+                                                        $thumbUrl = '';
+                                                        $extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                                                        
+                                                        foreach ($extensions as $ext) {
+                                                            if (file_exists(ROOT . "/public/images/news/{$art['id']}/thumbnail.{$ext}")) {
+                                                                $thumbUrl = BASE_URL . "public/images/news/{$art['id']}/thumbnail.{$ext}";
+                                                                break;
+                                                            }
+                                                        }
+                                                        
+                                                        if ($thumbUrl === '') {
+                                                            foreach ($extensions as $ext) {
+                                                                if (file_exists(ROOT . "/public/images/news/{$art['id']}/1.{$ext}")) {
+                                                                    $thumbUrl = BASE_URL . "public/images/news/{$art['id']}/1.{$ext}";
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        
+                                                        if ($thumbUrl === '') {
+                                                            $dbImage = !empty($art['img_link']) ? str_replace('\\', '/', $art['img_link']) : '';
+                                                            $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($dbImage, '/'));
+                                                            $thumbUrl = !empty($cleanPath) ? BASE_URL . $cleanPath : 'https://via.placeholder.com/150x100?text=No+Image';
+                                                        }
                                                     ?>
-                                                    <img src="<?= htmlspecialchars($imgUrl) ?>" alt="Thumbnail" style="width: 60px; height: 45px; object-fit: cover; border-radius: 4px; flex-shrink: 0;" class="mr-3">
+                                                    <img src="<?= htmlspecialchars($thumbUrl) ?>" alt="Thumbnail" style="width: 60px; height: 45px; object-fit: cover; border-radius: 4px; flex-shrink: 0;" class="mr-3 border border-gray-200 shadow-sm">
                                                     
                                                     <div style="min-width: 0; flex: 1;">
                                                         <div class="font-weight-bold text-dark text-truncate" title="<?= htmlspecialchars($art['title']) ?>">
