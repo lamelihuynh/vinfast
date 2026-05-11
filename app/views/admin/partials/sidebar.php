@@ -17,7 +17,8 @@ $isActive = static function (string $needle) use ($requestPath): bool {
 $isDashboardGroup = $isActive('/admin/dashboard');
 $isUserGroup = $isActive('/admin/users');
 $isProductGroup = $isActive('/admin/products') || $isActive('/admin/orders');
-$isContentGroup = $isActive('/admin/settings') || $isActive('/admin/contacts') || $isActive('/admin/faq') || $isActive('/admin/faq-topic') || $isActive('/admin/page-content');
+$isContentGroup = $isActive('/admin/settings') || $isActive('/admin/faq') || $isActive('/admin/faq-topic') || $isActive('/admin/page-content');
+$isContactGroup = $isActive('/admin/contacts');
 $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
 ?>
 <div class="sidebar-menu">
@@ -63,6 +64,12 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
             </ul>
           </li>
 
+          <li class="<?= $isContactGroup ? 'active' : '' ?>">
+            <a href="<?= ADMIN_URL ?>contacts">
+              <i class="ti-headphone-alt"></i><span>Liên hệ và đăng ký lái thử</span>
+            </a>
+          </li>
+
           <li class="<?= $isContentGroup ? 'active' : '' ?>">
             <a href="javascript:void(0)" aria-expanded="<?= $isContentGroup ? 'true' : 'false' ?>">
               <i class="ti-layout"></i><span>Nội dung website</span>
@@ -70,7 +77,6 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
             <ul class="collapse <?= $isContentGroup ? 'show' : '' ?>">
               <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">Trang chủ</a></li>
               <li class="<?= $isActive('/admin/page-content/about') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>page-content/about">Trang Giới Thiệu</a></li>
-              <li class="<?= $isActive('/admin/contacts') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>contacts">Trang Liên hệ</a></li>
               <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">Trang Câu Hỏi Thường Gặp</a></li>
               <li class="<?= $isActive('/admin/faq-topic') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq-topic">Trang FAQ</a></li>
             </ul>
