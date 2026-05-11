@@ -94,6 +94,7 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
         'customerName' => (string)($note['full_name'] ?? ($order['user_name'] ?? '')),
         'email' => (string)($note['email'] ?? ''),
         'phone' => (string)($note['phone'] ?? $extractPhone($order['note'] ?? '')),
+        'cccd' => (string)($note['cccd'] ?? ''),
         'productName' => (string)($order['product_name'] ?? ''),
         'price' => number_format((float)($order['price'] ?? 0), 0, ',', '.') . ' VND',
         'type' => $typeMap[(string)($order['type'] ?? '')] ?? (string)($order['type'] ?? ''),

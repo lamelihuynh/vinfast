@@ -26,6 +26,7 @@
                         <div class="fw-semibold" data-detail="customerName">--</div>
                         <div class="small text-muted" data-detail="email">--</div>
                         <div class="small text-muted" data-detail="phone">--</div>
+                        <div class="small text-muted" data-detail="cccd">--</div>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Sản phẩm</div>
@@ -35,10 +36,6 @@
                     <div class="col-md-6">
                         <div class="small text-muted">Loại đơn</div>
                         <div data-detail="type">--</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="small text-muted">Trạng thái</div>
-                        <span class="badge bg-secondary text-white" data-detail="statusBadge">--</span>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Tỉnh/Thành</div>
@@ -63,17 +60,6 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <form id="orderDetailStatusForm" method="post" action="<?= ADMIN_URL ?>orders/setstatus/0" class="d-flex gap-2 w-100 mb-2">
-                    <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
-                    <input type="hidden" name="redirect" value="index">
-                    <select name="status" class="form-select" id="orderDetailStatusSelect">
-                        <option value="pending">Chờ xử lý</option>
-                        <option value="confirmed">Đã xác nhận</option>
-                        <option value="done">Hoàn tất</option>
-                        <option value="cancelled">Đã hủy</option>
-                    </select>
-                    <button type="submit" class="btn btn-primary">Lưu trạng thái</button>
-                </form>
                 <form id="orderDetailPaymentForm" method="post" action="<?= ADMIN_URL ?>orders/setpayment/0" class="d-flex gap-2 w-100">
                     <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
                     <input type="hidden" name="redirect" value="index">
@@ -97,13 +83,6 @@
         if (!modal) {
             return;
         }
-
-        var statusClassMap = {
-            pending: 'bg-warning text-dark',
-            confirmed: 'bg-info text-dark',
-            done: 'bg-success text-white',
-            cancelled: 'bg-danger text-white'
-        };
 
         var paymentClassMap = {
             unpaid: 'bg-secondary text-white',
@@ -146,6 +125,7 @@
             setText('customerName', order.customerName || order.userName || '');
             setText('email', order.email || '');
             setText('phone', order.phone || '');
+            setText('cccd', order.cccd || '');
             setText('productName', order.productName || '');
             setText('price', order.price || '');
             setText('type', order.type || '');
@@ -155,34 +135,15 @@
             setText('payMethod', order.payMethod || '');
             setText('depositAmount', order.depositAmount || '');
 
-            var badgeEl = modal.querySelector('[data-detail="statusBadge"]');
-            if (badgeEl) {
-                badgeEl.className = 'badge ' + (statusClassMap[order.statusRaw] || 'bg-secondary text-white');
-                badgeEl.textContent = order.status || emptyValue;
-            }
-
             var paymentBadgeEl = modal.querySelector('[data-detail="paymentStatusBadge"]');
             if (paymentBadgeEl) {
                 paymentBadgeEl.className = 'badge ' + (paymentClassMap[order.paymentStatusRaw] || 'bg-secondary text-white');
                 paymentBadgeEl.textContent = order.paymentStatus || emptyValue;
             }
 
-            var statusSelect = document.getElementById('orderDetailStatusSelect');
-            if (statusSelect) {
-                statusSelect.value = order.statusRaw || 'pending';
-            }
-
             var paymentSelect = document.getElementById('orderDetailPaymentSelect');
             if (paymentSelect) {
                 paymentSelect.value = order.paymentStatusRaw || 'pending_verify';
-            }
-
-            var form = document.getElementById('orderDetailStatusForm');
-            if (form) {
-                var id = Number(order.id || 0);
-                if (id > 0) {
-                    form.setAttribute('action', '<?= ADMIN_URL ?>orders/setstatus/' + id);
-                }
             }
 
             var paymentForm = document.getElementById('orderDetailPaymentForm');

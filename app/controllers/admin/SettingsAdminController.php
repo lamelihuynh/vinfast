@@ -31,16 +31,31 @@ class SettingsAdminController
         // -----------------------------
         $payload = [
             'tagline' => trim((string)($_POST['tagline'] ?? '')),
+            'sub_tagline' => trim((string)($_POST['sub_tagline'] ?? '')),
             'address' => trim((string)($_POST['address'] ?? '')),
             'phone' => trim((string)($_POST['phone'] ?? '')),
             'email' => trim((string)($_POST['email'] ?? '')),
             'facebook_url' => trim((string)($_POST['facebook_url'] ?? '')),
             'featured_product_id' => trim((string)($_POST['featured_product_id'] ?? '')),
+            'featured_color' => trim((string)($_POST['featured_color'] ?? '')),
+            'stat1_val' => trim((string)($_POST['stat1_val'] ?? '')),
+            'stat1_lbl' => trim((string)($_POST['stat1_lbl'] ?? '')),
+            'stat2_val' => trim((string)($_POST['stat2_val'] ?? '')),
+            'stat2_lbl' => trim((string)($_POST['stat2_lbl'] ?? '')),
+            'stat3_val' => trim((string)($_POST['stat3_val'] ?? '')),
+            'stat3_lbl' => trim((string)($_POST['stat3_lbl'] ?? '')),
+            'stat4_val' => trim((string)($_POST['stat4_val'] ?? '')),
+            'stat4_lbl' => trim((string)($_POST['stat4_lbl'] ?? '')),
         ];
 
         // Basic validation (admin side)
         $v = new Validator($payload);
-        $v->maxLen('tagline', 255)->maxLen('address', 255)->maxLen('phone', 20)->maxLen('email', 150)->maxLen('facebook_url', 255);
+        $v->maxLen('tagline', 255)
+          ->maxLen('address', 255)
+          ->maxLen('phone', 20)
+          ->maxLen('email', 150)
+          ->maxLen('facebook_url', 255)
+          ->maxLen('featured_color', 20);
         if ($v->fails()) {
             $_SESSION['errors'] = array_values($v->errors());
             header('Location: ' . ADMIN_URL . 'settings');

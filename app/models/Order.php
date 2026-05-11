@@ -181,6 +181,44 @@ class Order
         return (int)($row['cnt'] ?? 0);
     }
 
+    public static function countAdminPaymentSummary(array $filters = []): array
+    {
+        global $pdo;
+
+        [$where, $params] = self::buildAdminFilters($filters);
+        $paymentStatusSql = self::paymentStatusSql();
+
+        $sql = "SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN {$paymentStatusSql} = 'unpaid' THEN 1 ELSE 0 END) AS unpaid,
+                    SUM(CASE WHEN {$paymentStatusSql} = 'pending_verify' THEN 1 ELSE 0 END) AS pending_verify,
+                    SUM(CASE WHEN {$paymentStatusSql} = 'paid' THEN 1 ELSE 0 END) AS paid,
+                    SUM(CASE WHEN {$paymentStatusSql} = 'failed' THEN 1 ELSE 0 END) AS failed,
+                    SUM(CASE WHEN {$paymentStatusSql} = 'refunded' THEN 1 ELSE 0 END) AS refunded
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                JOIN users u ON o.user_id = u.id";
+
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $stmt = $pdo->prepare($sql);
+        self::bindParams($stmt, $params);
+        $stmt->execute();
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'all' => (int)($row['total'] ?? 0),
+            'unpaid' => (int)($row['unpaid'] ?? 0),
+            'pending_verify' => (int)($row['pending_verify'] ?? 0),
+            'paid' => (int)($row['paid'] ?? 0),
+            'failed' => (int)($row['failed'] ?? 0),
+            'refunded' => (int)($row['refunded'] ?? 0),
+        ];
+    }
+
     public static function validStatuses(): array
     {
         return self::ALLOWED_STATUSES;
@@ -284,6 +322,15 @@ class Order
     {
         $json = json_encode($note, JSON_UNESCAPED_UNICODE);
         return $json !== false ? $json : '{}';
+    }
+
+    private static function paymentStatusSql(): string
+    {
+        return "CASE
+            WHEN o.note IS NULL OR TRIM(o.note) = '' THEN 'pending_verify'
+            WHEN JSON_VALID(o.note) = 0 THEN 'pending_verify'
+            ELSE COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.payment_status')), ''), 'pending_verify')
+        END";
     }
 
     private static function buildAdminFilters(array $filters = []): array

@@ -6,8 +6,6 @@ USE vinfast_db;
 DELETE FROM product_colors;
 DELETE FROM products;
 DELETE FROM page_assets;
-DELETE FROM users;
-DELETE FROM site_settings;
 DELETE FROM categories;
 -- Insert categories
 INSERT INTO categories (id, name, slug)
@@ -1397,5 +1395,4 @@ VALUES (
 ALTER TABLE categories AUTO_INCREMENT = 3;
 ALTER TABLE products AUTO_INCREMENT = 181;
 ALTER TABLE product_colors AUTO_INCREMENT = 88;
-ALTER TABLE users AUTO_INCREMENT = 2;
-ALTER TABLE site_settings AUTO_INCREMENT = 5;
+

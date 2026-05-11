@@ -60,7 +60,7 @@ if (isset($_SESSION['errors'])) {
                 </span>
             </div>
 
-            <div class="hidden flex items-start justify-between gap-3" data-summary-color-surcharge-wrap>
+            <div class="flex items-start justify-between gap-3 hidden" data-summary-color-surcharge-wrap>
                 <span class="text-slate-500 min-w-[120px]">Phụ thu màu</span>
                 <span class="min-w-0 flex-1 break-words text-right font-semibold text-slate-800" data-summary-color-surcharge>
                     <?= htmlspecialchars(number_format((float)($selectedColorSurcharge ?? 0), 0, ',', '.')) ?> VNĐ

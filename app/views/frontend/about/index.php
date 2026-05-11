@@ -8,7 +8,7 @@
  */
 
 $heroPath = '/public/images/uploads/about-page/hero_image.jpg';
-$version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
+//$version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
 $total = count($timeline ?? []);
 ?>
 
@@ -488,7 +488,7 @@ $total = count($timeline ?? []);
                     alt="Hero Image" 
                     loading="lazy" 
                     class="absolute inset-0 w-full h-full object-cover object-center" 
-                    src="<?= BASE_URL . $heroPath . '?v=' . $version_heroPath ?>"
+                    src="<?= BASE_URL . $heroPath . '?v=' . time() ?>"
                     style="position: absolute; height: 100%; width: 100%; inset: 0px; object-fit: cover; object-position: center center; color: transparent;"
                 >
                 <div class="absolute inset-0 w-full h-full bg-black/30 pointer-events-none"></div>
@@ -513,8 +513,8 @@ $total = count($timeline ?? []);
         <span class="before:content-[''] before:float-left before:h-[42px] before:w-[15%]"></span>
         <span class="before:content-[''] before:float-right before:h-[42px] before:w-[15%]"></span>
         
-        VinFast là công ty thành viên thuộc tập đoàn Vingroup, một trong những Tập đoàn Kinh tế tư nhân đa ngành lớn nhất Châu Á.
-        Với triết lý “Đặt khách hàng làm trọng tâm”, VinFast không ngừng sáng tạo để tạo ra các sản phẩm đẳng cấp và xuất sắc cho mọi người.
+        <?php echo $aboutText; ?>
+
         </h3>
         
 
@@ -611,7 +611,7 @@ $total = count($timeline ?? []);
             </div>
             </div>
 
-            <div class="card__mobile-content">2
+            <div class="card__mobile-content">
             <div class="card__text-body">
                 <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Sustainability</p>
                 <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Georgia,serif">Travel Thoughtfully</h2>
@@ -760,16 +760,29 @@ $total = count($timeline ?? []);
         <!-- Logo face -->
         <div class="aw-face-logo">
           <img class="aw-logo-img"
-               src="<?= htmlspecialchars($aw['img']) ?>"
-               alt="<?= htmlspecialchars($aw['name']) ?>"
+               src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($aw['image_path']) ?>"
+               alt="<?= htmlspecialchars($aw['title']) ?>"
                loading="lazy">
         </div>
  
         <!-- Text face (on hover) -->
         <div class="aw-face-text">
-          <p class="aw-award-name"><?= nl2br(htmlspecialchars($aw['name'])) ?></p>
-          <p class="aw-award-desc"><?= nl2br(htmlspecialchars($aw['desc'])) ?></p>
-        </div>
+
+            <p class="aw-award-name">
+              <?= (int)$aw['award_year'] ?>
+            </p>
+
+            <p class="aw-award-desc">
+              <?= htmlspecialchars($aw['title']) ?>
+            </p>
+
+            <?php if (!empty($award['description'])): ?>
+              <p class="aw-award-desc">
+                <?= nl2br(htmlspecialchars($award['description'])) ?>
+              </p>
+            <?php endif; ?>
+
+          </div>
  
       </div>
       <?php endforeach; ?>

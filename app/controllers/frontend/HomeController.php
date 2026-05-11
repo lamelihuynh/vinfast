@@ -32,6 +32,22 @@ class HomeController
         $leadProduct = null;
         if (!empty($settings['featured_product_id'])) {
             $leadProduct = Product::getById($settings['featured_product_id']);
+            
+            // If a specific color is selected in settings, try to find its corresponding image
+            if ($leadProduct && !empty($settings['featured_color'])) {
+                $targetColorHex = strtoupper(trim($settings['featured_color']));
+                $colors = $leadProduct['exterior_colors'] ?? [];
+                
+                foreach ($colors as $c) {
+                    $colorHex = strtoupper(trim((string)($c['hex'] ?? '')));
+                    if ($colorHex === $targetColorHex && !empty($c['image'])) {
+                        // Put the color-specific image at the beginning of the images array
+                        // so that ProductViewHelper::thumbUrl picks it up.
+                        array_unshift($leadProduct['images'], $c['image']);
+                        break;
+                    }
+                }
+            }
         }
         if (!$leadProduct && !empty($featured)) {
             $leadProduct = $featured[0];

@@ -65,6 +65,8 @@ $prependBase = function($path) {
             $awardImages[$year] = $asset['file_path'];
         }
 
+        $aboutAward = new AboutAward(); 
+        $awards = $aboutAward->all(); 
         // SEO
         $title = $settings['meta_about_title'] ?? 'Giới thiệu VinFast';
         $desc = $settings['meta_about_description'] ?? 'Tìm hiểu về VinFast - công ty sản xuất ô tô điện hàng đầu tại Việt Nam';
@@ -78,6 +80,7 @@ $prependBase = function($path) {
             'videoUrl' => $prependBase($heroVideo),
             'timeline' => $timeline,
             'awardImages' => array_map($prependBase, $awardImages),
+            'awards' => $awards,
             'settings' => $settings,
         ]);
     }

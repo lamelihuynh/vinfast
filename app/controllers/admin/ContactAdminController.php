@@ -14,9 +14,9 @@
  */
 class ContactAdminController {
 
-    public function index(int $page = 1): void
+    public function index(): void
     {
-        $page = max(1, (int)$page);
+        $page = max(1, (int)($_GET['page'] ?? 1));
         $section = trim((string)($_GET['section'] ?? 'contacts'));
         $status  = trim((string)($_GET['status'] ?? ''));
 
@@ -33,7 +33,7 @@ class ContactAdminController {
                 'done'      => TestDrive::countAll('done'),
                 'cancelled' => TestDrive::countAll('cancelled'),
             ];
-            $pg = new Pagination($total, $page, PER_PAGE);
+            $pg = new Pagination($total, $page, 7);
             $items = TestDrive::getPaginated($pg->current, $pg->perPage, $status);
         } else {
             $total = Contact::countAll($status);
@@ -47,6 +47,15 @@ class ContactAdminController {
             $items = Contact::getPaginated($pg->current, $pg->perPage, $status);
         }
 
+        $query = array_filter([
+            'section' => $section !== 'contacts' ? $section : null,
+            'status' => $status !== '' ? $status : null,
+        ], static function ($value): bool {
+            return $value !== null;
+        });
+        $baseQuery = http_build_query($query);
+        $pageUrl = ADMIN_URL . 'contacts/index?' . ($baseQuery !== '' ? $baseQuery . '&' : '') . 'page=';
+
         SEO::set('Customer contacts');
         View::render('admin/contacts/index', [
             'section' => $section,
@@ -54,6 +63,7 @@ class ContactAdminController {
             'counts'  => $counts,
             'items' => $items,
             'pg' => $pg,
+            'pageUrl' => $pageUrl,
         ], 'admin');
     }
 

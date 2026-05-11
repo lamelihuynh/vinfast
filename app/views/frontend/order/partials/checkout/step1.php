@@ -61,6 +61,7 @@ $initialBasePriceText = number_format($initialBasePrice, 0, ',', '.') . ' VNĐ';
 
     <input type="hidden" name="variant_name" value="<?= htmlspecialchars((string)($selectedVariant['name'] ?? $productName)) ?>" data-variant-input>
     <input type="hidden" name="interior_code" value="<?= htmlspecialchars((string)$selectedInteriorCode) ?>" data-interior-input>
+    <input type="hidden" name="color_code" value="<?= htmlspecialchars((string)$colorCode) ?>" data-color-code-input>
 
     <?php if (!empty($variantSwitchChoices) && count($variantSwitchChoices) > 1): ?>
         <div class="rounded-xl border border-slate-100 p-4">

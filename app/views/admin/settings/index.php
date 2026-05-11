@@ -176,9 +176,96 @@ $banner3 = SiteSetting::imageUrl($settings['banner_3'] ?? '', 'public/images/ban
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="col-lg-6 form-group">
+                            <label class="col-form-label font-weight-bold text-dark text-uppercase d-block border-bottom pb-1 mb-2" style="font-size: 0.9rem;">Màu chủ đạo (Featured Color)</label>
+                            
+                            <div id="productColorList" class="d-flex flex-wrap gap-2 mb-3">
+                                <!-- Colors will be rendered here by JS -->
+                                <p class="text-muted small">Hãy chọn dòng xe để xem các màu khả dụng.</p>
+                            </div>
+
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" style="background-color: <?= htmlspecialchars($settings['featured_color'] ?? '#000000') ?>; width: 45px; border: 1px solid #ddd;" id="colorPreview"></span>
+                                </div>
+                                <input type="text" class="form-control form-control-lg" name="featured_color" id="featuredColorInput" value="<?= htmlspecialchars((string)($settings['featured_color'] ?? '#000000')) ?>" placeholder="#000000" readonly>
+                            </div>
+                            <small class="form-text text-muted mt-2"><i class="ti-info-alt"></i> Chọn một trong các màu thực tế của xe để làm màu chủ đạo cho phần giới thiệu.</small>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Dữ liệu màu sắc của sản phẩm để JS xử lý -->
+            <?php
+                $productColorsMap = [];
+                foreach ($products ?? [] as $p) {
+                    $productColorsMap[$p['id']] = $p['exterior_colors'] ?? [];
+                }
+            ?>
+            <script id="productColorsData" type="application/json"><?= json_encode($productColorsMap) ?></script>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const productSelect = document.querySelector('select[name="featured_product_id"]');
+                    const colorListContainer = document.getElementById('productColorList');
+                    const colorInput = document.getElementById('featuredColorInput');
+                    const colorPreview = document.getElementById('colorPreview');
+                    const colorsData = JSON.parse(document.getElementById('productColorsData').textContent);
+
+                    function renderColors(productId) {
+                        colorListContainer.innerHTML = '';
+                        const colors = colorsData[productId] || [];
+                        
+                        if (colors.length === 0) {
+                            colorListContainer.innerHTML = '<p class="text-muted small">Dòng xe này chưa có dữ liệu màu sắc hoặc chưa chọn xe.</p>';
+                            return;
+                        }
+
+                        colors.forEach(c => {
+                            const btn = document.createElement('div');
+                            btn.className = 'color-item rounded-circle border p-1';
+                            btn.style.width = '35px';
+                            btn.style.height = '35px';
+                            btn.style.cursor = 'pointer';
+                            btn.style.backgroundColor = c.hex || '#ccc';
+                            btn.title = c.name + ' (' + c.code + ')';
+                            
+                            // Highlight if selected
+                            if (colorInput.value.toUpperCase() === (c.hex || '').toUpperCase()) {
+                                btn.classList.add('border-primary');
+                                btn.style.borderWidth = '3px';
+                            }
+
+                            btn.addEventListener('click', function() {
+                                colorInput.value = (c.hex || '#000000').toUpperCase();
+                                colorPreview.style.backgroundColor = c.hex || '#000000';
+                                
+                                // Refresh highlights
+                                document.querySelectorAll('.color-item').forEach(i => {
+                                    i.classList.remove('border-primary');
+                                    i.style.borderWidth = '1px';
+                                });
+                                btn.classList.add('border-primary');
+                                btn.style.borderWidth = '3px';
+                            });
+
+                            colorListContainer.appendChild(btn);
+                        });
+                    }
+
+                    productSelect.addEventListener('change', function() {
+                        renderColors(this.value);
+                    });
+
+                    // Initial render
+                    if (productSelect.value) {
+                        renderColors(productSelect.value);
+                    }
+                });
+            </script>
+
+
 
             <!-- KHU VỰC HOMEPAGE STATS -->
             <div class="card shadow-sm border-0 mb-4">

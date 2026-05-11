@@ -246,9 +246,7 @@ class OrderController
                 exit;
             }
 
-            $confirmationOrderId = 'VF-' . strtoupper(dechex((int)$created)) . '-' . strtoupper(substr(md5((string)microtime(true)), 0, 4));
             $_SESSION['checkout_confirmation'] = [
-                'orderId' => $confirmationOrderId,
                 'orderDbId' => (int)$created,
                 'carName' => (string)($product['name'] ?? ''),
                 'variantName' => (string)$formData['variant_name'],

@@ -261,9 +261,16 @@
 
     var colorName = checked.getAttribute('data-color-name') || checked.value || '';
     var colorImage = checked.getAttribute('data-color-image') || '';
+    var colorCode = checked.value || '';
     selectedColorSurcharge = Number(checked.getAttribute('data-color-surcharge') || 0);
     if (Number.isNaN(selectedColorSurcharge) || selectedColorSurcharge < 0) {
       selectedColorSurcharge = 0;
+    }
+
+    // Update hidden color code input
+    var colorCodeInput = form.querySelector('[data-color-code-input]');
+    if (colorCodeInput) {
+      colorCodeInput.value = colorCode;
     }
 
     if (summaryColor) {
