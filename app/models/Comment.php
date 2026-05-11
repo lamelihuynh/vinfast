@@ -8,7 +8,6 @@
  * Columns: id, user_id, news_id(nullable), product_id(nullable),
  *          body, is_approved, created_at
  */
-
 class Comment
 {
     public static function create(int $userId, int $newsId, string $body, int $rating = 5): bool 
@@ -30,7 +29,7 @@ class Comment
     {
         global $pdo;
         $stmt = $pdo->query(
-            'SELECT c.*, u.name AS author_name, 
+            'SELECT c.*, u.name AS author_name, u.avatar AS author_avatar, 
                     n.title AS news_title
                FROM comments c
                JOIN users u ON u.id = c.user_id
@@ -65,15 +64,28 @@ class Comment
     public static function getAllAdmin(): array
     {
         global $pdo;
-        
         $stmt = $pdo->query(
-            'SELECT c.*, u.name AS author_name, u.email AS author_email, 
+            'SELECT c.*, u.name AS author_name, u.email AS author_email, u.avatar AS author_avatar, 
                     n.title AS news_title
                FROM comments c
                JOIN users u ON u.id = c.user_id
           LEFT JOIN news n ON n.id = c.news_id
            ORDER BY c.created_at DESC'
         );
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public static function getApprovedByNewsId(int $newsId): array
+    {
+        global $pdo;
+        $stmt = $pdo->prepare(
+            'SELECT c.*, u.name AS author_name, u.avatar AS author_avatar 
+               FROM comments c
+               JOIN users u ON u.id = c.user_id
+              WHERE c.news_id = :news_id AND c.is_approved = 1
+           ORDER BY c.created_at DESC'
+        );
+        $stmt->execute([':news_id' => $newsId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -88,19 +100,5 @@ class Comment
             FROM comments
         ');
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'approved' => 0, 'pending' => 0];
-    }
-    
-    public static function getApprovedByNewsId(int $newsId): array
-    {
-        global $pdo;
-        $stmt = $pdo->prepare(
-            'SELECT c.*, u.name AS author_name 
-               FROM comments c
-               JOIN users u ON u.id = c.user_id
-              WHERE c.news_id = :news_id AND c.is_approved = 1
-           ORDER BY c.created_at DESC'
-        );
-        $stmt->execute([':news_id' => $newsId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 }

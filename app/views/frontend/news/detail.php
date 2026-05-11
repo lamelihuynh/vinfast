@@ -53,7 +53,17 @@ $sort = $_GET['sort'] ?? 'newest';
 </script>
 
 <style>
-    .article-body p { font-size: 1.125rem; line-height: 1.8; color: #374151; margin-bottom: 1.5rem; text-align: justify; }
+    .article-body {
+        word-break: break-all; 
+    }
+    .article-body p { 
+        font-size: 1.125rem; 
+        line-height: 1.8; 
+        color: #374151; 
+        margin-bottom: 1.5rem; 
+        text-align: left; 
+        word-break: break-all; 
+    }
     .article-body figure { margin: 2.5rem 0; text-align: center; }
     .article-body figure img { width: 100%; max-height: 600px; object-fit: cover; border-radius: 0.5rem; }
     .article-body figcaption { margin-top: 0.75rem; font-size: 0.875rem; color: #6b7280; font-style: italic; }
@@ -190,15 +200,18 @@ $sort = $_GET['sort'] ?? 'newest';
 
             <div class="space-y-6" id="commentsList">
                 <?php if (empty($reviews)): ?>
-                    <p class="text-center text-slate-400 py-10">Chưa có bình luận nào cho bài viết này.</p>
+                    <p class="text-center text-slate-400 py-10 italic">Chưa có bình luận nào cho bài viết này.</p>
                 <?php else: ?>
                     <?php foreach ($reviews as $rv): ?>
                       <article class="comment-item border-b border-slate-100 pb-6 last:border-0" data-rating="<?= (int)$rv['rating'] ?>">
                         <div class="flex items-start justify-between mb-3">
                           <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-[#102339] text-white flex items-center justify-center font-bold text-sm uppercase">
-                              <?= mb_substr(htmlspecialchars($rv['author_name'] ?? $rv['user_name'] ?? 'U'), 0, 1) ?>
-                            </div>
+                            <?php 
+                                $avatarPath = !empty($rv['author_avatar']) ? ltrim($rv['author_avatar'], '/') : 'public/images/avatars/default/default.jpg';
+                                $avatarUrl = BASE_URL . $avatarPath;
+                            ?>
+                            <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm flex-shrink-0">
+                            
                             <div>
                               <p class="m-0 text-sm font-bold text-slate-900"><?= htmlspecialchars($rv['author_name'] ?? $rv['user_name'] ?? 'User') ?></p>
                               <p class="m-0 text-[11px] text-slate-400"><?= date('d/m/Y', strtotime($rv['created_at'])) ?></p>
@@ -214,7 +227,7 @@ $sort = $_GET['sort'] ?? 'newest';
                           </div>
                         </div>
                         
-                        <p class="text-sm leading-relaxed text-slate-700 mb-4 text-justify">
+                        <p class="text-sm leading-relaxed text-slate-700 mb-4 text-left" style="word-break: break-all;">
                           <?= nl2br(htmlspecialchars($rv['body'])) ?>
                         </p>
 
@@ -284,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!regex.test(email)) {
                 alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Oh snap!</strong> Định dạng email không hợp lệ. Vui lòng kiểm tra lại.</div>`;
-                setTimeout(() => { const n = document.getElementById('temp-alert-news'); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 5000);
+                setTimeout(() => { const n = document.getElementById('temp-alert-news'); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 3000);
                 return;
             }
 
@@ -295,19 +308,20 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#d4edda] border border-[#c3e6cb] text-[#155724] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Well done!</strong> Bạn đã đăng ký nhận tin thành công!</div>`;
+                    alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#d4edda] border border-[#c3e6cb] text-[#155724] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Hoàn thành!</strong> Bạn đã đăng ký nhận tin thành công!</div>`;
                     emailInput.value = '';
                 } else {
-                    alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Oh snap!</strong> ${data.message}</div>`;
+                    alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Lỗi!</strong> ${data.message}</div>`;
                 }
-                setTimeout(() => { const n = document.getElementById('temp-alert-news'); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 5000);
+                setTimeout(() => { const n = document.getElementById('temp-alert-news'); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 3000);
             })
             .catch(err => {
-                alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Oh snap!</strong> Lỗi kết nối máy chủ!</div>`;
-                setTimeout(() => { const n = document.getElementById('temp-alert-news'); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 5000);
+                alertBox.innerHTML = `<div id="temp-alert-news" class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500"><strong>Lỗi!</strong> Lỗi kết nối máy chủ!</div>`;
+                setTimeout(() => { const n = document.getElementById('temp-alert-news'); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 3000);
             });
         });
     }
+
     const btnToggleForm = document.getElementById('btnToggleReviewForm');
     const formContainer = document.getElementById('reviewFormContainer');
     const btnCloseForm = document.getElementById('btnCloseReviewForm');
@@ -357,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
     const reviewForm = document.getElementById('formSubmitReview');
     function showCommentAlert(type, message) {
         let alertBox = document.getElementById('commentAlert');
@@ -370,11 +385,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         alertBox.innerHTML = `
             <div id="${uniqueId}" class="${isSuccess ? 'bg-[#d4edda] border-[#c3e6cb] text-[#155724]' : 'bg-[#f8d7da] border-[#f5c6cb] text-[#721c24]'} border px-4 py-2 rounded relative mb-3 text-sm transition-opacity duration-500">
-                <strong>${isSuccess ? 'Well done!' : 'Oh snap!'}</strong> ${message}
+                <strong>${isSuccess ? 'Hoàn thành!' : 'Lỗi!'}</strong> ${message}
             </div>
         `;
         alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => { const n = document.getElementById(uniqueId); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 5000);
+        setTimeout(() => { const n = document.getElementById(uniqueId); if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); } }, 3000);
     }
 
     if (reviewForm) {
@@ -422,6 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .finally(() => { submitBtn.innerText = originalText; submitBtn.disabled = false; });
         });
     }
+
     const filterBtns = document.querySelectorAll('.filter-btn');
     const commentItems = document.querySelectorAll('.comment-item');
 
@@ -493,8 +509,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }).catch(err => console.log('Lỗi vote'));
         });
     });
-
 });
 </script>
 </main>
-

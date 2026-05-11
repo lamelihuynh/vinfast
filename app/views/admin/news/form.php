@@ -132,9 +132,6 @@
         return textArea.value;
     }
 
-    /**
-     * PARSER 
-     */
     function initBlocks() {
         if (!rawBody) {
             addTextBlock(); 
@@ -172,6 +169,7 @@
         }
     }
 
+    // ĐÃ ÉP KIỂU break-all CHO Ô NHẬP TEXT ĐỂ CHỮ KHÔNG BỊ RỚT DÒNG VÔ LÝ
     function addTextBlock(content = "") {
         const blockHTML = `
             <div class="block-item bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-blue-500 relative group" data-type="text">
@@ -183,7 +181,7 @@
                         <button type="button" onclick="this.closest('.block-item').remove()" class="text-red-400 hover:text-red-600 ml-2">✕ Xóa</button>
                     </div>
                 </div>
-                <textarea class="block-content w-full border border-gray-200 rounded p-3 min-h-[100px] focus:ring-1 focus:ring-blue-500 transition" placeholder="Nhập nội dung đoạn văn (Tối thiểu 10 ký tự)..."></textarea>
+                <textarea class="block-content w-full border border-gray-200 rounded p-3 min-h-[100px] focus:ring-1 focus:ring-blue-500 transition" placeholder="Nhập nội dung đoạn văn (Tối thiểu 10 ký tự)..." style="word-break: break-all; white-space: pre-wrap;"></textarea>
             </div>
         `;
         container.insertAdjacentHTML('beforeend', blockHTML);
@@ -290,7 +288,7 @@
         });
 
         if (!isValid) {
-            showCustomAlert('danger', 'Oh snap!', "Vui lòng sửa các lỗi sau đây:\n\n" + errorMessages.join("\n"));
+            showCustomAlert('danger', 'Lỗi!', "Vui lòng sửa các lỗi sau đây:\n\n" + errorMessages.join("\n"));
             if (firstErrorElement) {
                 setTimeout(() => {
                     firstErrorElement.focus();
@@ -332,16 +330,16 @@
             
             const result = await response.json();
             if(result.status === 'success') {
-                showCustomAlert('success', 'Well done!', 'Lưu bài viết thành công! Đang chuyển hướng...');
+                showCustomAlert('success', 'Hoàn thành!', 'Lưu bài viết thành công! Đang chuyển hướng...');
                 setTimeout(() => {
                     window.location.href = '/vinfast/admin/news';
                 }, 1500);
             } else {
-                showCustomAlert('danger', 'Oh snap!', 'Lỗi từ máy chủ: ' + result.message);
+                showCustomAlert('danger', 'Lỗi!', 'Lỗi từ máy chủ: ' + result.message);
             }
         } catch (error) {
             console.error(error);
-            showCustomAlert('danger', 'Oh snap!', 'Lỗi kết nối máy chủ!');
+            showCustomAlert('danger', 'Lỗi!', 'Lỗi kết nối máy chủ!');
         }
     });
     

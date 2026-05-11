@@ -21,6 +21,12 @@
 ?>
 <!-- TODO: Implement News Listing -->
 <?php
+/**
+ * app/views/frontend/news/index.php
+ * Cập nhật: Thêm Animation "Fade Up" mượt mà cho các khối tin tức
+ */
+?>
+<?php
 $host = 'localhost';
 $db   = 'vinfast_db';
 $user = 'root';
@@ -77,6 +83,16 @@ try {
             theme: { extend: { colors: { primary: '#102339', secondary: '#c8a059' } } }
         }
     </script>
+    <style>
+        /* HIỆU ỨNG ANIMATION ĐẨY LÊN CHO TIN TỨC */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up-item {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
 </head>
 <body class="bg-white text-gray-800 font-sans">
 
@@ -193,7 +209,6 @@ try {
 
         function renderNews() {
             const grid = document.getElementById('news-grid');
-            grid.innerHTML = ''; 
             
             const filteredData = getFilteredNews();
 
@@ -207,14 +222,18 @@ try {
             const end = start + ITEMS_PER_PAGE;
             const paginatedNews = filteredData.slice(start, end);
 
+            // Bắt đầu chuỗi HTML và biến delay để tạo hiệu ứng nối tiếp
+            let htmlContent = '';
+            let delay = 0; 
+
             paginatedNews.forEach(news => {
                 const parts = news.date.split('-');
                 const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-                
                 const detailUrl = `<?= BASE_URL ?>news/read/${news.slug}`;
 
-                grid.innerHTML += `
-                    <article class="group flex flex-col h-full">
+                // Gắn class fade-up-item và animation-delay vào mỗi article
+                htmlContent += `
+                    <article class="group flex flex-col h-full fade-up-item" style="opacity: 0; animation-delay: ${delay}ms;">
                         <a href="${detailUrl}" class="overflow-hidden rounded-xl mb-4 block cursor-pointer">
                             <img src="${news.image}" alt="${news.title}" class="w-full h-56 object-cover transform group-hover:scale-105 transition duration-500">
                         </a>
@@ -238,7 +257,11 @@ try {
                         </a>
                     </article>
                 `;
+                delay += 75; // Tăng delay cho thẻ tiếp theo trượt lên sau
             });
+
+            // Gán HTML vào lưới một lần duy nhất để animation chạy mượt mà
+            grid.innerHTML = htmlContent;
 
             updatePaginationButtons(filteredData.length);
         }
@@ -317,13 +340,6 @@ try {
                     </a>
                 `;
             });
-
-            const tagsContainer = document.getElementById('tags-container');
-            if(tagsDB.length > 0) {
-                tagsDB.forEach(tag => {
-                    tagsContainer.innerHTML += `<button class="border border-gray-200 text-gray-500 text-xs px-3 py-1.5 rounded-full hover:border-gray-400 hover:text-gray-700 transition">${tag}</button>`;
-                });
-            }
         }
 
         updateCategoryCounts();
@@ -345,7 +361,7 @@ try {
         if (!regex.test(email)) {
             alertBox.innerHTML = `
                 <div class="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-2 rounded relative mb-3 text-sm">
-                    <strong>Lỗi!</strong> Định dạng email không hợp lệ. Vui lòng nhập định dạng có chứa '@' và dấu chấm '.'.
+                    <strong>Lỗi!</strong> Định dạng email không hợp lệ. Vui lòng kiểm tra lại.
                 </div>
             `;
             return;

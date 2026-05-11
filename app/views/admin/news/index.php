@@ -32,15 +32,10 @@ $sort = $_GET['sort'] ?? 'time';
 ?>
 
 <div class="row">
-    <div class="col-lg-12 mt-5">
-        <div class="mb-4">
-            <h1 class="header-title mb-1">Quản lý tin tức</h1>
-            <div class="text-muted small">Trang chủ / Sản phẩm / <span class="text-primary font-weight-bold">Tin tức</span></div>
-        </div>
-        
+    <div class="col-lg-12">
         <div class="row mb-4">
             <div class="col-md-4 mb-3 mb-md-0">
-                <div class="card text-white bg-primary h-100 shadow-sm" style="border-radius: 8px; border: none;">
+                <div class="card text-white bg-primary h-100 shadow-sm" style="border: none;">
                     <div class="card-body p-4">
                         <div class="text-white-50 text-uppercase font-weight-bold mb-2" style="font-size: 13px;">Tổng bài viết</div>
                         <h2 class="font-weight-bold text-white mb-0" style="font-size: 2.5rem;"><?= number_format($totalNews) ?></h2>
@@ -48,7 +43,7 @@ $sort = $_GET['sort'] ?? 'time';
                 </div>
             </div>
             <div class="col-md-4 mb-3 mb-md-0">
-                <div class="card text-white h-100 shadow-sm" style="background-color: #10b981 !important; border-radius: 8px; border: none;">
+                <div class="card text-white h-100 shadow-sm" style="background-color: #10b981 !important; border: none;">
                     <div class="card-body p-4">
                         <div class="text-white-50 text-uppercase font-weight-bold mb-2" style="font-size: 13px;">Đã đăng</div>
                         <h2 class="font-weight-bold text-white mb-0" style="font-size: 2.5rem;"><?= number_format($publishedNews) ?></h2>
