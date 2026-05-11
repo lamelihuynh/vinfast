@@ -150,15 +150,15 @@ if (!function_exists('vf_product_range')) {
                 </div>
             </div>
             
-            <div class="swiper vfFeaturedSwiper overflow-visible">
+            <div class="swiper vfFeaturedSwiper">
                 <div class="swiper-wrapper">
                     <?php if (!empty($featured)): ?>
                         <?php foreach ($featured as $index => $p): ?>
                             <div class="swiper-slide">
-                                <article class="vehicle-card-hover group relative overflow-hidden rounded-[2rem] bg-white p-3 shadow-lg border-2 border-slate-100 transition-all duration-500 mx-1.5">
+                                <article class="vehicle-card-hover group relative overflow-hidden rounded-[2rem] p-3 border-2 border-vfNavy/20 transition-all duration-500 mx-1.5">
                                     <a href="<?= BASE_URL ?>products/detail/<?= (int)($p['id'] ?? 0) ?>" class="block">
-                                        <div class="aspect-[16/11] bg-slate-50 overflow-hidden rounded-[1.5rem] relative">
-                                            <img src="<?= htmlspecialchars(ProductViewHelper::thumbUrl((array)$p)) ?>" alt="<?= htmlspecialchars((string)($p['name'] ?? '')) ?>" class="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                                        <div class="aspect-[16/11] overflow-hidden rounded-[1.5rem] relative">
+                                            <img src="<?= htmlspecialchars(ProductViewHelper::thumbUrl((array)$p)) ?>" alt="<?= htmlspecialchars((string)($p['name'] ?? '')) ?>" class="h-full w-full object-contain transition-transform duration-1000 group-hover:scale-110">
                                         </div>
                                         <div class="p-5">
                                             <h3 class="text-xl font-black text-vfNavy group-hover:text-[#1a4a82] transition-colors"><?= htmlspecialchars((string)($p['name'] ?? '')) ?></h3>

@@ -9,7 +9,7 @@ body.is-homepage-snap, html.is-homepage-snap {
 .snap-container {
     /* natural scrolling */
     height: auto;
-    overflow: visible;
+    overflow-x: hidden;
 }
 
 .snap-section {
