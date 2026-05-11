@@ -36,6 +36,11 @@ class Validator {
             $this->e[$f] = ucfirst($f) . ' must be a number.';
         return $this;
     }
+    public function phone(string $f): self {
+        if (!empty($this->d[$f]) && !preg_match('/^0[0-9]{9}$/', (string)$this->d[$f]))
+            $this->e[$f] = 'Số điện thoại phải bao gồm 10 chữ số và bắt đầu bằng số 0.';
+        return $this;
+    }
     public function fails(): bool   { return !empty($this->e); }
     public function errors(): array { return $this->e; }
 }

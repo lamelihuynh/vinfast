@@ -113,7 +113,7 @@ class ContactController {
         $v = new Validator($data);
         $v->required('name')->maxLen('name', 100);
         $v->required('email')->email('email')->maxLen('email', 150);
-        $v->maxLen('phone', 20);
+        $v->required('phone')->phone('phone');
         $v->required('message')->minLen('message', 10)->maxLen('message', 2000);
 
         if ($v->fails()) {
@@ -152,7 +152,7 @@ class ContactController {
         $v = new Validator($data);
         $v->required('name')->maxLen('name', 100);
         $v->required('email')->email('email')->maxLen('email', 150);
-        $v->required('phone')->maxLen('phone', 20);
+        $v->required('phone')->phone('phone');
         $v->required('product_id');
         $v->required('province');
         $v->required('showroom');
