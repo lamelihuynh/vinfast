@@ -49,28 +49,58 @@ document.addEventListener('DOMContentLoaded', () => {
         revealObserver.observe(el);
     });
 
-    // 4. Letter Reveal Helper (Original Version)
+    // 4. Letter Reveal Helper (Word-safe: no mid-word line breaks)
     function revealLetters(element) {
         if (element.dataset.revealed) return;
         const text = element.textContent.trim();
         element.innerHTML = '';
         element.style.opacity = '1';
         
-        [...text].forEach((char, i) => {
-            const span = document.createElement('span');
-            span.innerText = char === ' ' ? '\u00A0' : char;
-            span.style.display = 'inline-block';
-            span.style.opacity = '0';
-            span.style.transform = 'translateY(15px)';
-            span.style.transition = 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
-            span.style.transitionDelay = `${i * 0.03}s`;
-            element.appendChild(span);
-            
+        const words = text.split(/\s+/);
+        const allCharSpans = [];
+        let charIdx = 0;
+
+        words.forEach((word, wordIdx) => {
+            // Word wrapper: keeps all letters of a word on the same line
+            const wordSpan = document.createElement('span');
+            wordSpan.style.display = 'inline-block';
+            wordSpan.style.whiteSpace = 'nowrap';
+            // Override CSS ".letter-reveal span { opacity:0 }" on the wrapper
+            wordSpan.style.opacity = '1';
+            wordSpan.style.transform = 'none';
+
+            [...word].forEach((char) => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.style.display = 'inline-block';
+                span.style.opacity = '0';
+                span.style.transform = 'translateY(15px)';
+                span.style.transition = 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
+                span.style.transitionDelay = `${charIdx * 0.03}s`;
+                wordSpan.appendChild(span);
+                allCharSpans.push(span);
+                charIdx++;
+            });
+
+            element.appendChild(wordSpan);
+
+            // Normal space between words (browser can break lines here)
+            if (wordIdx < words.length - 1) {
+                element.appendChild(document.createTextNode(' '));
+            }
+        });
+
+        // Trigger animations AFTER everything is in the DOM
+        // Double-rAF ensures the browser paints opacity:0 first
+        requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                span.style.opacity = '1';
-                span.style.transform = 'translateY(0)';
+                allCharSpans.forEach(span => {
+                    span.style.opacity = '1';
+                    span.style.transform = 'translateY(0)';
+                });
             });
         });
+
         element.dataset.revealed = 'true';
     }
 

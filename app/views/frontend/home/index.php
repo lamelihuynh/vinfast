@@ -246,10 +246,10 @@ if (!function_exists('vf_product_range')) {
         <div class="mx-auto max-w-6xl px-4 lg:grid lg:grid-cols-2 lg:gap-20 lg:items-center">
             <div class="reveal-on-scroll relative mb-12 lg:mb-0">
                 <div class="aspect-square rounded-[3rem] overflow-hidden shadow-2xl border-4 border-slate-50">
-                    <img src="<?= htmlspecialchars($banners[0]) ?>" class="h-full w-full object-cover fade-in-scale">
+                    <img src="<?= htmlspecialchars($banners[1]) ?>" class="h-full w-full object-cover fade-in-scale">
                 </div>
                 <div class="absolute -bottom-8 -right-8 w-60 aspect-[4/3] rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl hidden sm:block">
-                    <img src="<?= htmlspecialchars($banners[1]) ?>" class="h-full w-full object-cover">
+                    <img src="<?= htmlspecialchars($banners[2]) ?>" class="h-full w-full object-cover">
                 </div>
             </div>
             
