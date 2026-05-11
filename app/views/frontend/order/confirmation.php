@@ -1,7 +1,6 @@
 <?php
 $order = isset($order) && is_array($order) ? $order : [];
 
-$orderId = (string)($order['orderId'] ?? 'VF-0000');
 $carName = (string)($order['carName'] ?? 'VinFast');
 $variantName = (string)($order['variantName'] ?? '');
 $carPrice = (float)($order['carPrice'] ?? 0);
@@ -72,21 +71,6 @@ $scripts = '';
             <h1 class="mb-2 text-white" style="font-size: 26px; font-weight: 800; letter-spacing: -0.3px;">Đã Ghi Nhận Yêu Cầu Đặt Cọc</h1>
             <p class="mb-6 text-white/70" style="font-size: 14px;">Yêu cầu của Quý khách đã được tạo. Chúng tôi sẽ xác nhận thanh toán và cập nhật trạng thái đơn sớm nhất.</p>
 
-            <div class="inline-flex items-center gap-3 rounded-xl px-5 py-3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
-                <span class="text-white/60" style="font-size: 11px; font-weight: 600; letter-spacing: 1px;">MÃ ĐẶT CỌC</span>
-                <span class="font-mono text-white" style="font-size: 16px; font-weight: 800;"><?= htmlspecialchars($orderId) ?></span>
-                <button type="button" data-copy-order class="ml-1 text-white/80 transition hover:text-white" title="Sao chép mã đặt cọc">
-                    <i class="fa-regular fa-copy"></i>
-                </button>
-            </div>
-
-            <?php if ($payMethod === 'transfer'): ?>
-                <div class="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
-                    <i class="fa-regular fa-clock text-[13px] text-yellow-400"></i>
-                    <span class="text-white/70" style="font-size: 11px; font-weight: 600;">Vui lòng hoàn thành chuyển khoản trong </span>
-                    <span class="font-mono" data-countdown="1800" style="font-size: 12px; font-weight: 700; color: #60a5fa;">30:00</span>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 
@@ -240,32 +224,6 @@ $scripts = '';
 
 <script>
     (function() {
-        var copyBtn = document.querySelector('[data-copy-order]');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', function() {
-                var text = <?= json_encode($orderId) ?>;
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).catch(function() {});
-                }
-            });
-        }
-
-        var countdown = document.querySelector('[data-countdown]');
-        if (countdown) {
-            var seconds = Number(countdown.getAttribute('data-countdown') || '0');
-            var timer = setInterval(function() {
-                if (seconds <= 0) {
-                    clearInterval(timer);
-                    countdown.textContent = '00:00';
-                    return;
-                }
-                seconds -= 1;
-                var m = String(Math.floor(seconds / 60)).padStart(2, '0');
-                var s = String(seconds % 60).padStart(2, '0');
-                countdown.textContent = m + ':' + s;
-            }, 1000);
-        }
-
         // print/share buttons removed — no client handlers required
     })();
 </script>

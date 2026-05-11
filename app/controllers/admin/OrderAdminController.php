@@ -36,13 +36,12 @@ class OrderAdminController
         $pg = new Pagination($total, $page, self::PER_PAGE);
         $orders = Order::getAdminList($filters, $pg->current, $pg->perPage);
 
-        $summary = [
-            'all' => Order::countAdminList(['q' => $q, 'status' => 'all', 'date_from' => $dateFrom, 'date_to' => $dateTo]),
-            'pending' => Order::countAdminList(['q' => $q, 'status' => 'pending', 'date_from' => $dateFrom, 'date_to' => $dateTo]),
-            'confirmed' => Order::countAdminList(['q' => $q, 'status' => 'confirmed', 'date_from' => $dateFrom, 'date_to' => $dateTo]),
-            'done' => Order::countAdminList(['q' => $q, 'status' => 'done', 'date_from' => $dateFrom, 'date_to' => $dateTo]),
-            'cancelled' => Order::countAdminList(['q' => $q, 'status' => 'cancelled', 'date_from' => $dateFrom, 'date_to' => $dateTo]),
-        ];
+        $summary = Order::countAdminPaymentSummary([
+            'q' => $q,
+            'status' => $status,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ]);
 
         $query = [];
         if ($q !== '') {

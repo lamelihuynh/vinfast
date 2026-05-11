@@ -37,14 +37,14 @@ $orders = is_iterable($ordersRaw) ? $ordersRaw : [];
       </aside>
 
       <main class="space-y-4">
-        <div class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
-          <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between gap-3">
+        <div class="flex max-h-[calc(100vh-6.5rem)] flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm lg:max-h-[calc(100vh-8rem)]">
+          <div class="sticky top-0 z-20 border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur flex items-center justify-between gap-3">
             <div>
               <h2 class="text-lg font-bold text-slate-900">Lịch sử đơn hàng</h2>
             </div>
             <a href="<?= BASE_URL ?>products" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Tiếp tục đặt xe</a>
           </div>
-          <div class="px-6 py-6">
+          <div class="flex-1 overflow-y-auto px-6 py-6 [scrollbar-gutter:stable]">
             <?php include ROOT . '/app/views/frontend/user/partials/orders-list.php'; ?>
           </div>
         </div>

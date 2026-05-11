@@ -26,6 +26,7 @@
                         <div class="fw-semibold" data-detail="customerName">--</div>
                         <div class="small text-muted" data-detail="email">--</div>
                         <div class="small text-muted" data-detail="phone">--</div>
+                        <div class="small text-muted" data-detail="cccd">--</div>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Sản phẩm</div>
@@ -124,6 +125,7 @@
             setText('customerName', order.customerName || order.userName || '');
             setText('email', order.email || '');
             setText('phone', order.phone || '');
+            setText('cccd', order.cccd || '');
             setText('productName', order.productName || '');
             setText('price', order.price || '');
             setText('type', order.type || '');
