@@ -62,6 +62,20 @@ class ContactController {
 
     public function index(): void
     {
+        // Handle pending submissions after login
+        if (Auth::check()) {
+            if (isset($_SESSION['pending_contact_msg'])) {
+                $data = $_SESSION['pending_contact_msg'];
+                unset($_SESSION['pending_contact_msg']);
+                $this->processSend($data);
+            }
+            if (isset($_SESSION['pending_test_drive'])) {
+                $data = $_SESSION['pending_test_drive'];
+                unset($_SESSION['pending_test_drive']);
+                $this->processTestDrive($data);
+            }
+        }
+
         $settings = SiteSetting::all();
         $tab = trim((string)($_GET['tab'] ?? 'contact'));
         if (!in_array($tab, ['contact', 'test-drive'], true)) {
@@ -85,7 +99,18 @@ class ContactController {
     {
         Auth::verifyCsrf();
 
-        $v = new Validator($_POST);
+        if (!Auth::check()) {
+            $_SESSION['pending_contact_msg'] = $_POST;
+            header('Location: ' . BASE_URL . 'auth/login?return_to=contact');
+            exit;
+        }
+
+        $this->processSend($_POST);
+    }
+
+    private function processSend(array $data): void
+    {
+        $v = new Validator($data);
         $v->required('name')->maxLen('name', 100);
         $v->required('email')->email('email')->maxLen('email', 150);
         $v->maxLen('phone', 20);
@@ -97,10 +122,10 @@ class ContactController {
             exit;
         }
 
-        $name = strip_tags(trim((string)($_POST['name'] ?? '')));
-        $email = strip_tags(trim((string)($_POST['email'] ?? '')));
-        $phone = strip_tags(trim((string)($_POST['phone'] ?? '')));
-        $message = strip_tags(trim((string)($_POST['message'] ?? '')));
+        $name = strip_tags(trim((string)($data['name'] ?? '')));
+        $email = strip_tags(trim((string)($data['email'] ?? '')));
+        $phone = strip_tags(trim((string)($data['phone'] ?? '')));
+        $message = strip_tags(trim((string)($data['message'] ?? '')));
 
         Contact::create($name, $email, $phone, $message);
 
@@ -113,7 +138,18 @@ class ContactController {
     {
         Auth::verifyCsrf();
 
-        $v = new Validator($_POST);
+        if (!Auth::check()) {
+            $_SESSION['pending_test_drive'] = $_POST;
+            header('Location: ' . BASE_URL . 'auth/login?return_to=contact?tab=test-drive');
+            exit;
+        }
+
+        $this->processTestDrive($_POST);
+    }
+
+    private function processTestDrive(array $data): void
+    {
+        $v = new Validator($data);
         $v->required('name')->maxLen('name', 100);
         $v->required('email')->email('email')->maxLen('email', 150);
         $v->required('phone')->maxLen('phone', 20);
@@ -129,14 +165,14 @@ class ContactController {
             exit;
         }
 
-        $name = strip_tags(trim((string)($_POST['name'] ?? '')));
-        $email = strip_tags(trim((string)($_POST['email'] ?? '')));
-        $phone = strip_tags(trim((string)($_POST['phone'] ?? '')));
-        $productId = (int)($_POST['product_id'] ?? 0);
-        $province = strip_tags(trim((string)($_POST['province'] ?? '')));
-        $showroom = strip_tags(trim((string)($_POST['showroom'] ?? '')));
-        $preferredDate = strip_tags(trim((string)($_POST['preferred_date'] ?? '')));
-        $note = strip_tags(trim((string)($_POST['note'] ?? '')));
+        $name = strip_tags(trim((string)($data['name'] ?? '')));
+        $email = strip_tags(trim((string)($data['email'] ?? '')));
+        $phone = strip_tags(trim((string)($data['phone'] ?? '')));
+        $productId = (int)($data['product_id'] ?? 0);
+        $province = strip_tags(trim((string)($data['province'] ?? '')));
+        $showroom = strip_tags(trim((string)($data['showroom'] ?? '')));
+        $preferredDate = strip_tags(trim((string)($data['preferred_date'] ?? '')));
+        $note = strip_tags(trim((string)($data['note'] ?? '')));
 
         $today = date('Y-m-d');
         if ($preferredDate < $today) {
@@ -187,4 +223,3 @@ class ContactController {
         exit;
     }
 }
-

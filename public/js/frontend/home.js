@@ -38,13 +38,41 @@ document.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('is-visible');
+                if (entry.target.classList.contains('letter-reveal')) {
+                    revealLetters(entry.target);
+                }
             }
         });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('.snap-section, .reveal-on-scroll, .fade-in-scale, .typewriter-text').forEach((el) => {
+    document.querySelectorAll('.snap-section, .reveal-on-scroll, .fade-in-scale, .typewriter-text, .letter-reveal').forEach((el) => {
         revealObserver.observe(el);
     });
+
+    // 4. Letter Reveal Helper (Original Version)
+    function revealLetters(element) {
+        if (element.dataset.revealed) return;
+        const text = element.textContent.trim();
+        element.innerHTML = '';
+        element.style.opacity = '1';
+        
+        [...text].forEach((char, i) => {
+            const span = document.createElement('span');
+            span.innerText = char === ' ' ? '\u00A0' : char;
+            span.style.display = 'inline-block';
+            span.style.opacity = '0';
+            span.style.transform = 'translateY(15px)';
+            span.style.transition = 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
+            span.style.transitionDelay = `${i * 0.03}s`;
+            element.appendChild(span);
+            
+            requestAnimationFrame(() => {
+                span.style.opacity = '1';
+                span.style.transform = 'translateY(0)';
+            });
+        });
+        element.dataset.revealed = 'true';
+    }
 
     // 5. Header Dynamic Background (on window scroll)
     window.addEventListener('scroll', () => {

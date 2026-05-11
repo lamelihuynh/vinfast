@@ -20,6 +20,10 @@ class AuthController
 
     public function login(): void
     {
+        if (isset($_GET['return_to'])) {
+            $_SESSION['return_to'] = $_GET['return_to'];
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->loginPost();
             return;
@@ -157,6 +161,14 @@ class AuthController
 
     private function redirectByRole(): void
     {
+        $returnTo = $_SESSION['return_to'] ?? $_GET['return_to'] ?? null;
+        unset($_SESSION['return_to']);
+
+        if ($returnTo) {
+            header('Location: ' . BASE_URL . ltrim($returnTo, '/'));
+            exit;
+        }
+
         if (Auth::isAdmin()) {
             header('Location: ' . ADMIN_URL . 'dashboard');
             exit;

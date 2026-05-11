@@ -85,7 +85,7 @@ if (!function_exists('vf_product_range')) {
                         <p class="reveal-on-scroll inline-flex items-center gap-2 rounded-full bg-[#FFB81C] px-3 py-1 text-[9px] font-black text-vfNavy uppercase tracking-[0.2em]">
                             <span class="h-1 w-1 rounded-full bg-vfNavy animate-pulse"></span> VINFAST GLOBAL
                         </p>
-                        <h1 class="reveal-on-scroll reveal-delay-1 mt-4 text-4xl font-black leading-[1.1] text-white sm:text-6xl lg:text-7xl">
+                        <h1 class="reveal-on-scroll reveal-delay-1 mt-4 text-4xl font-black leading-[1.1] text-white sm:text-6xl lg:text-7xl letter-reveal" style="text-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.2);">
                             <?= str_replace("\n", " ", $tagline) ?>
                         </h1>
                         <p class="reveal-on-scroll reveal-delay-2 mt-6 max-w-md text-base leading-relaxed text-white sm:text-lg break-words font-medium">
@@ -195,7 +195,7 @@ if (!function_exists('vf_product_range')) {
                     <span class="h-1 w-12 bg-[#FFB81C] rounded-full"></span>
                     <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#FFB81C]">THE NEXT-GEN EV</p>
                 </div>
-                <h3 class="mt-4 text-5xl font-black text-white leading-tight reveal-on-scroll"><?= htmlspecialchars((string)(($leadProduct['name'] ?? 'VinFast VF 9'))) ?></h3>
+                <h3 class="mt-4 text-5xl font-black text-white leading-tight reveal-on-scroll letter-reveal"><?= htmlspecialchars((string)(($leadProduct['name'] ?? 'VinFast VF 9'))) ?></h3>
                 <p class="mt-6 text-base text-white/60 leading-relaxed max-w-md"><?= htmlspecialchars($leadProduct['short_desc'] ?? 'Đẳng cấp xe điện thông minh toàn cầu, kiến tạo hành trình di chuyển xanh.') ?></p>
                 
                 <div class="mt-10 grid grid-cols-2 gap-8">
@@ -259,7 +259,7 @@ if (!function_exists('vf_product_range')) {
                     <span class="text-[10px] font-black uppercase tracking-[0.3em] text-vfNavy">HÀNH TRÌNH TIÊN PHONG</span>
                 </div>
                 
-                <h3 class="text-4xl font-black text-vfNavy leading-tight mb-8 reveal-on-scroll" style="font-family: 'Lora', serif;">
+                <h3 class="text-4xl font-black text-vfNavy leading-tight mb-8 reveal-on-scroll letter-reveal" style="font-family: 'Lora', serif;">
                     VinFast - Dẫn Đầu Kỷ Nguyên Xe Điện
                 </h3>
                 
