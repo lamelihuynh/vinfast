@@ -85,6 +85,7 @@
                     <select id="sortComment" class="form-control" style="max-width: 250px; cursor: pointer;">
                         <option value="time_desc">Sắp xếp: Mới nhất</option>
                         <option value="id_asc">Sắp xếp: ID Bài đăng tăng dần</option>
+                        <option value="rating">Sắp xếp: Đánh giá phản hồi</option>
                     </select>
                 </div>
 
@@ -116,7 +117,8 @@
                                     <?php foreach ($comments as $cmt): ?>
                                         <tr class="comment-row" 
                                             data-news-id="<?= $cmt['news_id'] ?? 0 ?>" 
-                                            data-time="<?= strtotime($cmt['created_at']) ?>">
+                                            data-time="<?= strtotime($cmt['created_at']) ?>"
+                                            data-rating="<?= (int)$cmt['rating'] ?>">
                                             
                                             <td class="align-middle">
                                                 <input type="checkbox" class="custom-cb comment-cb" value="<?= $cmt['id'] ?>">
@@ -283,6 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         matchingRows.sort((a, b) => {
             if (sortVal === 'time_desc') return b.dataset.time - a.dataset.time;
             if (sortVal === 'id_asc') return a.dataset.newsId - b.dataset.newsId;
+            if (sortVal === 'rating') return a.dataset.rating - b.dataset.rating;
             return 0;
         });
 

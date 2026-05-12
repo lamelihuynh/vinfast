@@ -76,6 +76,7 @@ $sort = $_GET['sort'] ?? 'time';
                             <select name="sort" class="form-control" onchange="this.form.submit()" style="max-width: 100%; width: auto; cursor: pointer; border: 1px solid #ced4da; background-color: #f8f9fa;">
                                 <option value="time" <?= $sort === 'time' ? 'selected' : '' ?>>Sắp xếp: Thời gian đăng</option>
                                 <option value="id_asc" <?= $sort === 'id_asc' ? 'selected' : '' ?>>Sắp xếp: ID Tăng dần</option>
+                                <option value="state" <?= $sort === 'state' ? 'selected' : '' ?>>Sắp xếp: Trạng thái tin tức</option>
                             </select>
                             <a href="<?= ADMIN_URL ?>news/create" class="btn btn-success text-nowrap text-center">+ Thêm bài viết</a>
                         </div>

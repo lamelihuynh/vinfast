@@ -87,6 +87,8 @@ class News
             $orderBy = 'n.id ASC';
         } elseif ($sort === 'popular') {
             $orderBy = 'n.views DESC';
+        } elseif ($sort === 'state') {
+            $orderBy = 'n.news_state DESC';
         } else {
             $orderBy = 'n.created_at DESC'; 
         }
