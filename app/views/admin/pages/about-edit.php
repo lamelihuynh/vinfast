@@ -18,11 +18,7 @@ $csrf = Auth::CsrfToken();
 
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-4" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="hero-tab" data-bs-toggle="tab" data-bs-target="#hero-pane" type="button" role="tab">
-                Ảnh Hero Đầu Trang
-            </button>
-        </li>
+        
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="intro-tab" data-bs-toggle="tab" data-bs-target="#intro-pane" type="button" role="tab">
                 Phần Giới Thiệu
@@ -41,39 +37,10 @@ $csrf = Auth::CsrfToken();
     </ul>
 
     <div class="tab-content">
-        <!-- Hero & Image Tab-->
-        <div class="tab-pane fade show active" id="hero-pane" role="tabpanel">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Hero Background Image</h5>
-                </div>
-                <div class="card-body">
-                    <?php if (!empty($heroImage)): ?>
-                        <div class="mb-3">
-                            <label class="form-label">Hình Ảnh Hiện Tại:</label>
-                            <p class="text-muted"><code><?= htmlspecialchars($heroImage) ?></code></p>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <form method="POST" action="<?= ADMIN_URL ?>page-content/about/save" enctype="multipart/form-data" id="heroForm">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Chọn hình ảnh mới (PNG, tối đa 5MB):</label>
-                            <input type="file" class="form-control" name="hero_image" accept="image/png, image/jpeg, image/jpg" id="heroImageInput">
-                            <small class="text-muted">Để trống nếu không muốn thay đổi</small>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" id="heroVideoBtn">
-                            <i class="fas fa-save"></i> Lưu Hình Ảnh
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Intro Tab -->
-        <div class="tab-pane fade" id="intro-pane" role="tabpanel">
+        <!-- <div class="tab-pane fade" id="intro-pane" role="tabpanel">
             <div class="card">
                 <div class="card-header">
                     <h5>Nội Dung Phần Giới Thiệu</h5>
@@ -104,8 +71,251 @@ $csrf = Auth::CsrfToken();
                     </form>
                 </div>
             </div>
-        </div>
+        </div> -->
+        
+        <div class="tab-pane fade" id="intro-pane" role="tabpanel">
 
+            <form
+                method="POST"
+                action="<?= ADMIN_URL ?>page-content/about/save"
+                enctype="multipart/form-data"
+                id="introForm"
+            >
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?= htmlspecialchars($csrf) ?>"
+                >
+
+                <!-- ================= INTRO ================= -->
+
+                <div class="card mb-4">
+
+                    <div class="card-header">
+                        <h5>Giới Thiệu Chung</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Nội dung
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                name="intro_text"
+                                rows="5"
+                            ><?= htmlspecialchars($aboutText) ?></textarea>
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Ảnh giới thiệu
+                            </label>
+
+                            <?php if (!empty($aboutImage)): ?>
+
+                                <div class="mb-2">
+                                    <img
+                                        src="<?= UPLOAD_URL . htmlspecialchars($aboutImage).'?v=' .time() ?>"
+                                        style="max-width:300px;border-radius:8px;"
+                                    >
+                                </div>
+
+                            <?php endif; ?>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                name="intro_image"
+                            >
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ================= VISION ================= -->
+
+                <div class="card mb-4">
+
+                    <div class="card-header">
+                        <h5>Tầm Nhìn</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="mb-3">
+                            <label>Tiêu đề</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="vision_title"
+                                value="<?= htmlspecialchars($visionTitle ?? '') ?>"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Nội dung</label>
+
+                            <textarea
+                                class="form-control"
+                                name="vision_text"
+                                rows="6"
+                            ><?= htmlspecialchars($visionText ?? '') ?></textarea>
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label>Ảnh</label>
+
+                            <?php if (!empty($visionImage)): ?>
+
+                                <div class="mb-2">
+                                    <img
+                                        src="<?= UPLOAD_URL . htmlspecialchars($visionImage). '?v=' .time() ?>"
+                                        style="max-width:300px;border-radius:8px;"
+                                    >
+                                </div>
+
+                            <?php endif; ?>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                name="vision_image"
+                            >
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ================= MISSION ================= -->
+
+                <div class="card mb-4">
+
+                    <div class="card-header">
+                        <h5>Sứ Mệnh</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="mb-3">
+                            <label>Tiêu đề</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="mission_title"
+                                value="<?= htmlspecialchars($missionTitle ?? '') ?>"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Nội dung</label>
+
+                            <textarea
+                                class="form-control"
+                                name="mission_text"
+                                rows="6"
+                            ><?= htmlspecialchars($missionText ?? '') ?></textarea>
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label>Ảnh</label>
+
+                            <?php if (!empty($missionImage)): ?>
+
+                                <div class="mb-2">
+                                    <img
+                                        src="<?= UPLOAD_URL . htmlspecialchars($missionImage).'?v=' .time() ?>"
+                                        style="max-width:300px;border-radius:8px;"
+                                    >
+                                </div>
+
+                            <?php endif; ?>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                name="mission_image"
+                            >
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ================= PHILOSOPHY ================= -->
+
+                <div class="card mb-4">
+
+                    <div class="card-header">
+                        <h5>Triết Lý Thương Hiệu</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="mb-3">
+                            <label>Tiêu đề</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="philosophy_title"
+                                value="<?= htmlspecialchars($philosophyTitle ?? '') ?>"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Nội dung</label>
+
+                            <textarea
+                                class="form-control"
+                                name="philosophy_text"
+                                rows="6"
+                            ><?= htmlspecialchars($philosophyText ?? '') ?></textarea>
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label>Ảnh</label>
+
+                            <?php if (!empty($philosophyImage)): ?>
+
+                                <div class="mb-2">
+                                    <img
+                                        src="<?= UPLOAD_URL . htmlspecialchars($philosophyImage).'?v='.time() ?>"
+                                        style="max-width:300px;border-radius:8px;"
+                                    >
+                                </div>
+
+                            <?php endif; ?>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                name="philosophy_image"
+                            >
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Lưu toàn bộ nội dung
+                </button>
+
+            </form>
+        </div>
         <!-- Timeline Tab -->
         <div class="tab-pane fade" id="timeline-pane" role="tabpanel">
             <div class="card">
@@ -141,7 +351,7 @@ $csrf = Auth::CsrfToken();
                                                     <div id="preview-<?= $year ?>-main" class="mb-2">
             
                                                         <?php if (isset($timelineImages[$year]['main'])): ?>
-                                                            <img src="<?= UPLOAD_URL. htmlspecialchars($timelineImages[$year]['main']) ?>" class="img-thumbnail" style="height: 100px; object-fit: cover;">
+                                                            <img src="<?= UPLOAD_URL. htmlspecialchars($timelineImages[$year]['main']).'?v='.time() ?>" class="img-thumbnail" style="height: 100px; object-fit: cover;">
                                                         <?php else: ?>
                                                             <div class="bg-light d-flex align-items-center justify-content-center border" style="height: 100px;">
                                                                 <small class="text-muted">Trống</small>
@@ -167,7 +377,7 @@ $csrf = Auth::CsrfToken();
                                                     <label class="small d-block mb-1">Ảnh phụ:</label>
                                                     <div id="preview-<?= $year ?>-secondary" class="mb-2">
                                                         <?php if (isset($timelineImages[$year]['secondary'])): ?>
-                                                            <img src="<?= UPLOAD_URL.htmlspecialchars($timelineImages[$year]['secondary']) ?>" class="img-thumbnail" style="height: 100px; object-fit: cover;">
+                                                            <img src="<?= UPLOAD_URL.htmlspecialchars($timelineImages[$year]['secondary']).'?v='.time() ?>" class="img-thumbnail" style="height: 100px; object-fit: cover;">
                                                         <?php else: ?>
                                                             <div class="bg-light d-flex align-items-center justify-content-center border" style="height: 100px;">
                                                                 <small class="text-muted">Trống</small>
@@ -218,7 +428,7 @@ $csrf = Auth::CsrfToken();
                     <div class="col-md-4 mb-4">
                         <div class="card h-100">
 
-                            <img src="<?= UPLOAD_URL . htmlspecialchars($award['image_path']) ?>"
+                            <img src="<?= UPLOAD_URL . htmlspecialchars($award['image_path']).'?v=' .time() ?>"
                                  class="card-img-top"
                                  style="height:220px; object-fit:cover;">
 
@@ -469,25 +679,29 @@ function uploadFileAjax(page, assetKey, file, inputElement) {
 }
 
 // 1. Tự động mở tab dựa trên Hash trên URL khi tải trang
+// 1. Tự động mở tab dựa trên Hash trên URL HOẶC SessionStorage khi tải trang
 window.addEventListener('DOMContentLoaded', () => {
-    const hash = window.location.hash;
-    if (hash) {
-        const tabBtn = document.querySelector(`[data-bs-target="${hash}"]`);
+    // Lấy tab từ Hash hoặc từ SessionStorage
+    const targetHash = window.location.hash || sessionStorage.getItem('activeTab');
+    
+    if (targetHash) {
+        const tabBtn = document.querySelector(`[data-bs-target="${targetHash}"]`);
         if (tabBtn) {
             const tab = new bootstrap.Tab(tabBtn);
             tab.show();
         }
     }
 
-    // 2. Cập nhật Hash vào URL mỗi khi người dùng nhấn chuyển Tab
+    // 2. Cập nhật Hash vào URL và SessionStorage mỗi khi người dùng nhấn chuyển Tab
     const tabButtons = document.querySelectorAll('button[data-bs-toggle="tab"]');
     tabButtons.forEach(btn => {
         btn.addEventListener('shown.bs.tab', (e) => {
-            window.location.hash = e.target.getAttribute('data-bs-target');
+            const hash = e.target.getAttribute('data-bs-target');
+            window.location.hash = hash;
+            sessionStorage.setItem('activeTab', hash); // Lưu lại để dùng khi reload
         });
     });
 });
-
 
 // Validation cho form Hero Video
 document.getElementById('heroForm').addEventListener('submit', function(e) {
@@ -518,27 +732,99 @@ document.getElementById('heroForm').addEventListener('submit', function(e) {
 
 // Validation cho form Intro
 document.getElementById('introForm')?.addEventListener('submit', function(e) {
-    const introTextInput = document.getElementById('introTextInput');
-    const introImageInput = document.getElementById('introImageInput');
-    
-    // Ít nhất phải có text hoặc image
-    const hasText = introTextInput && introTextInput.value.trim().length > 0;
-    const hasImage = introImageInput && introImageInput.files && introImageInput.files.length > 0;
-    
-    if (!hasText && !hasImage) {
+
+    // ===== TEXT =====
+    const introText =
+        document.querySelector('[name="intro_text"]')?.value.trim();
+
+    const visionText =
+        document.querySelector('[name="vision_text"]')?.value.trim();
+
+    const missionText =
+        document.querySelector('[name="mission_text"]')?.value.trim();
+
+    const philosophyText =
+        document.querySelector('[name="philosophy_text"]')?.value.trim();
+
+    // ===== IMAGE =====
+    const introImage =
+        document.querySelector('[name="intro_image"]');
+
+    const visionImage =
+        document.querySelector('[name="vision_image"]');
+
+    const missionImage =
+        document.querySelector('[name="mission_image"]');
+
+    const philosophyImage =
+        document.querySelector('[name="philosophy_image"]');
+
+    const hasAnyText =
+        introText ||
+        visionText ||
+        missionText ||
+        philosophyText;
+
+    const hasAnyImage =
+        (introImage?.files?.length > 0) ||
+        (visionImage?.files?.length > 0) ||
+        (missionImage?.files?.length > 0) ||
+        (philosophyImage?.files?.length > 0);
+
+    // ===== VALIDATE EMPTY =====
+    if (!hasAnyText && !hasAnyImage) {
+
         e.preventDefault();
-        alert('Vui lòng nhập nội dung hoặc chọn hình ảnh!');
+
+        alert('Vui lòng nhập ít nhất một nội dung hoặc chọn ảnh!');
+
         return false;
     }
-    
-    // Kiểm tra kích thước ảnh nếu có
-    if (hasImage) {
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        if (introImageInput.files[0].size > maxSize) {
-            e.preventDefault();
-            alert('File ảnh quá lớn! Tối đa 10MB');
-            return false;
+
+    // ===== VALIDATE IMAGE SIZE =====
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const imageInputs = [
+        introImage,
+        visionImage,
+        missionImage,
+        philosophyImage
+    ];
+
+    for (const input of imageInputs) {
+
+        if (
+            input &&
+            input.files &&
+            input.files.length > 0
+        ) {
+
+            if (input.files[0].size > maxSize) {
+
+                e.preventDefault();
+
+                alert(
+                    `Ảnh "${input.name}" vượt quá 10MB`
+                );
+
+                return false;
+            }
         }
     }
+});
+
+// Cập nhật action của các form để gắn thêm hash đang active trước khi submit
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function() {
+        const activeTabBtn = document.querySelector('.nav-link.active');
+        if (activeTabBtn) {
+            const hash = activeTabBtn.getAttribute('data-bs-target');
+            // Gắn hash vào cuối URL action nếu chưa có
+            let actionUrl = this.getAttribute('action');
+            if (actionUrl && !actionUrl.includes('#')) {
+                this.setAttribute('action', actionUrl + hash);
+            }
+        }
+    });
 });
 </script>

@@ -20,7 +20,48 @@
 <?php
 $faqs = is_array($faqs ?? null) ? $faqs : [];
 ?>
+<style>
+    /* Điều chỉnh cho SRTdash trên Mobile */
+    @media (max-width: 768px) {
+        /* 1. Ẩn các cột ít quan trọng để dành chỗ cho Câu hỏi */
+        #faqDataTable th:nth-child(1), td:nth-child(1), /* STT */
+        #faqDataTable th:nth-child(4), td:nth-child(4), /* Thứ tự */
+        #faqDataTable th:nth-child(6), td:nth-child(6)  /* Ngày tạo */ {
+            display: none;
+        }
 
+        /* 2. Cố định độ rộng cột hành động để không bị nhảy hàng */
+        #faqDataTable td:last-child {
+            min-width: 100px;
+            white-space: nowrap;
+        }
+
+        /* 3. Tối ưu cột Câu hỏi */
+        #faqDataTable td:nth-child(2) {
+            text-align: left !important;
+            min-width: 150px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Giới hạn hiển thị 2 dòng */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            white-space: normal;
+        }
+
+        /* 4. Thu nhỏ padding của card trên mobile */
+        .card-body {
+            padding: 15px !important;
+        }
+
+        /* 5. Chỉnh lại header tìm kiếm của Simple-DataTable */
+        .dataTable-top {
+            display: block !important;
+        }
+        .dataTable-search {
+            float: none !important;
+            margin-top: 10px;
+        }
+    }
+</style>
 <!-- SRTdash Data Table -->
 <div class="row">
     <div class="col-12">
@@ -40,8 +81,8 @@ $faqs = is_array($faqs ?? null) ? $faqs : [];
 
                 <?php if (!empty($faqs)): ?>
                     <!-- Data Table Responsive -->
-                    <div class="data-tables datatable-primary">
-                        <table id="faqDataTable" class="table table-hover">
+                    <div class="data-tables datatable-primary table-responsive">
+                        <table id="faqDataTable" class="table table-hover text-center">
                             <thead class="bg-light text-capitalize">
                                 <tr>
                                     <th>STT</th>

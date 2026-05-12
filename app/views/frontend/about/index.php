@@ -8,7 +8,7 @@
  */
 
 $heroPath = '/public/images/uploads/about-page/hero_image.jpg';
-//$version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
+// $version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
 $total = count($timeline ?? []);
 ?>
 
@@ -71,7 +71,7 @@ $total = count($timeline ?? []);
       font-size: 15px;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      font-family: 'Lora', serif;
+      font-family: ;
       font-weight: 500;
       text-shadow: 0 1px 6px rgba(0,0,0,0.7);
       transition: opacity 0.25s ease;
@@ -361,7 +361,7 @@ $total = count($timeline ?? []);
   /* ── Header row ──────────────────────────────────── */
   .aw-header {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     padding: 0 32px 32px;
   }
@@ -400,7 +400,7 @@ $total = count($timeline ?? []);
   .aw-card {
     /* width set by JS */
     flex-shrink: 0;
-    min-height: 164px;
+    min-height: 180px;
     border-right: 1px solid rgba(0,0,0,.12);
     position: relative;
     overflow: hidden;
@@ -422,9 +422,10 @@ $total = count($timeline ?? []);
   .aw-face-logo  { opacity: 1; }
   .aw-face-text  { opacity: 0; background: #eee8d5; }
  
+  @media (hover: hover) {
   .aw-card:hover .aw-face-logo { opacity: 0; }
   .aw-card:hover .aw-face-text { opacity: 1; }
- 
+}
   /* Logo image — grayscale, contained */
   .aw-logo-img {
     width: 100%;
@@ -457,6 +458,18 @@ $total = count($timeline ?? []);
     .aw-face-logo  { opacity: 0; }
     .aw-face-text  { opacity: 1; }
   }
+  @media (max-width: 479px) {
+  .aw-header {
+    flex-direction: column;
+    padding: 0 16px 20px;
+  }
+  .aw-nav { padding-top: 0; }
+  .aw-card { height: 200px; }
+}
+@media (min-width: 480px) and (max-width: 767px) {
+  .aw-header { padding: 0 16px 24px; }
+  .aw-card   { height: 190px; }
+}
 </style>
 
  
@@ -488,7 +501,7 @@ $total = count($timeline ?? []);
                     alt="Hero Image" 
                     loading="lazy" 
                     class="absolute inset-0 w-full h-full object-cover object-center" 
-                    src="<?= BASE_URL . $heroPath . '?v=' . time() ?>"
+                    src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($aboutImage).'?v='.time() ?>"
                     style="position: absolute; height: 100%; width: 100%; inset: 0px; object-fit: cover; object-position: center center; color: transparent;"
                 >
                 <div class="absolute inset-0 w-full h-full bg-black/30 pointer-events-none"></div>
@@ -528,20 +541,21 @@ $total = count($timeline ?? []);
         <!-- ── Card 1 ── -->
         <div class="card">
             <div class="card__img-wrap">
-            <img src="https://cdn.abercrombiekent.com/images/bsiop5ln/production/961cb889752cc9f3be22533c1a2463e33852dfd3-2048x2560.jpg?w=1440&q=75&fit=max&auto=format" alt="Travel Your Way">
+            <img src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($visionPath).'?v='.time() ?>"
+                alt="Travel Your Way">
             <div class="img-overlay"></div>
-            <span class="card__label-v">Tầm Nhìn</span>
+            <span class="card__label-v"><?= $visionTitle ?></span>
             </div>
 
             <!-- Desktop text panel -->
             <div class="card__text">
                 <div class="card__text-inner">
                     <div class="card__text-body">
-                    <p class="text-[10px] tracking-[0.22em] uppercase text-black/35 mb-3" style="font-family:'Helvetica Neue',Arial,sans-serif">Vision</p>
-                    <h2 class="text-[22px] text-black font-light italic leading-snug mb-4" style="font-family:Georgia,serif">Tầm Nhìn</h2>
+                    <p class="text-[10px] tracking-[0.22em] uppercase text-black/35 mb-3" style="font-family:'Helvetica Neue',Arial,sans-se huỳrif">Vision</p>
+                    <h2 class="text-[22px] text-black font-light italic leading-snug mb-4" style="font-family:Lora,serif"><?= $visionTitle ?></h2>
                     <div class="w-6 h-px bg-black/25 mb-4"></div>
                     <p class="text-[25px] leading-[1.8] text-black/60" style="font-family:'Lora',serif;font-weight:400">
-                        Với khát vọng đưa thương hiệu Việt vươn tầm quốc tế, VinFast hướng tới tầm nhìn trở thành hãng xe điện thông minh hàng đầu thế giới, dẫn dắt cuộc cách mạng di chuyển xanh toàn cầu. Bằng việc lấy khách hàng làm trọng tâm và không ngừng sáng tạo, chúng tôi cam kết kiến tạo một hệ sinh thái xe điện đẳng cấp, tích hợp công nghệ trí tuệ nhân tạo tiên tiến, mang đến trải nghiệm an toàn, bền vững và thông minh cho mọi người trên hành trình hướng tới một tương lai xanh.
+                      <?= $visionText ?>
                     </p>
 
                     </div>
@@ -551,10 +565,12 @@ $total = count($timeline ?? []);
             <!-- Tablet & Mobile content -->
             <div class="card__mobile-content">
             <div class="card__text-body">
-                <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Philosophy</p>
-                <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Georgia,serif">Travel Your Way</h2>
+                <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Vision</p>
+                <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Lora,serif"><?= $visionTitle ?></h2>
                 <div class="w-5 h-px bg-white/25 mb-3"></div>
-                <p class="text-[13px] leading-[1.75] text-white/55" style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:300">For six decades we have been refining the art of bespoke travel, showing every guest the world in a fresh light.</p>
+                <p class="text-[13px] leading-[1.75] text-white/55" style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:300">
+                  <?= $visionText ?>
+                </p>
             </div>
             </div>
         </div>
@@ -562,19 +578,20 @@ $total = count($timeline ?? []);
         <!-- ── Card 2 ── -->
         <div class="card">
             <div class="card__img-wrap">
-            <img src="https://cdn.abercrombiekent.com/images/bsiop5ln/production/2f2c73cb34a30abbc46f15260e808c4f48f5cf86-2048x2560.jpg?w=1440&q=75&fit=max&auto=format" alt="With You All The Way">
+            <img src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($missionPath).'?v='.time() ?>"
+              alt="Mission">
             <div class="img-overlay"></div>
-            <span class="card__label-v">Sứ Mệnh</span>
+            <span class="card__label-v"><?= $missionTitle ?></span>
             </div>
 
             <div class="card__text">
             <div class="card__text-inner">
                 <div class="card__text-body">
                 <p class="text-[10px] tracking-[0.22em] uppercase text-black/35 mb-3" style="font-family:'Helvetica Neue',Arial,sans-serif">Mission</p>
-                <h2 class="text-[22px] text-black font-light italic leading-snug mb-4" style="font-family:Georgia,serif">Sứ Mệnh</h2>
+                <h2 class="text-[22px] text-black font-light italic leading-snug mb-4" style="font-family:Lora,serif">Sứ Mệnh</h2>
                 <div class="w-6 h-px bg-black/25 mb-4"></div>
                 <p class="text-[25px] leading-[1.8] text-black/60" style="font-family:'Lora',serif;font-weight:400">
-                    Sứ mệnh của VinFast là 'Vì một cuộc sống tốt đẹp hơn cho mọi người'. chúng tôi không chỉ sản xuất những chiếc xe, mà còn tiên phong thúc đẩy lối sống bền vững thông qua các giải pháp di chuyển thông minh, an toàn và thân thiện với môi trường. Bằng tinh thần quyết liệt, tốc độ và cam kết không ngừng đổi mới, VinFast nỗ lực phá bỏ mọi rào cản để xe điện trở nên dễ tiếp cận hơn cho mọi khách hàng, từ đó chung tay kiến tạo một tương lai xanh và bền vững cho các thế hệ mai sau.
+                  <?= $missionText ?>
                 </p>
                 </div>
             </div>
@@ -582,10 +599,14 @@ $total = count($timeline ?? []);
 
             <div class="card__mobile-content">
             <div class="card__text-body">
-                <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Support</p>
-                <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Georgia,serif">Sứ</h2>
+                <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Mission</p>
+                <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Georgia,serif">
+                  <?= $missionTitle ?>
+                </h2>
                 <div class="w-5 h-px bg-white/25 mb-3"></div>
-                <p class="text-[13px] leading-[1.75] text-white/55" style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:300">From the moment you begin planning to the day you return home, our team is by your side around the clock.</p>
+                <p class="text-[13px] leading-[1.75] text-white/55" style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:300">
+                  <?= $missionText ?>
+                </p>
             </div>
             </div>
         </div>
@@ -593,19 +614,24 @@ $total = count($timeline ?? []);
         <!-- ── Card 3 ── -->
         <div class="card">
             <div class="card__img-wrap">
-            <img src="https://cdn.abercrombiekent.com/images/bsiop5ln/production/70932a47c5cc8f9c64b593cf498af5e5b2fa9537-2048x2560.jpg?w=1440&q=75&fit=max&auto=format" alt="Travel Thoughtfully">
+            <img src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($philosophyPath).'?v='.time() ?>"
+              alt="Travel Thoughtfully">
             <div class="img-overlay"></div>
-            <span class="card__label-v">Triết Lý Thương Hiệu</span>
+            <span class="card__label-v">
+              <?= $philosophyTitle ?>
+            </span>
             </div>
 
             <div class="card__text">
             <div class="card__text-inner">
                 <div class="card__text-body">
                 <p class="text-[10px] tracking-[0.22em] uppercase text-black/35 mb-3" style="font-family:'Helvetica Neue',Arial,sans-serif">Brand Philosophy</p>
-                <h2 class="text-[22px] text-black font-light italic leading-snug mb-4" style="font-family:Georgia,serif">Triết Lý Thương Hiệu</h2>
+                <h2 class="text-[22px] text-black font-light italic leading-snug mb-4" style="font-family:Lora,serif">
+                  <?= $philosophyTitle ?>
+                </h2>
                 <div class="w-6 h-px bg-black/25 mb-4"></div>
                 <p class="text-[25px] leading-[1.8] text-black/60" style="font-family:'Lora', serif;font-weight:400">
-                    Triết lý thương hiệu của VinFast được xây dựng trên ba trụ cột chính: 'Đặt khách hàng làm trọng tâm', 'Đổi mới không ngừng' và 'Cam kết chất lượng đẳng cấp'. Chúng tôi tin rằng công nghệ tiên tiến nhất chỉ thực sự có giá trị khi nó phục vụ cuộc sống và mang lại lợi ích cho cộng đồng. Với VinFast, mỗi chiếc xe không chỉ là phương tiện di chuyển, mà là một không gian sống thông minh, nơi mọi giới hạn về trải nghiệm đều được phá bỏ để mang lại sự hài lòng tối đa và niềm tự hào cho chủ sở hữu.
+                  <?= $philosophyText ?>
                 </p>
                 </div>
             </div>
@@ -613,10 +639,14 @@ $total = count($timeline ?? []);
 
             <div class="card__mobile-content">
             <div class="card__text-body">
-                <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Sustainability</p>
-                <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Georgia,serif">Travel Thoughtfully</h2>
+                <p class="text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2" style="font-family:'Helvetica Neue',Arial,sans-serif">Brand Philosophy</p>
+                <h2 class="text-[19px] text-white font-light italic leading-snug mb-3" style="font-family:Lora,serif">
+                  <?= $philosophyTitle ?>
+                </h2>
                 <div class="w-5 h-px bg-white/25 mb-3"></div>
-                <p class="text-[13px] leading-[1.75] text-white/55" style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:300">Travel done responsibly is a force for good — protecting wildlife, preserving culture, and empowering communities across 30+ countries.</p>
+                <p class="text-[13px] leading-[1.75] text-white/55" style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:300">
+                  <?= $philosophyText ?>
+                </p>
             </div>
             </div>
         </div>
@@ -659,7 +689,7 @@ $total = count($timeline ?? []);
  
             <!-- Main image -->
             <div class="tl-photo-main">
-              <img src="<?= htmlspecialchars($item['img_main']) ?>"
+              <img src="<?= htmlspecialchars($item['img_main']).'?v='.time() ?>"
                    alt="<?= htmlspecialchars($item['year']) ?>"
                    loading="lazy">
             </div>
@@ -667,7 +697,7 @@ $total = count($timeline ?? []);
             <!-- Secondary image (optional) -->
             <?php if ($item['img_secondary']): ?>
             <div class="tl-photo-secondary">
-              <img src="<?= htmlspecialchars($item['img_secondary']) ?>"
+              <img src="<?= htmlspecialchars($item['img_secondary']) .'?v='.time()?>"
                    alt="<?= htmlspecialchars($item['year']) ?> secondary"
                    loading="lazy">
             </div>
@@ -760,7 +790,7 @@ $total = count($timeline ?? []);
         <!-- Logo face -->
         <div class="aw-face-logo">
           <img class="aw-logo-img"
-               src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($aw['image_path']) ?>"
+               src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($aw['image_path']) .'?v='.time()?>"
                alt="<?= htmlspecialchars($aw['title']) ?>"
                loading="lazy">
         </div>
@@ -907,7 +937,7 @@ $total = count($timeline ?? []);
     if (vw >= 1280) return 5;
     if (vw >= 1024) return 4;
     if (vw >= 768)  return 3;
-    if (vw >= 500)  return 2;
+    if (vw >= 480)  return 2;
     return 1;
   }
  
@@ -916,8 +946,13 @@ $total = count($timeline ?? []);
     const vis = visible();
     const cw  = viewport.offsetWidth / vis;
  
-    cards.forEach(c => { c.style.width = cw + 'px'; });
- 
+    const isTouch = window.matchMedia('(hover: none)').matches;
+    const ch = viewport.offsetWidth < 480 ? 200 : (isTouch ? 200 : 180);
+    cards.forEach(c => {
+      c.style.width  = cw + 'px';
+      c.style.height = ch + 'px';
+    }); 
+
     track.style.transition = animate
       ? 'transform .55s cubic-bezier(.4,0,.2,1)'
       : 'none';

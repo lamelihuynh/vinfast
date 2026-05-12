@@ -385,7 +385,7 @@
         placeholder="Tìm kiếm câu hỏi..."
         autocomplete="off"
         aria-label="Tìm kiếm FAQ">
-      <button class="faq-search-btn" onclick="faqSearch()">Tìm kiếm</button>
+      <button class="faq-search-btn" onclick="faqSearch(true)">Tìm kiếm</button>
     </div>
   </div>
 </section>
@@ -455,79 +455,8 @@
 </section>
 
 <!-- ═══════════ SUBMIT QUESTION ═══════════ -->
-<section class="submit-section">
-  <div class="submit-card">
-    <h2>Không tìm thấy câu trả lời?</h2>
-    <p>Gửi câu hỏi của bạn cho chúng tôi. Đội ngũ hỗ trợ sẽ phản hồi trong vòng 24 giờ làm việc.</p>
 
-    <form id="faq-submit-form" onsubmit="submitQuestion(event)">
-      <div class="form-row">
-        <label class="form-label">Họ và tên *</label>
-        <input class="form-control" type="text" name="name" placeholder="Nguyễn Văn A" required>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Email *</label>
-        <input class="form-control" type="email" name="email" placeholder="email@example.com" required>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Danh mục</label>
-        <select class="form-control" name="category">
-          <option value="">-- Chọn chủ đề --</option>
-          <?php foreach ($faq_groups as $grp): ?>
-          <option value="<?= htmlspecialchars($grp['id']) ?>">
-            <?= htmlspecialchars($grp['label']) ?>
-          </option>
-          <?php endforeach; ?>
-          <option value="other">Khác</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Câu hỏi của bạn *</label>
-        <textarea class="form-control" name="question"
-                  placeholder="Mô tả chi tiết câu hỏi của bạn..." required></textarea>
-      </div>
-      <button class="submit-btn" type="submit">
-        Gửi câu hỏi →
-      </button>
-    </form>
 
-    <!-- Success state -->
-    <div class="submit-success" id="submit-success">
-      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M8 12l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <p class="text-[16px] font-semibold text-[#1a1a2e]">Câu hỏi đã được gửi!</p>
-      <p class="text-[13px] text-[#6b7280] mt-1">Chúng tôi sẽ phản hồi trong vòng 24 giờ làm việc.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ CONTACT ROW ═══════════ -->
-<div class="contact-row">
-  <a class="contact-item" href="tel:19002323">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.0 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/>
-    </svg>
-    <span class="contact-title">Hotline</span>
-    <span class="contact-val">1900 23 23</span>
-  </a>
-  <a class="contact-item" href="mailto:hotro@vinfastauto.com">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-      <polyline points="22,6 12,13 2,6"/>
-    </svg>
-    <span class="contact-title">Email</span>
-    <span class="contact-val">hotro@vinfastauto.com</span>
-  </a>
-  <a class="contact-item" href="<?= defined('BASE_URL') ? BASE_URL : '/' ?>contact">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-    </svg>
-    <span class="contact-title">Chat trực tiếp</span>
-    <span class="contact-val">Liên hệ ngay</span>
-  </a>
-</div>
 
 <script>
 /* ── Accordion ────────────────────────────────────── */
@@ -566,10 +495,16 @@ function scrollToGroup(id) {
 
 /* ── Live search ───────────────────────────────────── */
 const searchInput = document.getElementById('faq-search');
-searchInput.addEventListener('input', faqSearch);
-searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') faqSearch(); });
 
-function faqSearch() {
+searchInput.addEventListener('input', () => {
+  faqSearch(false); 
+});
+
+searchInput.addEventListener('keydown', e => { 
+  if (e.key === 'Enter') faqSearch(true); 
+});
+
+function faqSearch(shouldScroll = false) {
   const q = searchInput.value.trim().toLowerCase();
   let totalVisible = 0;
 
@@ -601,6 +536,12 @@ function faqSearch() {
   });
 
   document.getElementById('faq-no-results').style.display = (q && totalVisible === 0) ? 'block' : 'none';
+  if (shouldScroll && q !== '') {
+    const target = totalVisible > 0 ? document.getElementById('faq-content') : document.getElementById('faq-no-results');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 }
 
 function highlightText(el, q) {

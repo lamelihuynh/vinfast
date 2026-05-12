@@ -42,6 +42,18 @@ class PageContentAdminController
         $aboutImage = $this->siteSetting->get('about_intro_image', '');
         $heroVideo = $this->siteSetting->get('about_hero_video', '');
 
+        $visionTitle = $this->siteSetting->get('about_vision_title', '');
+        $visionText = $this->siteSetting->get('about_vision_text', '');
+        $visionImage = $this->siteSetting->get('about_vision_image', '');
+
+        $missionTitle = $this->siteSetting->get('about_mission_title', '');
+        $missionText = $this->siteSetting->get('about_mission_text', '');
+        $missionImage = $this->siteSetting->get('about_mission_image', '');
+
+        $philosophyTitle = $this->siteSetting->get('about_philosophy_title', '');
+        $philosophyText = $this->siteSetting->get('about_philosophy_text', '');
+        $philosophyImage = $this->siteSetting->get('about_philosophy_image', '');
+        $aboutHeroImage = $this->siteSetting->get('about_intro_image', ''); 
         // Get timeline images
         $years = [2026, 2025,2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017];
 
@@ -81,7 +93,17 @@ class PageContentAdminController
             'timelineImages' => $timelineImages,
             'timelineTexts' => $timelineTexts,
             'awardImages' => $awardImages,
-            'awards'=> $awards 
+            'awards'=> $awards,
+            'visionTitle' => $visionTitle,
+            'visionText' => $visionText, 
+            'missionTitle' => $missionTitle,
+            'missionText' => $missionText, 
+            'philosophyTitle' => $philosophyTitle,
+            'philosophyText' => $philosophyText, 
+            'visionImage' => $visionImage,
+            'missionImage' => $missionImage,
+            'philosophyImage' => $philosophyImage,
+            'heroImage' => $aboutHeroImage,
         ], 'admin');
     }
 
@@ -93,6 +115,111 @@ class PageContentAdminController
     {
         Auth::requireAdmin();
         // Auth::verifyCsrf();
+
+        if (isset($_POST['vision_title'])) {
+            $this->siteSetting->set(
+                'about_vision_title',
+                trim($_POST['vision_title'] ?? '')
+            );
+        }
+
+        if (isset($_POST['vision_text'])) {
+            $this->siteSetting->set(
+                'about_vision_text',
+                trim($_POST['vision_text'] ?? '')
+            );
+        }
+
+        if (isset($_POST['mission_title'])) {
+            $this->siteSetting->set(
+                'about_mission_title',
+                trim($_POST['mission_title'] ?? '')
+            );
+        }
+
+        if (isset($_POST['mission_text'])) {
+            $this->siteSetting->set(
+                'about_mission_text',
+                trim($_POST['mission_text'] ?? '')
+            );
+        }
+
+        if (isset($_POST['philosophy_title'])) {
+            $this->siteSetting->set(
+                'about_philosophy_title',
+                trim($_POST['philosophy_title'] ?? '')
+            );
+        }
+        if (isset($_POST['philosophy_text'])) {
+            $this->siteSetting->set(
+                'about_philosophy_text',
+                trim($_POST['philosophy_text'] ?? '')
+            );
+        }
+        
+        if (
+            isset($_FILES['vision_image']) &&
+            $_FILES['vision_image']['size'] > 0
+        ) {
+
+            $upload = $this->pageAsset->upload(
+                'about',
+                'vision_image',
+                $_FILES['vision_image']
+            );
+
+            if ($upload['success']) {
+
+                $this->siteSetting->set(
+                    'about_vision_image',
+                    $upload['asset']['file_path']
+                );
+            }
+        }
+
+
+        if (
+            isset($_FILES['mission_image']) &&
+            $_FILES['mission_image']['size'] > 0
+        ) {
+
+            $upload = $this->pageAsset->upload(
+                'about',
+                'mission_image',
+                $_FILES['mission_image']
+            );
+
+            if ($upload['success']) {
+
+                $this->siteSetting->set(
+                    'about_mission_image',
+                    $upload['asset']['file_path']
+                );
+            }
+        }
+
+
+        if (
+            isset($_FILES['philosophy_image']) &&
+            $_FILES['philosophy_image']['size'] > 0
+        ) {
+
+            $upload = $this->pageAsset->upload(
+                'about',
+                'philosophy_image',
+                $_FILES['philosophy_image']
+            );
+
+            if ($upload['success']) {
+
+                $this->siteSetting->set(
+                    'about_philosophy_image',
+                    $upload['asset']['file_path']
+                );
+            }
+        }
+
+
 
         // Save text content ONLY if submitted
         if (isset($_POST['intro_text'])) {

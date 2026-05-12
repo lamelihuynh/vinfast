@@ -31,13 +31,13 @@ $topics = is_array($topics ?? null) ? $topics : [];
                 <?php if (!empty($topics)): ?>
 
                     <div class="table-responsive">
-
-                        <table class="table table-hover align-middle">
+                        
+                        <!-- CHỈ THÊM ID: id="topicDataTable" VÀO ĐÂY -->
+                        <table id="topicDataTable" class="table table-hover align-middle">
 
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Ảnh</th>
                                     <th>Tên Chủ Đề</th>
                                     <th>Slug</th>
                                     <th>Thứ Tự</th>
@@ -153,3 +153,24 @@ $topics = is_array($topics ?? null) ? $topics : [];
 
     </div>
 </div>
+
+<!-- THÊM ĐOẠN SCRIPT NÀY ĐỂ KÍCH HOẠT PHÂN TRANG -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@10/dist/style.min.css">
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@10/dist/umd/simple-datatables.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableEl = document.getElementById('topicDataTable');
+    if (tableEl) {
+        new simpleDatatables.DataTable(tableEl, {
+            perPage: 10, // Số dòng trên mỗi trang
+            labels: {
+                placeholder: "Tìm kiếm...",
+                perPage: "mục mỗi trang",
+                noRows: "Không tìm thấy dữ liệu",
+                info: "Hiển thị {start} đến {end} của {rows} mục"
+            }
+        });
+    }
+});
+</script>

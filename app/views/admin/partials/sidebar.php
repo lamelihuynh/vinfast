@@ -53,7 +53,9 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
               </li>
             </ul>
           </li>
+          
 
+          
           <li class="<?= $isProductGroup ? 'active' : '' ?>">
             <a href="javascript:void(0)" aria-expanded="<?= $isProductGroup ? 'true' : 'false' ?>">
               <i class="ti-package"></i><span> Sản phẩm và Đơn hàng</span>
@@ -77,8 +79,8 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
             <ul class="collapse <?= $isContentGroup ? 'show' : '' ?>">
               <li class="<?= $isActive('/admin/settings') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>settings">Trang chủ</a></li>
               <li class="<?= $isActive('/admin/page-content/about') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>page-content/about">Trang Giới Thiệu</a></li>
-              <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">Trang Câu Hỏi Thường Gặp</a></li>
-              <li class="<?= $isActive('/admin/faq-topic') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq-topic">Trang FAQ</a></li>
+              <li class="<?= $isActive('/admin/faq') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq">Trang FAQ</a></li>
+              <li class="<?= $isActive('/admin/faq-topic') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>faq-topic">Trang Chủ Đề FAQ</a></li>
             </ul>
           </li>
           <li class="<?= $isNewsGroup ? 'active' : '' ?>">

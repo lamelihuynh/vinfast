@@ -49,6 +49,18 @@ $prependBase = function($path) {
 
         // // Helper function to prepend BASE_URL if path starts with /
 
+        
+        $visionTitle = $settings['about_vision_title'] ?? '';
+        $visionText = $settings['about_vision_text'] ?? '';
+        $missionTitle = $settings['about_mission_title'] ?? '';
+        $missionText = $settings['about_mission_text'] ?? '';
+        $philosophyTitle = $settings['about_philosophy_title'] ?? '';
+        $philosophyText = $settings['about_philosophy_text'] ?? '';
+
+        $visionPath = $settings['about_vision_image'];
+        $missionPath = $settings['about_mission_image'];
+        $philosophyPath = $settings['about_philosophy_image'];
+        
 
         // Extract about intro content
         $aboutText = $settings['about_intro_text'] ?? '';
@@ -76,12 +88,24 @@ $prependBase = function($path) {
         // Render view
         View::render('frontend/about/index', [
             'aboutText' => $aboutText,
-            'aboutImage' => $prependBase($aboutImage),
+            'aboutImage' => $aboutImage,
             'videoUrl' => $prependBase($heroVideo),
             'timeline' => $timeline,
             'awardImages' => array_map($prependBase, $awardImages),
             'awards' => $awards,
             'settings' => $settings,
+            
+            'visionTitle' => $visionTitle, 
+            'visionText' => $visionText, 
+            'missionTitle' => $missionTitle, 
+            'missionText' => $missionText,             
+            'philosophyTitle' => $philosophyTitle, 
+            'philosophyText' => $visionText, 
+
+            'visionPath' => $visionPath, 
+            'missionPath' => $missionPath, 
+            'philosophyPath' => $philosophyPath, 
+
         ]);
     }
 }
