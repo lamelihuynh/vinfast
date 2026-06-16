@@ -11,6 +11,8 @@
     .article-content figure { margin: 2rem 0; text-align: center; }
     .article-content img { border-radius: 0.75rem; max-width: 100%; height: auto; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     .article-content figcaption { margin-top: 0.75rem; font-size: 0.875rem; color: #6b7280; font-style: italic; }
+    .collapse { visibility: visible !important; }
+    .collapse:not(.show):not(.in) { display: none !important; }
 </style>
 
 <div class="row">

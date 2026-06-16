@@ -151,13 +151,11 @@
     const thumbFileInput = document.getElementById('newsThumbnail');
     const oldThumbInput = document.getElementById('oldThumbnail');
 
-    // BÓC TÁCH THUMBNAIL TỪ MẢNG ẢNH
     let thumbIndex = existingImages.findIndex(img => img.img_link.toLowerCase().includes('thumbnail'));
     let thumbData = null;
     if (thumbIndex !== -1) {
         thumbData = existingImages.splice(thumbIndex, 1)[0];
     } else if (existingImages.length > 0) {
-        // Fallback: Lấy ảnh đầu tiên nếu ko có chữ thumbnail
         thumbData = existingImages.splice(0, 1)[0];
     }
 
@@ -170,7 +168,6 @@
         thumbPreviewContainer.classList.remove('hidden');
     }
 
-    // Preview khi chọn ảnh Thumbnail mới
     thumbFileInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
             const reader = new FileReader();

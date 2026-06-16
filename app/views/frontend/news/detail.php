@@ -53,7 +53,6 @@ $sort = $_GET['sort'] ?? 'newest';
 </script>
 
 <style>
-    /* THAY ĐỔI CSS TẠI ĐÂY ĐỂ VĂN BẢN HIỂN THỊ TỰ NHIÊN NHẤT */
     .article-body {
         overflow-wrap: anywhere; 
         word-wrap: break-word;
@@ -253,13 +252,35 @@ $sort = $_GET['sort'] ?? 'newest';
                 <div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
                     <?php foreach ($featuredNews as $fn): ?>
                         <?php 
-                            $thumbnail = $fn['thumbnail'] ?? '';
-                            $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($thumbnail, '/'));
-                            $imgUrl = !empty($cleanPath) ? BASE_URL . $cleanPath : 'https://via.placeholder.com/300x200?text=VinFast+News';
+                            $thumbUrl = '';
+                            $newsId = $fn['id'];
+                            $extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                            
+                            foreach ($extensions as $ext) {
+                                if (file_exists(ROOT . "/public/images/news/{$newsId}/thumbnail.{$ext}")) {
+                                    $thumbUrl = BASE_URL . "public/images/news/{$newsId}/thumbnail.{$ext}";
+                                    break;
+                                }
+                            }
+                            
+                            if ($thumbUrl === '') {
+                                foreach ($extensions as $ext) {
+                                    if (file_exists(ROOT . "/public/images/news/{$newsId}/1.{$ext}")) {
+                                        $thumbUrl = BASE_URL . "public/images/news/{$newsId}/1.{$ext}";
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if ($thumbUrl === '') {
+                                $dbImage = !empty($fn['img_link']) ? str_replace('\\', '/', $fn['img_link']) : '';
+                                $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($dbImage, '/'));
+                                $thumbUrl = !empty($cleanPath) ? BASE_URL . $cleanPath : 'https://via.placeholder.com/300x200?text=VinFast+News';
+                            }
                         ?>
                         <a href="<?= BASE_URL ?>news/read/<?= $fn['slug'] ?>" class="group block">
                             <div class="overflow-hidden rounded-lg mb-2 relative aspect-[3/2]">
-                                <img src="<?= htmlspecialchars($imgUrl) ?>" alt="<?= htmlspecialchars($fn['title']) ?>" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500">
+                                <img src="<?= htmlspecialchars($thumbUrl) ?>" alt="<?= htmlspecialchars($fn['title']) ?>" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500">
                             </div>
                             <h4 class="text-sm font-bold text-gray-800 line-clamp-3 group-hover:text-blue-600 transition leading-snug">
                                 <?= htmlspecialchars($fn['title']) ?>

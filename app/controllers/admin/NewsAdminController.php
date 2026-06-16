@@ -244,7 +244,6 @@ class NewsAdminController
                         $fileTmpPath = $_FILES['block_files']['tmp_name'][$index];
                         $originalName = basename($_FILES['block_files']['name'][$index]); 
                         
-                        // Đánh số từ $nextImgIndex
                         $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
                         $newFileName = $nextImgIndex . '.' . $fileExtension;
                         $nextImgIndex++; 
