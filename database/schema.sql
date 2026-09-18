@@ -162,24 +162,24 @@ CREATE TABLE IF NOT EXISTS email (
   email VARCHAR(100) NOT NULL
 ) ENGINE = InnoDB;
 -- 5. Seed Initial Data
-INSERT IGNORE INTO users (name, email, password, role)
-VALUES (
-    'Admin VinFast',
-    'admin@vinfast.vn',
-    '$2y$10$ReplaceThisWithARealBcryptHash',
-    'admin'
-  );
-INSERT IGNORE INTO categories (name, slug)
-VALUES ('Electric Motorbike', 'electric-motorbike'),
-  ('Electric Car', 'electric-car');
-INSERT IGNORE INTO site_settings (`key`, value)
-VALUES (
-    'address',
-    '627-629 Cách Mạng Tháng 8, Phường 15, Quận 10, TP. Hồ Chí Minh'
-  ),
-  ('phone', '1900 23 23 89'),
-  ('email', 'support.vn@vinfast.com'),
-  ('tagline', 'Cùng bạn bứt phá mọi giới hạn');
+-- INSERT IGNORE INTO users (name, email, password, role)
+-- VALUES (
+--     'Admin VinFast',
+--     'admin@vinfast.vn',
+--     '$2y$10$ReplaceThisWithARealBcryptHash',
+--     'admin'
+--   );
+-- INSERT IGNORE INTO categories (name, slug)
+-- VALUES ('Electric Motorbike', 'electric-motorbike'),
+--   ('Electric Car', 'electric-car');
+-- INSERT IGNORE INTO site_settings (`key`, value)
+-- VALUES (
+--     'address',
+--     '627-629 Cách Mạng Tháng 8, Phường 15, Quận 10, TP. Hồ Chí Minh'
+--   ),
+--   ('phone', '1900 23 23 89'),
+--   ('email', 'support.vn@vinfast.com'),
+--   ('tagline', 'Cùng bạn bứt phá mọi giới hạn');
 -- 6. Page asset + awards_tables. 
 CREATE TABLE IF NOT EXISTS page_assets (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
