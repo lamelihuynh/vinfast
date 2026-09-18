@@ -13,6 +13,7 @@ define('DB_NAME',    getenv('DB_NAME') ?: 'vinfast_db');
 define('DB_USER',    getenv('DB_USER') ?: 'root');
 define('DB_PASS',    getenv('DB_PASS') ?: '');
 define('DB_SSL_CA',  getenv('DB_SSL_CA') ?: '');
+define('DB_SSL_CA_CONTENT', getenv('DB_SSL_CA_CONTENT') ?: '');
 define('DB_CHARSET', 'utf8mb4');
 
 try {
@@ -23,12 +24,27 @@ try {
         PDO::ATTR_EMULATE_PREPARES   => false,
     ];
 
-    if (DB_SSL_CA !== '') {
-        if (!is_file(DB_SSL_CA) || !is_readable(DB_SSL_CA)) {
-            throw new RuntimeException('DB_SSL_CA does not point to a readable CA certificate.');
+    $sslCaPath = DB_SSL_CA;
+    if ($sslCaPath !== '' && !is_file($sslCaPath)) {
+        $secretPath = '/etc/secrets/' . basename($sslCaPath);
+        if (is_file($secretPath)) {
+            $sslCaPath = $secretPath;
+        }
+    }
+
+    if (DB_SSL_CA_CONTENT !== '') {
+        $sslCaPath = tempnam(sys_get_temp_dir(), 'aiven-ca-');
+        if ($sslCaPath === false || file_put_contents($sslCaPath, DB_SSL_CA_CONTENT) === false) {
+            throw new RuntimeException('Unable to create a temporary CA certificate file.');
+        }
+    }
+
+    if ($sslCaPath !== '') {
+        if (!is_file($sslCaPath) || !is_readable($sslCaPath)) {
+            throw new RuntimeException('DB_SSL_CA file was not found or is not readable.');
         }
 
-        $options[PDO::MYSQL_ATTR_SSL_CA] = DB_SSL_CA;
+        $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCaPath;
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
     }
 
