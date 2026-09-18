@@ -10,6 +10,9 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/public/images/avatars \
     && chmod -R 775 /var/www/html/public/images/news
 
-EXPOSE 80
+EXPOSE 10000
 
-CMD ["apache2-foreground"]
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+CMD ["docker-entrypoint.sh"]
