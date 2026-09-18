@@ -44,7 +44,7 @@ try {
     ");
     $rawNews = $stmtNews->fetchAll();
 
-    $baseDir = $_SERVER['DOCUMENT_ROOT'] . '/vinfast/public/images/news/';
+    $baseDir = ROOT . '/public/images/news/';
 
     foreach ($rawNews as $row) {
         $cleanBody = strip_tags($row['body']);
@@ -55,7 +55,7 @@ try {
 
         foreach ($extensions as $ext) {
             if (file_exists($newsDir . 'thumbnail.' . $ext)) {
-                $thumbUrl = '/vinfast/public/images/news/' . $row['id'] . '/thumbnail.' . $ext;
+                $thumbUrl = BASE_URL . 'public/images/news/' . $row['id'] . '/thumbnail.' . $ext;
                 break;
             }
         }
@@ -63,7 +63,7 @@ try {
         if ($thumbUrl === '') {
             foreach ($extensions as $ext) {
                 if (file_exists($newsDir . '1.' . $ext)) {
-                    $thumbUrl = '/vinfast/public/images/news/' . $row['id'] . '/1.' . $ext;
+                    $thumbUrl = BASE_URL . 'public/images/news/' . $row['id'] . '/1.' . $ext;
                     break;
                 }
             }
@@ -72,7 +72,7 @@ try {
         if ($thumbUrl === '') {
             $dbImage = !empty($row['img_link']) ? str_replace('\\', '/', $row['img_link']) : '';
             $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($dbImage, '/'));
-            $thumbUrl = !empty($cleanPath) ? '/vinfast/' . $cleanPath : 'https://via.placeholder.com/600x350/E5E7EB/9CA3AF?text=No+Image';
+            $thumbUrl = !empty($cleanPath) ? BASE_URL . ltrim($cleanPath, '/') : 'https://via.placeholder.com/600x350/E5E7EB/9CA3AF?text=No+Image';
         }
 
         $newsArray[] = [
@@ -121,7 +121,7 @@ try {
     <section class="bg-[#102339] py-5 px-4 sm:px-6 md:py-16 lg:px-12 w-full">
         <div class="max-w-7xl mx-5">
             <nav class="flex items-center space-x-2 text-sm sm:text-base mb-6">
-                <a href="/vinfast" class="flex items-center text-gray-400 hover:text-white transition-colors">
+                <a href="<?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>" class="flex items-center text-gray-400 hover:text-white transition-colors">
                     <svg class="w-4 h-4 mr-1.5 pb-[2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     Trang chủ
                 </a>
@@ -205,6 +205,7 @@ try {
 
     <script>
         const newsDB = <?= json_encode($newsArray, JSON_UNESCAPED_UNICODE) ?>;
+        const newsDetailBaseUrl = <?= json_encode(BASE_URL . 'news/read/', JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const tagsDB = <?= json_encode($tagsArray, JSON_UNESCAPED_UNICODE) ?>;
 
         const ITEMS_PER_PAGE = 8;
@@ -250,7 +251,7 @@ try {
             paginatedNews.forEach(news => {
                 const parts = news.date.split('-');
                 const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-                const detailUrl = `/vinfast/news/read/${news.slug}`;
+                const detailUrl = `${newsDetailBaseUrl}${news.slug}`;
 
                 htmlContent += `
                     <article class="group flex flex-col h-full fade-up-item" style="opacity: 0; animation-delay: ${delay}ms;">
@@ -351,7 +352,7 @@ try {
         function renderSidebarExtras() {
             const featuredContainer = document.getElementById('featured-news');
             newsDB.slice(0, 4).forEach(news => {
-                const detailUrl = `/vinfast/news/read/${news.slug}`;
+                const detailUrl = `${newsDetailBaseUrl}${news.slug}`;
                 featuredContainer.innerHTML += `
                     <a href="${detailUrl}" class="group block cursor-pointer">
                         <img src="${news.image}" class="w-full h-20 object-cover rounded-lg mb-2">
@@ -389,7 +390,7 @@ try {
         let formData = new FormData();
         formData.append('email', email);
 
-        fetch('/vinfast/news/subscribe', {
+        fetch('<?= BASE_URL ?>news/subscribe', { 
             method: 'POST',
             body: formData
         })
