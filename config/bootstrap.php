@@ -40,19 +40,6 @@ define('MAX_FILE_SIZE', 5 * 1024 * 1024);            // 2 MB
 define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
 
 
-require_once ROOT . '/config/database.php';
-
-// Auto-load helpers (always needed)
-foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelper', 'ProductViewHelper', 'CheckoutViewHelper'] as $h) {
-    require_once ROOT . "/app/helpers/{$h}.php";
-}
-
-// Auto-load models on demand
-spl_autoload_register(function (string $class): void {
-    $file = ROOT . "/app/models/{$class}.php";
-    if (file_exists($file)) require_once $file;
-});
-
 $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['SERVER_PORT'] ?? '') === '443');
 
@@ -76,3 +63,16 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
 }
+
+require_once ROOT . '/config/database.php';
+
+// Auto-load helpers (always needed)
+foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelper', 'ProductViewHelper', 'CheckoutViewHelper'] as $h) {
+    require_once ROOT . "/app/helpers/{$h}.php";
+}
+
+// Auto-load models on demand
+spl_autoload_register(function (string $class): void {
+    $file = ROOT . "/app/models/{$class}.php";
+    if (file_exists($file)) require_once $file;
+});
