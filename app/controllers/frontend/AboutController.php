@@ -29,12 +29,28 @@ class AboutController {
             $assetMap[$key] = $asset['file_path'];
         }
 
-$prependBase = function($path) {
-        if (empty($path)) return null;
-        // Nếu path lưu trong DB là 'about-page/file.jpg'
-        // Ta nối thành: BASE_URL + 'public/images/uploads/' + path
-        return BASE_URL . 'public/images/uploads/' . ltrim($path, '/');
-    };
+$normalizeUploadPath = function ($path): ?string {
+    $path = trim((string)$path);
+    if ($path === '') return null;
+    if (preg_match('~^https?://~i', $path)) return $path;
+
+    $path = ltrim(str_replace('\\', '/', $path), '/');
+    foreach (['public/images/uploads/', 'images/uploads/', 'uploads/'] as $prefix) {
+        if (str_starts_with($path, $prefix)) {
+            $path = substr($path, strlen($prefix));
+            break;
+        }
+    }
+
+    return $path !== '' ? $path : null;
+};
+
+$prependBase = function ($path) use ($normalizeUploadPath) {
+    $path = $normalizeUploadPath($path);
+    if ($path === null) return null;
+    if (preg_match('~^https?://~i', $path)) return $path;
+    return BASE_URL . 'public/images/uploads/' . $path;
+};
 
 
         $timeline = [];
@@ -64,7 +80,7 @@ $prependBase = function($path) {
 
         // Extract about intro content
         $aboutText = $settings['about_intro_text'] ?? '';
-        $aboutImage = $settings['about_intro_image'] ?? '';
+        $aboutImage = $normalizeUploadPath($settings['about_intro_image'] ?? '');
         $heroVideo = $settings['about_hero_video'] ?? '';
 
         
@@ -102,9 +118,9 @@ $prependBase = function($path) {
             'philosophyTitle' => $philosophyTitle, 
             'philosophyText' => $visionText, 
 
-            'visionPath' => $visionPath, 
-            'missionPath' => $missionPath, 
-            'philosophyPath' => $philosophyPath, 
+            'visionPath' => $normalizeUploadPath($visionPath),
+            'missionPath' => $normalizeUploadPath($missionPath),
+            'philosophyPath' => $normalizeUploadPath($philosophyPath),
 
         ]);
     }

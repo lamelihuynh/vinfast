@@ -60,7 +60,6 @@ class AuthController
     public function logout(): void
     {
         Auth::logout();
-        session_start();
         header('Location: ' . BASE_URL . 'auth/login');
         exit;
     }

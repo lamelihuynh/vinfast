@@ -1,5 +1,7 @@
 <?php
 
+ob_start();
+
 /**
  * config/bootstrap.php — Application Bootstrap
  * Owner: All members (common)
@@ -54,21 +56,23 @@ spl_autoload_register(function (string $class): void {
 $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['SERVER_PORT'] ?? '') === '443');
 
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => $isHttps,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-
-if (PHP_VERSION_ID >= 70300) {
-    session_start([
-        'cookie_httponly' => true,
-        'cookie_secure' => $isHttps,
-        'cookie_samesite' => 'Lax',
-        'use_strict_mode' => 1,
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
     ]);
-} else {
-    session_start();
+
+    if (PHP_VERSION_ID >= 70300) {
+        session_start([
+            'cookie_httponly' => true,
+            'cookie_secure' => $isHttps,
+            'cookie_samesite' => 'Lax',
+            'use_strict_mode' => 1,
+        ]);
+    } else {
+        session_start();
+    }
 }

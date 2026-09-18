@@ -7,9 +7,24 @@
  * Purpose: Official VinFast About page - matches vinfastauto.com/vn_vi/ve-chung-toi
  */
 
-$heroPath = '/public/images/uploads/about-page/hero_image.jpg';
+$heroPath = BASE_URL . 'public/images/uploads/about-page/hero_image.jpg';
 // $version_heroPath = filemtime($_SERVER['DOCUMENT_ROOT'] . $heroPath); 
 $total = count($timeline ?? []);
+$aboutAssetUrl = static function ($path): string {
+  $path = trim((string)$path);
+  if ($path === '') return '';
+  if (preg_match('~^https?://~i', $path)) return $path;
+
+  $path = ltrim(str_replace('\\', '/', $path), '/');
+  foreach (['public/images/uploads/', 'images/uploads/', 'uploads/'] as $prefix) {
+    if (str_starts_with($path, $prefix)) {
+      $path = substr($path, strlen($prefix));
+      break;
+    }
+  }
+
+  return BASE_URL . 'public/images/uploads/' . $path;
+};
 ?>
 
 <!DOCTYPE html>
@@ -501,7 +516,7 @@ $total = count($timeline ?? []);
                     alt="Hero Image" 
                     loading="lazy" 
                     class="absolute inset-0 w-full h-full object-cover object-center" 
-                    src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($aboutImage).'?v='.time() ?>"
+                    src="<?= htmlspecialchars($aboutAssetUrl($aboutImage), ENT_QUOTES, 'UTF-8') . '?v=' . time() ?>"
                     style="position: absolute; height: 100%; width: 100%; inset: 0px; object-fit: cover; object-position: center center; color: transparent;"
                 >
                 <div class="absolute inset-0 w-full h-full bg-black/30 pointer-events-none"></div>
@@ -541,7 +556,7 @@ $total = count($timeline ?? []);
         <!-- ── Card 1 ── -->
         <div class="card">
             <div class="card__img-wrap">
-            <img src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($visionPath).'?v='.time() ?>"
+            <img src="<?= htmlspecialchars($aboutAssetUrl($visionPath), ENT_QUOTES, 'UTF-8') . '?v=' . time() ?>"
                 alt="Travel Your Way">
             <div class="img-overlay"></div>
             <span class="card__label-v"><?= $visionTitle ?></span>
@@ -578,7 +593,7 @@ $total = count($timeline ?? []);
         <!-- ── Card 2 ── -->
         <div class="card">
             <div class="card__img-wrap">
-            <img src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($missionPath).'?v='.time() ?>"
+            <img src="<?= htmlspecialchars($aboutAssetUrl($missionPath), ENT_QUOTES, 'UTF-8') . '?v=' . time() ?>"
               alt="Mission">
             <div class="img-overlay"></div>
             <span class="card__label-v"><?= $missionTitle ?></span>
@@ -614,7 +629,7 @@ $total = count($timeline ?? []);
         <!-- ── Card 3 ── -->
         <div class="card">
             <div class="card__img-wrap">
-            <img src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($philosophyPath).'?v='.time() ?>"
+            <img src="<?= htmlspecialchars($aboutAssetUrl($philosophyPath), ENT_QUOTES, 'UTF-8') . '?v=' . time() ?>"
               alt="Travel Thoughtfully">
             <div class="img-overlay"></div>
             <span class="card__label-v">
@@ -790,7 +805,7 @@ $total = count($timeline ?? []);
         <!-- Logo face -->
         <div class="aw-face-logo">
           <img class="aw-logo-img"
-               src="<?= BASE_URL . 'public/images/uploads/'.htmlspecialchars($aw['image_path']) .'?v='.time()?>"
+               src="<?= htmlspecialchars($aboutAssetUrl($aw['image_path'] ?? ''), ENT_QUOTES, 'UTF-8') . '?v=' . time() ?>"
                alt="<?= htmlspecialchars($aw['title']) ?>"
                loading="lazy">
         </div>
