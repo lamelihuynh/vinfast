@@ -1,13 +1,17 @@
 <?php
 
 /**
- * app/models/Order.php — Deposit / Test-Drive Order Model
- * Table: orders
+ * app/models/Order.php — Deposit / Purchase Order Model
+ * Tables (PostgreSQL): orders + order_items
  * Owner: Hai Nam (Member 3)
  * Used by: ProductController, UserController, OrderAdminController
  *
- * Columns: id, user_id, product_id, type(deposit|test_drive),
- *          status(pending|confirmed|cancelled|done), note, created_at
+ * orders:      id, user_id, type(deposit|purchase), status, payment_status, subtotal_amount,
+ *              discount_amount, total_amount, coupon_id, note(JSONB), created_at, updated_at
+ * order_items: product/variant là id logic sang Mongo + snapshot tên/giá.
+ *
+ * Để view cũ không phải sửa, mọi SELECT trả thêm các khóa cũ từ item ĐẦU TIÊN của đơn:
+ *   product_id, product_name, price (đơn đặt cọc luôn có đúng 1 item).
  */
 class Order
 {
@@ -22,21 +26,68 @@ class Order
         'cancelled' => [],
     ];
 
-    private const SQL_BASE = "SELECT o.*, p.name AS product_name, p.price, u.name AS user_name, u.email
+    /** Item đầu tiên của đơn: thay cho JOIN products cũ (products giờ ở MongoDB). */
+    private const FIRST_ITEM_JOIN = "LEFT JOIN LATERAL (
+            SELECT oi.product_id, oi.variant_id, oi.product_name_snapshot AS product_name, oi.unit_price AS price
+            FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id LIMIT 1
+        ) p ON TRUE";
+
+    private const ORDER_COLUMNS = "o.id, o.user_id, o.type, o.status, o.payment_status, o.subtotal_amount,
+        o.discount_amount, o.total_amount, o.coupon_id, o.note::text AS note,
+        to_char(o.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+        to_char(o.updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at,
+        p.product_id, p.variant_id, p.product_name, p.price";
+
+    private const SQL_BASE = "SELECT " . self::ORDER_COLUMNS . ", u.name AS user_name, u.email
         FROM orders o
-        JOIN products p ON o.product_id = p.id
+        " . self::FIRST_ITEM_JOIN . "
         JOIN users u ON o.user_id = u.id";
 
+    /**
+     * Tạo đơn 1 sản phẩm (luồng đặt cọc cũ). Ghi orders + order_items trong 1 transaction.
+     * Số tiền của đơn đặt cọc = deposit_base_amount / deposit_amount trong note.
+     * (OrderService::place của T4 sẽ thay hàm này cho luồng checkout giỏ hàng.)
+     */
     public static function create($userId, $productId, $type = 'deposit', $note = null)
     {
-        global $pdo;
-        $stmt = $pdo->prepare("\n            INSERT INTO orders (user_id, product_id, type, status, note) \n            VALUES (?, ?, ?, 'pending', ?)\n        ");
-        $ok = $stmt->execute([$userId, $productId, $type, $note]);
-        if (!$ok) {
+        $product = Product::getByIdAdmin((int)$productId);
+        if (!$product) {
             return false;
         }
 
-        return (int)$pdo->lastInsertId();
+        $noteArr = self::decodeOrderNote($note);
+        if ($noteArr === [] && trim((string)$note) !== '') {
+            $noteArr = ['text' => (string)$note];
+        }
+
+        $paymentStatus = (string)($noteArr['payment_status'] ?? 'pending_verify');
+        if (!in_array($paymentStatus, self::ALLOWED_PAYMENT_STATUSES, true)) {
+            $paymentStatus = 'pending_verify';
+        }
+
+        $amount = max(0, (float)($noteArr['deposit_base_amount'] ?? $noteArr['deposit_amount'] ?? $product['price'] ?? 0));
+        $variantId = (string)$product['default_variant_id'];
+        $variantName = trim((string)($noteArr['variant_name'] ?? '')) ?: 'Tiêu chuẩn';
+        $colorCode = trim((string)($noteArr['color']['code'] ?? '')) ?: null;
+        $colorName = trim((string)($noteArr['color']['name'] ?? '')) ?: null;
+
+        try {
+            return Db::transaction(static function (PDO $pdo) use ($userId, $type, $paymentStatus, $amount, $noteArr, $product, $variantId, $variantName, $colorCode, $colorName): int {
+                $stmt = $pdo->prepare("INSERT INTO orders (user_id, type, status, payment_status, subtotal_amount, total_amount, note)
+                    VALUES (?, ?, 'pending', ?, ?, ?, CAST(? AS jsonb)) RETURNING id");
+                $stmt->execute([(int)$userId, $type === 'purchase' ? 'purchase' : 'deposit', $paymentStatus, $amount, $amount, self::encodeOrderNote($noteArr)]);
+                $orderId = (int)$stmt->fetchColumn();
+
+                $item = $pdo->prepare('INSERT INTO order_items (order_id, product_id, variant_id, product_name_snapshot, variant_name_snapshot, color_code, color_name_snapshot, unit_price, quantity)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
+                $item->execute([$orderId, (string)$product['id'], $variantId, (string)$product['name'], $variantName, $colorCode, $colorName, $amount]);
+
+                return $orderId;
+            });
+        } catch (Throwable $e) {
+            error_log('Order::create: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public static function getByUserId($userId, $page = 1, $perPage = 10)
@@ -46,7 +97,7 @@ class Order
         $perPage = max(1, (int)$perPage);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $stmt = $pdo->prepare("\n            SELECT o.*, p.name as product_name, p.price \n            FROM orders o \n            JOIN products p ON o.product_id = p.id \n            WHERE o.user_id = :user_id \n            ORDER BY o.created_at DESC\n            LIMIT :limit OFFSET :offset\n        ");
+        $stmt = $pdo->prepare("\n            SELECT " . self::ORDER_COLUMNS . "\n            FROM orders o \n            " . self::FIRST_ITEM_JOIN . "\n            WHERE o.user_id = :user_id \n            ORDER BY o.created_at DESC\n            LIMIT :limit OFFSET :offset\n        ");
         $stmt->bindValue(':user_id', (int)$userId, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -66,7 +117,7 @@ class Order
     public static function getById($id)
     {
         global $pdo;
-        $stmt = $pdo->prepare("\n            SELECT o.*, p.name as product_name, p.price, u.name as user_name, u.email \n            FROM orders o \n            JOIN products p ON o.product_id = p.id \n            JOIN users u ON o.user_id = u.id \n            WHERE o.id = ?\n        ");
+        $stmt = $pdo->prepare("\n            " . self::SQL_BASE . "\n            WHERE o.id = ?\n        ");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -78,7 +129,7 @@ class Order
         $perPage = max(1, (int)$perPage);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $stmt = $pdo->prepare("\n            SELECT o.*, p.name as product_name, u.name as user_name \n            FROM orders o \n            JOIN products p ON o.product_id = p.id \n            JOIN users u ON o.user_id = u.id \n            ORDER BY o.created_at DESC \n            LIMIT :limit OFFSET :offset\n        ");
+        $stmt = $pdo->prepare("\n            " . self::SQL_BASE . "\n            ORDER BY o.created_at DESC \n            LIMIT :limit OFFSET :offset\n        ");
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -118,10 +169,7 @@ class Order
         $perPage = max(1, (int)$perPage);
         $offset = max(0, (int)($page - 1) * $perPage);
 
-        $sql = "SELECT o.*, p.name as product_name, u.name as user_name 
-            FROM orders o 
-            JOIN products p ON o.product_id = p.id 
-            JOIN users u ON o.user_id = u.id 
+        $sql = self::SQL_BASE . "
             WHERE o.status = :status
             ORDER BY o.created_at DESC 
             LIMIT :limit OFFSET :offset";
@@ -166,7 +214,7 @@ class Order
 
         $sql = "SELECT COUNT(*) AS cnt
                 FROM orders o
-                JOIN products p ON o.product_id = p.id
+                " . self::FIRST_ITEM_JOIN . "
                 JOIN users u ON o.user_id = u.id";
 
         if (!empty($where)) {
@@ -196,7 +244,7 @@ class Order
                     SUM(CASE WHEN {$paymentStatusSql} = 'failed' THEN 1 ELSE 0 END) AS failed,
                     SUM(CASE WHEN {$paymentStatusSql} = 'refunded' THEN 1 ELSE 0 END) AS refunded
                 FROM orders o
-                JOIN products p ON o.product_id = p.id
+                " . self::FIRST_ITEM_JOIN . "
                 JOIN users u ON o.user_id = u.id";
 
         if (!empty($where)) {
@@ -251,6 +299,7 @@ class Order
         return self::ALLOWED_PAYMENT_STATUSES;
     }
 
+    /** Nhận note JSON kiểu cũ; đơn mới lưu payment_status ở cột riêng (xem getPaymentStatusById). */
     public static function getPaymentStatusFromNote($note): string
     {
         $decoded = self::decodeOrderNote($note);
@@ -269,7 +318,9 @@ class Order
             return 'pending_verify';
         }
 
-        return self::getPaymentStatusFromNote($order['note'] ?? null);
+        return in_array($order['payment_status'] ?? '', self::ALLOWED_PAYMENT_STATUSES, true)
+            ? (string)$order['payment_status']
+            : self::getPaymentStatusFromNote($order['note'] ?? null);
     }
 
     public static function updatePaymentStatus(int $orderId, string $paymentStatus): bool
@@ -299,8 +350,8 @@ class Order
         }
 
         $json = self::encodeOrderNote($note);
-        $stmt = $pdo->prepare('UPDATE orders SET note = ? WHERE id = ?');
-        return $stmt->execute([$json, $orderId]);
+        $stmt = $pdo->prepare('UPDATE orders SET payment_status = ?, note = CAST(? AS jsonb) WHERE id = ?');
+        return $stmt->execute([$paymentStatus, $json, $orderId]);
     }
 
     private static function decodeOrderNote($note): array
@@ -326,11 +377,7 @@ class Order
 
     private static function paymentStatusSql(): string
     {
-        return "CASE
-            WHEN o.note IS NULL OR TRIM(o.note) = '' THEN 'pending_verify'
-            WHEN JSON_VALID(o.note) = 0 THEN 'pending_verify'
-            ELSE COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.payment_status')), ''), 'pending_verify')
-        END";
+        return 'o.payment_status';
     }
 
     private static function buildAdminFilters(array $filters = []): array
@@ -346,7 +393,7 @@ class Order
 
         $q = trim((string)($filters['q'] ?? ''));
         if ($q !== '') {
-            $where[] = '(u.name LIKE :q1 OR u.email LIKE :q2 OR p.name LIKE :q3 OR CAST(o.id AS CHAR) LIKE :q4)';
+            $where[] = '(u.name ILIKE :q1 OR u.email ILIKE :q2 OR p.product_name ILIKE :q3 OR o.id::text LIKE :q4)';
             $params[':q1'] = '%' . $q . '%';
             $params[':q2'] = '%' . $q . '%';
             $params[':q3'] = '%' . $q . '%';
@@ -355,13 +402,13 @@ class Order
 
         $dateFrom = trim((string)($filters['date_from'] ?? ''));
         if ($dateFrom !== '' && self::isValidDate($dateFrom)) {
-            $where[] = 'DATE(o.created_at) >= :date_from';
+            $where[] = 'o.created_at >= CAST(:date_from AS date)';
             $params[':date_from'] = $dateFrom;
         }
 
         $dateTo = trim((string)($filters['date_to'] ?? ''));
         if ($dateTo !== '' && self::isValidDate($dateTo)) {
-            $where[] = 'DATE(o.created_at) <= :date_to';
+            $where[] = "o.created_at < CAST(:date_to AS date) + interval '1 day'";
             $params[':date_to'] = $dateTo;
         }
 

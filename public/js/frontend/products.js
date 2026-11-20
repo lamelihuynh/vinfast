@@ -79,6 +79,18 @@
   });
   saveSectionState(sectionState);
 
+  // Đổi loại sản phẩm (xe / phụ kiện): reset danh mục, mức giá, phạm vi
+  document.querySelectorAll('.js-type-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var typeInput = document.getElementById('filterTypeInput');
+      if (!filterForm || !typeInput) return;
+      typeInput.value = btn.getAttribute('data-type-value') || 'all';
+      if (catInput) catInput.value = '0';
+      filterForm.querySelectorAll('input[name="price"], input[name="range"]').forEach(function (i) { i.checked = i.value === 'all'; });
+      filterForm.submit();
+    });
+  });
+
   if (catButtons.length > 0 && catInput) {
     catButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {

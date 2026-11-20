@@ -27,6 +27,14 @@
                         $minPrice = $basePrice;
                         $maxPrice = $basePrice;
 
+                        $isAccessory = !empty($p['is_accessory']);
+                        $variantList = is_array($p['variants'] ?? null) ? $p['variants'] : [];
+                        if ($isAccessory && $variantList) {
+                            $variantPrices = array_map(static fn($v): float => (float)($v['price'] ?? 0), $variantList);
+                            $minPrice = min($variantPrices);
+                            $maxPrice = max($variantPrices);
+                        }
+
                         $isActive = (int)($p['is_active'] ?? 0) === 1;
                         $statusClass = $isActive ? 'bg-success' : 'bg-secondary';
                         $statusText = $isActive ? 'Hiển thị' : 'Đã ẩn';
@@ -52,6 +60,14 @@
                             </td>
                             <td>
                                 <span class="badge text-black badge-primary"><?= htmlspecialchars((string)($p['category_name'] ?? 'Chưa phân loại')) ?></span>
+                                <div class="mt-1">
+                                    <?php if ($isAccessory): ?>
+                                        <span class="badge bg-info text-dark">Phụ kiện</span>
+                                        <small class="text-muted d-block"><?= count($variantList) ?> phiên bản</small>
+                                    <?php else: ?>
+                                        <span class="badge bg-dark">Xe</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <?php if ($maxPrice > $minPrice): ?>

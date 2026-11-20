@@ -13,9 +13,10 @@ class AboutAward
     public function all(): array
     {
         $stmt = $this->pdo->query("
-            SELECT * 
-            FROM about_awards
-            ORDER BY award_year DESC, id DESC
+            SELECT a.id, a.title, a.award_year, a.image_path,
+                   to_char(a.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at
+            FROM about_awards a
+            ORDER BY a.award_year DESC, a.id DESC
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

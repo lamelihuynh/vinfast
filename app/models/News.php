@@ -2,28 +2,32 @@
 
 /**
  * app/models/News.php — News Article Model
- * Table: news
+ * Table: news (+ news_tags, news_img_info) — PostgreSQL
  * Owner: Nhat Tan (Member 4)
  * Used by: NewsController (frontend), NewsAdminController (admin)
  *
- * Columns: id, author_id, title, slug, body, thumbnail,
- *          meta_title, meta_description, created_at
+ * Columns: id, title, slug, body, catalog, views, news_state, created_at
+ * created_at is returned as 'YYYY-MM-DD HH24:MI:SS' (old MySQL shape).
  */
 class News
 {
     public const CATALOGS = ['Công ty', 'Ô tô điện', 'Xe máy điện'];
     public const STATES = ['Hiển thị', 'Ẩn'];
 
-    public static function count(string $q = '', string $catalog = '', string $state = 'Hiển thị'): int
+    /**
+     * Build WHERE conditions shared by count() and getAll().
+     * Tag search uses EXISTS so no JOIN/DISTINCT is needed (PG forbids
+     * SELECT DISTINCT ... ORDER BY a column that is not selected).
+     */
+    private static function buildWhere(string $q, string $catalog, string $state, array &$params): string
     {
-        global $pdo;
-
         $conditions = [];
-        $params = [];
 
         if ($q !== '') {
             $like = '%' . $q . '%';
-            $conditions[] = '(n.title LIKE :q OR t.tags LIKE :q2)';
+            $conditions[] = '(n.title ILIKE :q OR EXISTS (
+                                SELECT 1 FROM news_tags t
+                                 WHERE t.news_id = n.id AND t.tags ILIKE :q2))';
             $params[':q'] = $like;
             $params[':q2'] = $like;
         }
@@ -38,14 +42,23 @@ class News
             $params[':state'] = $state;
         }
 
-        $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+        return $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+    }
 
-        $stmt = $pdo->prepare(
-            "SELECT COUNT(DISTINCT n.id)
-               FROM news n
-          LEFT JOIN news_tags t ON t.news_id = n.id
-             $where"
-        );
+    /** catalog has a CHECK constraint in PG: anything outside CATALOGS is stored as NULL. */
+    private static function normalizeCatalog($catalog): ?string
+    {
+        return in_array($catalog, self::CATALOGS, true) ? $catalog : null;
+    }
+
+    public static function count(string $q = '', string $catalog = '', string $state = 'Hiển thị'): int
+    {
+        global $pdo;
+
+        $params = [];
+        $where = self::buildWhere($q, $catalog, $state, $params);
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM news n $where");
         $stmt->execute($params);
 
         return (int) $stmt->fetchColumn();
@@ -61,42 +74,23 @@ class News
     ): array {
         global $pdo;
 
-        $offset = ($page - 1) * $perPage;
-        $conditions = [];
+        $offset = max(0, ($page - 1) * $perPage);
         $params = [];
+        $where = self::buildWhere($q, $catalog, $state, $params);
 
-        if ($q !== '') {
-            $like = '%' . $q . '%';
-            $conditions[] = '(n.title LIKE :q OR t.tags LIKE :q2)';
-            $params[':q'] = $like;
-            $params[':q2'] = $like;
-        }
-
-        if ($catalog !== '' && in_array($catalog, self::CATALOGS, true)) {
-            $conditions[] = 'n.catalog = :catalog';
-            $params[':catalog'] = $catalog;
-        }
-
-        if ($state !== '' && in_array($state, self::STATES, true)) {
-            $conditions[] = 'n.news_state = :state';
-            $params[':state'] = $state;
-        }
-
-        $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
         if ($sort === 'id_asc') {
             $orderBy = 'n.id ASC';
         } elseif ($sort === 'popular') {
-            $orderBy = 'n.views DESC';
+            $orderBy = 'n.views DESC, n.id DESC';
         } elseif ($sort === 'state') {
-            $orderBy = 'n.news_state DESC';
+            $orderBy = 'n.news_state DESC, n.id DESC';
         } else {
-            $orderBy = 'n.created_at DESC'; 
+            $orderBy = 'n.created_at DESC, n.id DESC';
         }
 
         $stmt = $pdo->prepare(
-            "SELECT DISTINCT n.id
+            "SELECT n.id
                FROM news n
-          LEFT JOIN news_tags t ON t.news_id = n.id
              $where
            ORDER BY $orderBy
               LIMIT :lim OFFSET :off"
@@ -115,13 +109,14 @@ class News
 
         $in = implode(',', array_fill(0, count($ids), '?'));
         $rows = $pdo->prepare(
-            "SELECT n.id, n.title, n.slug, n.catalog, n.views, n.news_state, n.created_at, 
-                    MIN(i.img_link) as thumbnail 
-            FROM news n
-        LEFT JOIN news_img_info i ON n.id = i.news_id
-            WHERE n.id IN ($in)
-        GROUP BY n.id
-        ORDER BY $orderBy"
+            "SELECT n.id, n.title, n.slug, n.catalog, n.views, n.news_state,
+                    to_char(n.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                    MIN(i.img_link) AS thumbnail
+               FROM news n
+          LEFT JOIN news_img_info i ON n.id = i.news_id
+              WHERE n.id IN ($in)
+           GROUP BY n.id
+           ORDER BY $orderBy"
         );
         $rows->execute($ids);
         $articles = $rows->fetchAll(PDO::FETCH_ASSOC);
@@ -147,7 +142,11 @@ class News
             $params[':state'] = $state;
         }
 
-        $stmt = $pdo->prepare("SELECT id, title, slug, body, catalog, news_state, views, created_at FROM news $where LIMIT 1");
+        $stmt = $pdo->prepare(
+            "SELECT id, title, slug, body, catalog, news_state, views,
+                    to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at
+               FROM news $where LIMIT 1"
+        );
         $stmt->execute($params);
         $article = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -173,16 +172,18 @@ class News
 
         $where = '';
         if ($state !== '' && in_array($state, self::STATES, true)) {
-            $where = 'WHERE news_state = :state';
+            $where = 'WHERE n.news_state = :state';
         }
 
         $stmt = $pdo->prepare(
-            "SELECT n.*, MIN(i.img_link) as thumbnail
+            "SELECT n.id, n.title, n.slug, n.body, n.catalog, n.views, n.news_state,
+                    to_char(n.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                    MIN(i.img_link) AS thumbnail
                FROM news n
           LEFT JOIN news_img_info i ON n.id = i.news_id
              $where
            GROUP BY n.id
-           ORDER BY n.created_at DESC
+           ORDER BY n.created_at DESC, n.id DESC
               LIMIT :limit"
         );
         if ($where !== '') $stmt->bindValue(':state', $state, PDO::PARAM_STR);
@@ -208,14 +209,16 @@ class News
         $state = in_array($data['news_state'] ?? '', self::STATES, true) ? $data['news_state'] : 'Hiển thị';
 
         $stmt = $pdo->prepare(
-            'INSERT INTO news (title, slug, body, catalog, news_state) VALUES (:title, :slug, :body, :catalog, :news_state)'
+            'INSERT INTO news (title, slug, body, catalog, news_state)
+             VALUES (:title, :slug, :body, :catalog, :news_state)
+             RETURNING id'
         );
         $stmt->execute([
             ':title' => $data['title'], ':slug' => $data['slug'], ':body' => $data['body'],
-            ':catalog' => $data['catalog'] ?? null, ':news_state' => $state,
+            ':catalog' => self::normalizeCatalog($data['catalog'] ?? null), ':news_state' => $state,
         ]);
 
-        $id = (int) $pdo->lastInsertId();
+        $id = (int) $stmt->fetchColumn();
         if ($id === 0) return 0;
 
         self::syncTags($id, $tags);
@@ -230,7 +233,7 @@ class News
         $sql = "SELECT COUNT(*) FROM news WHERE slug = :slug";
         $params = [':slug' => $slug];
         if ($excludeId > 0) {
-            $sql .= " AND id != :id";
+            $sql .= " AND id <> :id";
             $params[':id'] = $excludeId;
         }
         $stmt = $pdo->prepare($sql);
@@ -248,12 +251,12 @@ class News
         );
         $ok = $stmt->execute([
             ':title' => $data['title'], ':slug' => $data['slug'], ':body' => $data['body'],
-            ':catalog' => $data['catalog'] ?? null, ':news_state' => $state, ':id' => $id,
+            ':catalog' => self::normalizeCatalog($data['catalog'] ?? null), ':news_state' => $state, ':id' => $id,
         ]);
 
         if ($ok) {
             self::syncTags($id, $tags);
-            self::syncImages($id, $images); 
+            self::syncImages($id, $images);
         }
         return $ok;
     }
@@ -261,10 +264,11 @@ class News
     public static function delete(int $id): bool
     {
         global $pdo;
+        // news_tags / news_img_info also cascade on delete; explicit deletes kept for clarity.
         self::syncTags($id, []);
-        
+
         $pdo->prepare('DELETE FROM news_img_info WHERE news_id = :id')->execute([':id' => $id]);
-        
+
         $stmt = $pdo->prepare('DELETE FROM news WHERE id = :id');
         return $stmt->execute([':id' => $id]);
     }
@@ -275,7 +279,7 @@ class News
         if (empty($ids)) return [];
         $in = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $pdo->prepare("SELECT news_id, tags FROM news_tags WHERE news_id IN ($in)");
-        $stmt->execute($ids);
+        $stmt->execute(array_values($ids));
         $result = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $result[$row['news_id']][] = $row['tags'];
@@ -289,7 +293,7 @@ class News
         if (empty($ids)) return [];
         $in = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $pdo->prepare("SELECT news_id, img_link, img_des FROM news_img_info WHERE news_id IN ($in)");
-        $stmt->execute($ids);
+        $stmt->execute(array_values($ids));
         $result = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $result[$row['news_id']][] = [
@@ -305,7 +309,9 @@ class News
         global $pdo;
         $pdo->prepare('DELETE FROM news_tags WHERE news_id = :id')->execute([':id' => $newsId]);
         if (empty($tags)) return;
-        $stmt = $pdo->prepare('INSERT IGNORE INTO news_tags (news_id, tags) VALUES (:news_id, :tag)');
+        $stmt = $pdo->prepare(
+            'INSERT INTO news_tags (news_id, tags) VALUES (:news_id, :tag) ON CONFLICT DO NOTHING'
+        );
         foreach (array_unique($tags) as $tag) {
             $tag = trim((string) $tag);
             if ($tag !== '') $stmt->execute([':news_id' => $newsId, ':tag' => $tag]);
@@ -326,7 +332,7 @@ class News
         }
 
         $stmtInsert = $pdo->prepare('INSERT INTO news_img_info (news_id, img_link, img_des) VALUES (:news_id, :img_link, :img_des)');
-        
+
         $stmtUpdate = $pdo->prepare('UPDATE news_img_info SET img_des = :img_des WHERE news_id = :news_id AND img_link = :old_link');
 
         foreach ($images as $img) {

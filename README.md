@@ -247,7 +247,38 @@ database/
 
 ---
 
-## Installation
+## Installation (hybrid PostgreSQL + MongoDB, Docker)
+
+Chỉ cần Docker Desktop. Không cài PHP/PostgreSQL/MongoDB trên máy.
+
+```bash
+docker compose up -d --build          # dựng postgres:16, mongo:7 (replica set rs0), tạo schema, seed, chạy app
+# Website: http://localhost:8080     Admin: http://localhost:8080/admin/dashboard
+# Port khác (PowerShell): $env:APP_PORT=8081; docker compose up -d --build
+```
+
+| Việc | Lệnh |
+|---|---|
+| Reset dữ liệu về seed | `docker compose run --rm seed php database/seed/seed.php --force` |
+| Seed kèm dữ liệu benchmark | xem `database/seed/README.md` (`--size=small\|10k\|100k`) |
+| Xóa sạch cả volume | `docker compose down -v` |
+| psql | `docker compose exec postgres psql -U vinfast` (từ host: `localhost:5433`, user/pass `vinfast`) |
+| mongosh | `docker compose exec mongo mongosh vinfast` (từ host: `mongodb://localhost:27018/?directConnection=true`) |
+
+Tài khoản test (chỉ local): `admin@vinfast.vn / Admin@123`, `member@vinfast.vn / Member@123`.
+
+Cấu trúc DB: `database/postgres/*.sql` (DDL), `database/mongo/*.js` (validator + index),
+`database/seed/` (seed từ dump production cũ `legacy_data.json`, catalog phụ kiện `accessories.php`).
+Kế hoạch chi tiết: `docs/hybrid-db-plan.html`, task từng topic: `docs/topics/`.
+
+### Sản phẩm: xe và phụ kiện
+- Category có `kind`: `vehicle` (đặt cọc, lái thử) hoặc `accessory` (pin & sạc, thời trang, phụ kiện xe — mua theo số lượng).
+- Mỗi category khai báo `dynamicAttributes` (thuộc tính sản phẩm) và `variantAttributes` (thuộc tính phiên bản: size/màu, dung lượng, dòng xe...).
+- Mỗi phiên bản có 1 dòng tồn kho trong PostgreSQL `inventory (product_id, variant_id)`.
+
+---
+
+## Installation cũ (MySQL / XAMPP — không còn dùng)
 
 ### Requirements
 - PHP >= 7.0 with PDO, PDO_MySQL, GD extensions

@@ -23,6 +23,12 @@ class OrderController
             return;
         }
 
+        // Đặt cọc chỉ áp dụng cho xe; phụ kiện mua qua giỏ hàng (T4)
+        if (!empty($product['is_accessory'])) {
+            header('Location: ' . BASE_URL . 'products/detail/' . (int)$product['id']);
+            exit;
+        }
+
         $categoryId = (int)($product['category_id'] ?? 0);
 
         $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];

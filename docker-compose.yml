@@ -1,0 +1,99 @@
+# VinFast — môi trường dev hybrid PostgreSQL + MongoDB
+#
+#   docker compose up -d --build        dựng DB, tạo schema, seed (chỉ lần đầu), chạy app
+#   http://localhost:8080               website        http://localhost:8080/admin
+#   (port khác: APP_PORT=8081 docker compose up -d)
+#
+# Reset toàn bộ dữ liệu về seed:
+#   docker compose down -v ; docker compose up -d --build
+#
+# Kết nối từ máy host: PostgreSQL localhost:5433 (vinfast / vinfast),
+#                      MongoDB mongodb://localhost:27018/?directConnection=true
+
+x-db-env: &db-env
+  PG_HOST: postgres
+  PG_PORT: "5432"
+  PG_DB: vinfast
+  PG_USER: vinfast
+  PG_PASSWORD: vinfast
+  MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0
+  MONGO_DB: vinfast
+  APP_ENV: local
+  INVENTORY_STRATEGY: pessimistic
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: vinfast
+      POSTGRES_USER: vinfast
+      POSTGRES_PASSWORD: vinfast
+    command: ["postgres", "-c", "max_connections=200"]
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vinfast -d vinfast"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  mongo:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports: ["27018:27017"]
+    volumes: [mongodata:/data/db]
+    healthcheck:
+      # Khởi tạo replica set 1 node (cần cho transaction) rồi chờ PRIMARY
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }; quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 3s
+      timeout: 10s
+      retries: 40
+
+  # Collection/validator/index Mongo (chạy lại an toàn)
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongo: { condition: service_healthy }
+    environment:
+      <<: *db-env
+    volumes:
+      - ./database:/database:ro
+    entrypoint: ["bash", "/database/docker/mongo-init.sh"]
+    restart: "no"
+
+  # Tạo schema PG nếu DB trống + seed dữ liệu cũ (legacy_data.json); đã có dữ liệu thì bỏ qua
+  seed:
+    build: .
+    image: vinfast-app:dev
+    depends_on:
+      postgres: { condition: service_healthy }
+      mongo-init: { condition: service_completed_successfully }
+    environment:
+      <<: *db-env
+    command: ["php", "database/seed/seed.php"]
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    restart: "no"
+
+  app:
+    build: .
+    image: vinfast-app:dev
+    depends_on:
+      seed: { condition: service_completed_successfully }
+    environment:
+      <<: *db-env
+    ports: ["${APP_PORT:-8080}:80"]
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+
+volumes:
+  pgdata:
+  mongodata:
+  vendor:

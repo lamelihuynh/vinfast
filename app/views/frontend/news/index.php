@@ -21,30 +21,25 @@
 ?>
 <!-- TODO: Implement News Listing -->
 <?php
-$host = 'localhost';
-$db   = 'vinfast_db';
-$user = 'root';
-$pass = '';
+global $pdo; // shared PostgreSQL connection from config/database.php
 
 $newsArray = [];
 $tagsArray = [];
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-
     $stmtNews = $pdo->query("
-        SELECT n.id, n.title, n.slug, n.catalog, n.created_at, n.body, i.img_link
+        SELECT n.id, n.title, n.slug, n.catalog,
+               to_char(n.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+               n.body, MIN(i.img_link) AS img_link
         FROM news n
         LEFT JOIN news_img_info i ON n.id = i.news_id
         WHERE n.news_state NOT LIKE '%Ẩn%'
         GROUP BY n.id
-        ORDER BY n.created_at DESC
+        ORDER BY n.created_at DESC, n.id DESC
     ");
-    $rawNews = $stmtNews->fetchAll();
+    $rawNews = $stmtNews->fetchAll(PDO::FETCH_ASSOC);
 
-    $baseDir = $_SERVER['DOCUMENT_ROOT'] . '/vinfast/public/images/news/';
+    $baseDir = ROOT . '/public/images/news/';
 
     foreach ($rawNews as $row) {
         $cleanBody = strip_tags($row['body']);
@@ -55,7 +50,7 @@ try {
 
         foreach ($extensions as $ext) {
             if (file_exists($newsDir . 'thumbnail.' . $ext)) {
-                $thumbUrl = '/vinfast/public/images/news/' . $row['id'] . '/thumbnail.' . $ext;
+                $thumbUrl = BASE_URL . 'public/images/news/' . $row['id'] . '/thumbnail.' . $ext;
                 break;
             }
         }
@@ -63,7 +58,7 @@ try {
         if ($thumbUrl === '') {
             foreach ($extensions as $ext) {
                 if (file_exists($newsDir . '1.' . $ext)) {
-                    $thumbUrl = '/vinfast/public/images/news/' . $row['id'] . '/1.' . $ext;
+                    $thumbUrl = BASE_URL . 'public/images/news/' . $row['id'] . '/1.' . $ext;
                     break;
                 }
             }
@@ -72,7 +67,7 @@ try {
         if ($thumbUrl === '') {
             $dbImage = !empty($row['img_link']) ? str_replace('\\', '/', $row['img_link']) : '';
             $cleanPath = preg_replace('#^/?vinfast/#', '', ltrim($dbImage, '/'));
-            $thumbUrl = !empty($cleanPath) ? '/vinfast/' . $cleanPath : 'https://via.placeholder.com/600x350/E5E7EB/9CA3AF?text=No+Image';
+            $thumbUrl = !empty($cleanPath) ? BASE_URL . $cleanPath : 'https://via.placeholder.com/600x350/E5E7EB/9CA3AF?text=No+Image';
         }
 
         $newsArray[] = [
@@ -89,7 +84,7 @@ try {
     $stmtTags = $pdo->query("SELECT DISTINCT tags FROM news_tags LIMIT 15");
     $tagsArray = $stmtTags->fetchAll(PDO::FETCH_COLUMN);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log("Lỗi Database: " . $e->getMessage());
 }
 ?>
@@ -250,7 +245,7 @@ try {
             paginatedNews.forEach(news => {
                 const parts = news.date.split('-');
                 const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-                const detailUrl = `/vinfast/news/read/${news.slug}`;
+                const detailUrl = `<?= BASE_URL ?>news/read/${news.slug}`;
 
                 htmlContent += `
                     <article class="group flex flex-col h-full fade-up-item" style="opacity: 0; animation-delay: ${delay}ms;">
@@ -351,7 +346,7 @@ try {
         function renderSidebarExtras() {
             const featuredContainer = document.getElementById('featured-news');
             newsDB.slice(0, 4).forEach(news => {
-                const detailUrl = `/vinfast/news/read/${news.slug}`;
+                const detailUrl = `<?= BASE_URL ?>news/read/${news.slug}`;
                 featuredContainer.innerHTML += `
                     <a href="${detailUrl}" class="group block cursor-pointer">
                         <img src="${news.image}" class="w-full h-20 object-cover rounded-lg mb-2">
@@ -389,7 +384,7 @@ try {
         let formData = new FormData();
         formData.append('email', email);
 
-        fetch('/vinfast/news/subscribe', {
+        fetch('<?= BASE_URL ?>news/subscribe', {
             method: 'POST',
             body: formData
         })

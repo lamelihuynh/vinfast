@@ -82,7 +82,7 @@ class ContactController {
             $tab = 'contact';
         }
 
-        $products = Product::getAll(1, 100);
+        $products = Product::getAll(1, 100, 'vehicle');
 
         SEO::set('Liên hệ', 'Gửi liên hệ và nhận hỗ trợ từ VinFast.');
 
@@ -201,7 +201,7 @@ class ContactController {
         }
 
         $product = Product::getById($productId);
-        if (!$product) {
+        if (!$product || !empty($product['is_accessory'])) {
             $_SESSION['errors'] = ['Dòng xe không tồn tại.'];
             header('Location: ' . BASE_URL . 'contact?tab=test-drive');
             exit;

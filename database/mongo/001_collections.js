@@ -40,6 +40,7 @@ upsertCollection('categories', {
       name: nonEmpty,
       slug: { bsonType: 'string', pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' },
       description: { bsonType: ['string', 'null'] },
+      kind: { enum: ['vehicle', 'accessory'] },   // vehicle: đặt cọc; accessory: mua theo số lượng
       isActive: { bsonType: 'bool' },
       dynamicAttributes: {          // thuộc tính cấp sản phẩm (products.attributes)
         bsonType: 'array',
@@ -49,7 +50,7 @@ upsertCollection('categories', {
           properties: {
             key: { bsonType: 'string', pattern: '^[a-zA-Z][a-zA-Z0-9_]*$' },
             label: nonEmpty,
-            type: { enum: ['string', 'number', 'boolean', 'enum', 'text'] },
+            type: { enum: ['string', 'number', 'boolean', 'enum', 'text', 'list'] },
             unit: { bsonType: ['string', 'null'] },
             required: { bsonType: 'bool' },
             filterable: { bsonType: 'bool' },
@@ -65,7 +66,7 @@ upsertCollection('categories', {
           properties: {
             key: { bsonType: 'string', pattern: '^[a-zA-Z][a-zA-Z0-9_]*$' },
             label: nonEmpty,
-            type: { enum: ['string', 'number', 'boolean', 'enum', 'text'] },
+            type: { enum: ['string', 'number', 'boolean', 'enum', 'text', 'list'] },
             unit: { bsonType: ['string', 'null'] },
             required: { bsonType: 'bool' },
             options: { bsonType: 'array', items: { bsonType: 'string' } },

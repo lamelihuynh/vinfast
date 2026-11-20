@@ -49,7 +49,7 @@ class DashboardAdminController
     {
         return [
             'users' => $this->countRows('users'),
-            'products' => $this->countRows('products', 'is_active = 1'),
+            'products' => $this->countActiveProducts(),
             'orders_total' => $this->countRows('orders'),
             'orders_pending' => $this->countRows('orders', "status = 'pending'"),
             'orders_done' => $this->countRows('orders', "status = 'done'"),
@@ -57,7 +57,7 @@ class DashboardAdminController
             'contacts_unread' => $this->countRows('contacts', "status = 'unread'"),
             'news_total' => $this->countRows('news'),
             'comments_total' => $this->countRows('comments'),
-            'comments_pending' => $this->countRows('comments', 'is_approved = 0'),
+            'comments_pending' => $this->countRows('comments', 'NOT is_approved'),
             'deposit_revenue' => $this->sumDepositRevenue(),
         ];
     }
@@ -81,19 +81,14 @@ class DashboardAdminController
         }
 
         try {
-            $sql = "SELECT DATE_FORMAT(o.created_at, '%Y-%m') AS ym,
-						   COUNT(*) AS orders,
-                           COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN
-                               COALESCE(
-                                   CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_base_amount')) AS DECIMAL(18,2)),
-                                   CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_amount')) AS DECIMAL(18,2)),
-                                   0
-                               )
-                           ELSE 0 END), 0) AS revenue
-					FROM orders o
-					WHERE o.created_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL :months MONTH)
-					GROUP BY ym
-					ORDER BY ym ASC";
+            // Doanh thu = total_amount của đơn chưa hủy (đơn cọc: tiền cọc; đơn mua: tổng tiền)
+            $sql = "SELECT to_char(o.created_at, 'YYYY-MM') AS ym,
+                           COUNT(*) AS orders,
+                           COALESCE(SUM(o.total_amount) FILTER (WHERE o.status <> 'cancelled'), 0) AS revenue
+                    FROM orders o
+                    WHERE o.created_at >= date_trunc('month', now()) - make_interval(months => :months)
+                    GROUP BY ym
+                    ORDER BY ym ASC";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':months', $months - 1, PDO::PARAM_INT);
             $stmt->execute();
@@ -120,12 +115,11 @@ class DashboardAdminController
         global $pdo;
 
         try {
-            $sql = 'SELECT p.name, COUNT(*) AS total
-					FROM orders o
-					JOIN products p ON p.id = o.product_id
-					GROUP BY o.product_id, p.name
-					ORDER BY total DESC, p.name ASC
-					LIMIT :limit';
+            $sql = 'SELECT MIN(oi.product_name_snapshot) AS name, COUNT(DISTINCT oi.order_id) AS total
+                    FROM order_items oi
+                    GROUP BY oi.product_id
+                    ORDER BY total DESC, name ASC
+                    LIMIT :limit';
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':limit', max(3, $limit), PDO::PARAM_INT);
             $stmt->execute();
@@ -149,28 +143,24 @@ class DashboardAdminController
         $palette = ['#1464F4', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
 
         try {
-            $sql = 'SELECT p.id,
-						   p.name,
-						   p.price,
-						   p.specs,
-						   COUNT(o.id) AS orders
-					FROM products p
-					LEFT JOIN orders o ON o.product_id = p.id
-					WHERE p.is_active = 1
-					GROUP BY p.id, p.name, p.price, p.specs
-					ORDER BY orders DESC, p.created_at DESC
-					LIMIT :limit';
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindValue(':limit', max(3, $limit), PDO::PARAM_INT);
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Sản phẩm ở MongoDB, số đơn ở PostgreSQL -> ghép ở backend
+            $orderCounts = [];
+            $stmt = $pdo->query('SELECT product_id, COUNT(DISTINCT order_id) AS orders FROM order_items GROUP BY product_id');
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $orderCounts[(string)$row['product_id']] = (int)$row['orders'];
+            }
+
+            $rows = [];
+            foreach (Product::filterAll() as $product) {
+                $product['orders'] = $orderCounts[(string)$product['id']] ?? 0;
+                $rows[] = $product;
+            }
+            usort($rows, static fn(array $x, array $y): int => [$y['orders'], $y['created_at']] <=> [$x['orders'], $x['created_at']]);
+            $rows = array_slice($rows, 0, max(3, $limit));
 
             $items = [];
             foreach ($rows as $i => $row) {
-                $specs = json_decode((string)($row['specs'] ?? ''), true);
-                if (!is_array($specs)) {
-                    $specs = [];
-                }
+                $specs = is_array($row['specs'] ?? null) ? $row['specs'] : [];
 
                 $items[] = [
                     'name' => (string)($row['name'] ?? ''),
@@ -193,19 +183,22 @@ class DashboardAdminController
         global $pdo;
 
         try {
-            $sql = 'SELECT o.id,
-						   o.status,
-						   o.type,
-						   o.created_at,
-						   o.note,
-						   p.name AS product_name,
-						   p.price,
-						   u.name AS user_name
-					FROM orders o
-					JOIN products p ON p.id = o.product_id
-					JOIN users u ON u.id = o.user_id
-					ORDER BY o.created_at DESC
-					LIMIT :limit';
+            $sql = "SELECT o.id,
+                           o.status,
+                           o.type,
+                           to_char(o.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                           o.note::text AS note,
+                           o.total_amount,
+                           p.product_name,
+                           u.name AS user_name
+                    FROM orders o
+                    LEFT JOIN LATERAL (
+                        SELECT oi.product_name_snapshot AS product_name
+                        FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id LIMIT 1
+                    ) p ON TRUE
+                    JOIN users u ON u.id = o.user_id
+                    ORDER BY o.created_at DESC
+                    LIMIT :limit";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':limit', max(3, $limit), PDO::PARAM_INT);
             $stmt->execute();
@@ -218,7 +211,7 @@ class DashboardAdminController
                     'code' => 'VF-ORD-' . str_pad((string)$orderId, 4, '0', STR_PAD_LEFT),
                     'customer' => (string)($row['user_name'] ?? 'Khach hang'),
                     'product' => (string)($row['product_name'] ?? ''),
-                    'deposit' => $this->extractDepositFromNote($row['note'] ?? null),
+                    'deposit' => (float)($row['total_amount'] ?? 0) ?: $this->extractDepositFromNote($row['note'] ?? null),
                     'status' => (string)($row['status'] ?? 'pending'),
                     'created_at' => (string)($row['created_at'] ?? ''),
                 ];
@@ -233,10 +226,10 @@ class DashboardAdminController
         global $pdo;
 
         try {
-            $sql = 'SELECT id, name, email, status, created_at, message
+            $sql = "SELECT id, name, email, status, to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at, message
 					FROM contacts
-					ORDER BY created_at DESC
-					LIMIT :limit';
+					ORDER BY contacts.created_at DESC
+					LIMIT :limit";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':limit', max(3, $limit), PDO::PARAM_INT);
             $stmt->execute();
@@ -310,19 +303,21 @@ class DashboardAdminController
         }
     }
 
+    private function countActiveProducts(): int
+    {
+        try {
+            return Product::countFiltered();
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }
+
     private function sumDepositRevenue(): float
     {
         global $pdo;
 
         try {
-            $sql = "SELECT COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN
-							COALESCE(
-								CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_base_amount')) AS DECIMAL(18,2)),
-								CAST(JSON_UNQUOTE(JSON_EXTRACT(o.note, '$.deposit_amount')) AS DECIMAL(18,2)),
-								0
-							)
-						ELSE 0 END), 0) AS revenue
-					FROM orders o";
+            $sql = "SELECT COALESCE(SUM(total_amount) FILTER (WHERE status <> 'cancelled'), 0) FROM orders";
             $stmt = $pdo->query($sql);
             return (float)$stmt->fetchColumn();
         } catch (Throwable $e) {

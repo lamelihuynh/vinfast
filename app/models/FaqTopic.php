@@ -1,14 +1,23 @@
 <?php
 
+/**
+ * FaqTopic — table faq_topics (PostgreSQL).
+ * is_active (BOOLEAN) is returned as 0/1 and created_at as 'YYYY-MM-DD HH24:MI:SS'
+ * so views keep the old MySQL shape.
+ */
 class FaqTopic {
+
+    private const COLS = "t.id, t.name, t.slug, t.icon_svg, t.sort_order,
+                t.is_active::int AS is_active,
+                to_char(t.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at";
 
     public static function all(): array {
         global $pdo;
 
         $stmt = $pdo->query("
-            SELECT *
-            FROM faq_topics
-            ORDER BY sort_order ASC, created_at DESC
+            SELECT " . self::COLS . "
+            FROM faq_topics t
+            ORDER BY t.sort_order ASC, t.created_at DESC
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -18,10 +27,10 @@ class FaqTopic {
         global $pdo;
 
         $stmt = $pdo->query("
-            SELECT *
-            FROM faq_topics
-            WHERE is_active = 1
-            ORDER BY sort_order ASC, created_at DESC
+            SELECT " . self::COLS . "
+            FROM faq_topics t
+            WHERE t.is_active
+            ORDER BY t.sort_order ASC, t.created_at DESC
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -31,9 +40,9 @@ class FaqTopic {
         global $pdo;
 
         $stmt = $pdo->prepare("
-            SELECT *
-            FROM faq_topics
-            WHERE id = ?
+            SELECT " . self::COLS . "
+            FROM faq_topics t
+            WHERE t.id = ?
             LIMIT 1
         ");
 
@@ -64,7 +73,7 @@ class FaqTopic {
             ':slug' => trim($slug),
             ':icon' => trim($iconSvg),
             ':sort_order' => $sortOrder,
-            ':active' => $isActive ? 1 : 0
+            ':active' => $isActive ? 'true' : 'false'
         ]);
     }
 
@@ -96,7 +105,7 @@ class FaqTopic {
             ':slug' => trim($slug),
             ':icon' => trim($iconSvg),
             ':sort_order' => $sortOrder,
-            ':active' => $isActive ? 1 : 0
+            ':active' => $isActive ? 'true' : 'false'
         ]);
     }
 

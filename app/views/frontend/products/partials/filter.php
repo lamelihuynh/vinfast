@@ -1,11 +1,31 @@
 <?php
-$priceOptions = [
+$type = $type ?? 'all';
+$typeOptions = [
     'all' => 'Tất cả',
-    'under300' => 'Dưới 300 triệu',
-    '300-500' => '300-500 triệu',
-    '500-1000' => '500 triệu - 1 tỷ',
-    'over1000' => 'Trên 1 tỷ',
+    'vehicle' => 'Xe điện',
+    'accessory' => 'Phụ kiện',
 ];
+$priceOptions = $type === 'accessory'
+    ? [
+        'all' => 'Tất cả',
+        'acc_under1' => 'Dưới 1 triệu',
+        'acc_1-5' => '1 - 5 triệu',
+        'acc_5-20' => '5 - 20 triệu',
+        'acc_over20' => 'Trên 20 triệu',
+    ]
+    : [
+        'all' => 'Tất cả',
+        'under300' => 'Dưới 300 triệu',
+        '300-500' => '300-500 triệu',
+        '500-1000' => '500 triệu - 1 tỷ',
+        'over1000' => 'Trên 1 tỷ',
+    ];
+if ($type === 'all') {
+    $priceOptions += [
+        'acc_under1' => 'Phụ kiện dưới 1 triệu',
+        'acc_1-5' => 'Phụ kiện 1 - 5 triệu',
+    ];
+}
 
 $rangeOptions = [
     'all' => 'Tất cả',
@@ -14,6 +34,9 @@ $rangeOptions = [
     'gt400' => 'Trên 400km',
 ];
 $categories = $categories ?? [];
+$visibleCategories = $type === 'all'
+    ? $categories
+    : array_values(array_filter($categories, static fn($c) => ($c['kind'] ?? 'vehicle') === $type));
 $selectedCategoryName = '';
 foreach ($categories as $c) {
     if ((int)$c['id'] === $cat) {
@@ -45,6 +68,7 @@ $q = $q ?? '';
 
   <form id="productsFilterForm" method="get" action="<?= BASE_URL ?>products" class="p-4 space-y-3">
     <input type="hidden" id="filterCatInput" name="cat" value="<?= (int)$cat ?>">
+    <input type="hidden" id="filterTypeInput" name="type" value="<?= htmlspecialchars($type) ?>">
     <input type="hidden" id="filterSortInput" name="sort" value="<?= htmlspecialchars($sort) ?>">
   <input type="hidden" id="filterPerPageInput" name="pp" value="<?= (int)($pp ?? 12) ?>">
     <?php if ($activeFilters > 0): ?>
@@ -72,7 +96,16 @@ $q = $q ?? '';
     <?php endif; ?>
     <div>
       <label class="block text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-1">Tìm kiếm</label>
-      <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Tìm theo tên xe..." class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-vfNavy">
+      <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Tìm theo tên sản phẩm..." class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-vfNavy">
+    </div>
+
+    <div>
+      <p class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-1 px-1">LOẠI SẢN PHẨM</p>
+      <div class="grid grid-cols-3 gap-1 bg-slate-100 rounded-lg p-1">
+        <?php foreach ($typeOptions as $value => $label): ?>
+          <button type="button" data-type-value="<?= $value ?>" class="js-type-btn py-1.5 rounded-md text-[11px] transition <?= $type === $value ? 'bg-white font-bold text-vfNavy shadow-sm' : 'text-slate-600 hover:text-slate-900' ?>"><?= $label ?></button>
+        <?php endforeach; ?>
+      </div>
     </div>
 
     <div>
@@ -85,7 +118,7 @@ $q = $q ?? '';
           <li>
             <button type="button" data-cat-value="0" class="js-cat-btn w-full text-left py-1.5 px-3 rounded-lg transition text-[12px] <?= $cat === 0 ? 'font-bold text-vfNavy bg-vfNavy/10' : 'font-normal text-slate-700 hover:bg-slate-50' ?>">Tất cả danh mục</button>
           </li>
-          <?php foreach ($categories as $c): ?>
+          <?php foreach ($visibleCategories as $c): ?>
             <?php $isActiveCat = $cat === (int)$c['id']; ?>
             <li>
               <button type="button" data-cat-value="<?= (int)$c['id'] ?>" class="js-cat-btn w-full text-left py-1.5 px-3 rounded-lg transition text-[12px] <?= $isActiveCat ? 'font-bold text-vfNavy bg-vfNavy/10' : 'font-normal text-slate-700 hover:bg-slate-50' ?>"><?= htmlspecialchars($c['name']) ?></button>
@@ -110,6 +143,7 @@ $q = $q ?? '';
       </div>
     </div>
 
+    <?php if ($type !== 'accessory'): ?>
     <div>
       <button type="button" data-filter-toggle data-target="filterRangeBody" class="w-full flex items-center justify-between py-1.5 px-1">
         <span class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">PHẠM VI</span>
@@ -124,5 +158,6 @@ $q = $q ?? '';
         <?php endforeach; ?>
       </div>
     </div>
+    <?php endif; ?>
   </form>
 </aside>

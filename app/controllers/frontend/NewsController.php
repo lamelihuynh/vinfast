@@ -96,7 +96,11 @@ class NewsController
 
         global $pdo;
         try {
-            $stmt = $pdo->prepare('INSERT INTO email (email) VALUES (:email)');
+            // Duplicate (case-insensitive) emails are silently ignored.
+            $stmt = $pdo->prepare(
+                'INSERT INTO email_subscriptions (email) VALUES (:email)
+                 ON CONFLICT ((lower(email))) DO NOTHING'
+            );
             $stmt->execute([':email' => $email]);
             echo json_encode(['status' => 'success']);
         } catch (PDOException $e) {

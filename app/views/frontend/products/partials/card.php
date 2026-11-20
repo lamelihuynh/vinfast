@@ -15,6 +15,42 @@ $powerText = (string)($specs['power'] ?? ($specs['motor_power'] ?? ($specs['max_
 if ($powerText === '') {
   $powerText = 'N/A';
 }
+
+// Mặt sau thẻ: xe dùng 4 thông số cố định; phụ kiện lấy theo thuộc tính động của category
+$isAccessory = !empty($p['is_accessory']);
+$priceText = number_format((float)($p['price'] ?? 0), 0, ',', '.') . ' VND';
+if ($isAccessory) {
+  $categoryText = (string)($p['category_label'] ?? 'Phụ kiện');
+  $variantCount = count(array_filter((array)($p['variants'] ?? []), static fn($v) => !empty($v['isActive'])));
+  $rangeText = $variantCount > 1 ? $variantCount . ' phiên bản' : 'Phụ kiện';
+  $cardStats = [];
+  $catDef = Category::allById()[(int)($p['category_id'] ?? 0)] ?? [];
+  foreach ((array)($catDef['dynamic_attributes'] ?? []) as $def) {
+    if (count($cardStats) >= 3 || ($def['type'] ?? '') === 'text') {
+      continue;
+    }
+    $val = $specs[$def['key'] ?? ''] ?? null;
+    if ($val === null || $val === '' || $val === []) {
+      continue;
+    }
+    if (is_array($val)) {
+      $val = count($val) > 3 ? implode(', ', array_slice($val, 0, 3)) . '…' : implode(', ', $val);
+    } elseif (is_bool($val)) {
+      $val = $val ? 'Có' : 'Không';
+    } else {
+      $val = trim($val . ' ' . ($def['unit'] ?? ''));
+    }
+    $cardStats[] = ['•', (string)($def['label'] ?? ''), (string)$val];
+  }
+  $cardStats[] = ['₫', 'Giá từ', $priceText];
+} else {
+  $cardStats = [
+    ['⚡', 'Công suất', $powerText],
+    ['🔋', 'Phạm vi', $rangeText],
+    ['₫', 'Giá từ', $priceText],
+    ['✓', 'Vận tốc tối đa', (string)($specs['max_speed'] ?? 'N/A')],
+  ];
+}
 ?>
 <div class="flip-card bg-transparent reveal-on-scroll <?= $delayClass ?? '' ?>" tabindex="0">
   <div class="flip-card-inner">
@@ -40,7 +76,7 @@ if ($powerText === '') {
           ?>
           <h4 class="text-slate-900 mb-0.5 text-[14px] font-bold" title="<?= htmlspecialchars($name) ?>" style="max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($displayName) ?></h4>
           <p class="text-slate-400 mb-1.5 text-[11px]"><?= htmlspecialchars($categoryText) ?></p>
-          <p class="text-vfGold mt-2 mb-2 text-[15px] font-bold"><?= number_format((float)($p['price'] ?? 0), 0, ',', '.') ?> VND</p>
+          <p class="text-vfGold mt-2 mb-2 text-[15px] font-bold"><?= $isAccessory && count((array)($p['variants'] ?? [])) > 1 ? 'Từ ' : '' ?><?= $priceText ?></p>
         </div>
       </a>
     </div>
@@ -61,22 +97,12 @@ if ($powerText === '') {
       </div>
 
       <div class="grid grid-cols-2 gap-2 mb-3 flex-1">
+        <?php foreach ($cardStats as [$statIcon, $statLabel, $statValue]): ?>
         <div class="bg-white/10 rounded-lg p-2">
-          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]">⚡</span><span class="text-[9px]">Công suất</span></div>
-          <p class="text-[11px] font-bold"><?= htmlspecialchars($powerText) ?></p>
+          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]"><?= $statIcon ?></span><span class="text-[9px]"><?= htmlspecialchars($statLabel) ?></span></div>
+          <p class="text-[11px] font-bold" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?= htmlspecialchars($statValue) ?>"><?= htmlspecialchars($statValue) ?></p>
         </div>
-        <div class="bg-white/10 rounded-lg p-2">
-          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]">🔋</span><span class="text-[9px]">Phạm vi</span></div>
-          <p class="text-[11px] font-bold"><?= htmlspecialchars($rangeText) ?></p>
-        </div>
-        <div class="bg-white/10 rounded-lg p-2">
-          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]">₫</span><span class="text-[9px]">Giá từ</span></div>
-          <p class="text-[11px] font-bold"><?= number_format((float)($p['price'] ?? 0), 0, ',', '.') ?> VND</p>
-        </div>
-        <div class="bg-white/10 rounded-lg p-2">
-          <div class="flex items-center gap-1 text-white/60 mb-0.5"><span class="text-[11px]">✓</span><span class="text-[9px]">Vận tốc tối đa</span></div>
-          <p class="text-[11px] font-bold"><?= htmlspecialchars($specs['max_speed'] ?? 'N/A') ?></p>
-        </div>
+        <?php endforeach; ?>
       </div>
 
 

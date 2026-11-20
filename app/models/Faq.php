@@ -1,20 +1,26 @@
 <?php
 /**
  * app/models/Faq.php — FAQ Model
- * Table: faqs
+ * Table: faqs (PostgreSQL)
  * Owner: Nhat Linh (Member 2)
  * Used by: FaqController (frontend), FaqAdminController (admin)
  *
- * Columns: id, question, answer, sort_order, is_active, created_at
+ * Columns: id, topic_id, question, answer, sort_order, is_active (BOOLEAN), created_at
+ * is_active is returned as 0/1 and created_at as 'YYYY-MM-DD HH24:MI:SS' (old MySQL shape).
  */
 class Faq {
-    
+
+    /** Column list for faqs rows returned to callers (alias f). */
+    private const COLS = "f.id, f.topic_id, f.question, f.answer, f.sort_order,
+            f.is_active::int AS is_active,
+            to_char(f.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at";
+
     public static function getAllForAdminDatatable(): array {
     global $pdo;
 
     $stmt = $pdo->prepare("
         SELECT
-            f.*,
+            " . self::COLS . ",
             t.name AS topic_name
         FROM faqs f
         INNER JOIN faq_topics t ON t.id = f.topic_id
@@ -38,15 +44,15 @@ class Faq {
 
     $stmt = $pdo->prepare("
         SELECT
-            f.*,
+            " . self::COLS . ",
             t.name AS topic_name,
             t.slug AS topic_slug,
             t.icon_svg
         FROM faqs f
         INNER JOIN faq_topics t ON t.id = f.topic_id
         WHERE
-            f.is_active = 1
-            AND t.is_active = 1
+            f.is_active
+            AND t.is_active
         ORDER BY
             t.sort_order ASC,
             f.sort_order ASC,
@@ -66,14 +72,14 @@ class Faq {
 
         global $pdo;
         $stmt = $pdo -> prepare('
-            SELECT f.*, t.name AS topic_name
+            SELECT ' . self::COLS . ', t.name AS topic_name
             FROM faqs f
             INNER JOIN faq_topics t ON t.id = f.topic_id
             WHERE f.id = ?
         ');
-        $stmt -> execute([$id]); 
+        $stmt -> execute([$id]);
         $row = $stmt -> fetch(PDO::FETCH_ASSOC);
-        return $row ?: null; 
+        return $row ?: null;
     }
 
 
@@ -81,15 +87,17 @@ class Faq {
      * Get all FAQ (include inactive) for admin with pagination
      */
     public static function getForAdmin(int $page = 1, int $perPage = 10): array {
-        global $pdo; 
-        $offset = ($page -1) * $perPage; 
+        global $pdo;
+        $offset = ($page -1) * $perPage;
 
-        $stmt = $pdo -> prepare('
-            SELECT id, question, answer, sort_order, is_active, created_at
-            FROM faqs
-            ORDER BY sort_order ASC, created_at DESC
-            LIMIT ? OFFSET ? 
-        ');
+        $stmt = $pdo -> prepare("
+            SELECT f.id, f.question, f.answer, f.sort_order,
+                   f.is_active::int AS is_active,
+                   to_char(f.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at
+            FROM faqs f
+            ORDER BY f.sort_order ASC, f.created_at DESC
+            LIMIT ? OFFSET ?
+        ");
         $stmt->bindValue(1, $perPage, PDO::PARAM_INT);
         $stmt->bindValue(2, $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -104,70 +112,70 @@ class Faq {
      */
     public static function countAll(): int{
 
-        global $pdo; 
-        $stmt = $pdo -> query('SELECT COUNT(*) FROM faqs'); 
+        global $pdo;
+        $stmt = $pdo -> query('SELECT COUNT(*) FROM faqs');
         return (int)$stmt -> fetchColumn();
     }
 
     /**
-     * Create new FAQ 
+     * Create new FAQ
      */
-    public static function create(int $topicId, string $question, string $answer, int $sortOder = 0, bool $isActive = true): bool{        
-        global $pdo; 
-        $question = trim($question); 
+    public static function create(int $topicId, string $question, string $answer, int $sortOder = 0, bool $isActive = true): bool{
+        global $pdo;
+        $question = trim($question);
         $answer = trim($answer);
 
         if ($question === '' || $answer === ''){
-            return false; 
+            return false;
         }
 
-        $sql = 
+        $sql =
             'INSERT INTO faqs (topic_id, question, answer, sort_order, is_active, created_at)
-            VALUES (:topic_id, :q, :a, :sort, :active, NOW())';
+            VALUES (:topic_id, :q, :a, :sort, :active, now())';
         $stmt = $pdo -> prepare($sql);
 
         $stmt->bindValue(':q', $question, PDO::PARAM_STR);
         $stmt->bindValue(':a', $answer, PDO::PARAM_STR);
         $stmt->bindValue(':sort', $sortOder, PDO::PARAM_INT);
-        $stmt->bindValue(':active', $isActive ? 1: 0, PDO::PARAM_INT);
+        $stmt->bindValue(':active', $isActive, PDO::PARAM_BOOL);
         $stmt->bindValue(':topic_id', $topicId, PDO::PARAM_INT);
-        
-        return $stmt->execute(); 
+
+        return $stmt->execute();
     }
 
 
     /**
-     * Update FAQ 
+     * Update FAQ
      */
     public static function update (int $id,  int $topicId, string $question, string $answer, int $sortOder = 0, bool $isActive = true): bool {
-        global $pdo; 
+        global $pdo;
 
         $question = trim($question);
         $answer = trim($answer);
         if ($question === ''|| $answer === ''){
-            return false; 
+            return false;
         }
 
-        $sql = 'UPDATE faqs 
-                SET topic_id =:topic_id, question = :q, answer = :a, sort_order= :sort, is_active=:active  
-                WHERE id =:id'; 
+        $sql = 'UPDATE faqs
+                SET topic_id =:topic_id, question = :q, answer = :a, sort_order= :sort, is_active=:active
+                WHERE id =:id';
 
         $stmt = $pdo -> prepare($sql);
 
         $stmt->bindValue(':q', $question, PDO::PARAM_STR);
         $stmt->bindValue(':a', $answer, PDO::PARAM_STR);
         $stmt->bindValue(':sort', $sortOder, PDO::PARAM_INT);
-        $stmt->bindValue(':active', $isActive ? 1: 0, PDO::PARAM_INT);
+        $stmt->bindValue(':active', $isActive, PDO::PARAM_BOOL);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->bindValue(':topic_id', $topicId, PDO::PARAM_INT);
 
-        
+
         return $stmt -> execute();
     }
 
 
     /**
-     * Delete FAQ 
+     * Delete FAQ
      */
     public static function delete ($id) : bool{
         global $pdo;
