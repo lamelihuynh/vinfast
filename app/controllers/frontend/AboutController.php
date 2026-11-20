@@ -57,9 +57,9 @@ $prependBase = function($path) {
         $philosophyTitle = $settings['about_philosophy_title'] ?? '';
         $philosophyText = $settings['about_philosophy_text'] ?? '';
 
-        $visionPath = $settings['about_vision_image'];
-        $missionPath = $settings['about_mission_image'];
-        $philosophyPath = $settings['about_philosophy_image'];
+        $visionPath = $settings['about_vision_image'] ?? '';
+        $missionPath = $settings['about_mission_image'] ?? '';
+        $philosophyPath = $settings['about_philosophy_image'] ?? '';
         
 
         // Extract about intro content
