@@ -1,6 +1,8 @@
 # VinFast Electric Vehicle Website 
 
 A full business website for VinFast
+
+> **Chạy trên máy local:** cần Git + Docker Desktop, rồi `git clone` → `git checkout develop-hybrid` → `docker compose up -d --build` → mở http://localhost:8080. Chi tiết ở mục [Cài đặt và chạy trên máy local](#cài-đặt-và-chạy-trên-máy-local).
 ---
 ## Project Structure
 
@@ -247,71 +249,100 @@ database/
 
 ---
 
-## Installation (hybrid PostgreSQL + MongoDB, Docker)
+## Cài đặt và chạy trên máy local
 
-Chỉ cần Docker Desktop. Không cài PHP/PostgreSQL/MongoDB trên máy.
+App chạy hoàn toàn trong Docker: PHP 8.2 + Apache, PostgreSQL 16, MongoDB 7. **Không cần cài PHP, MySQL, PostgreSQL hay MongoDB** trên máy.
+
+### 1. Cần có
+- [Git](https://git-scm.com/downloads)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows: bật WSL 2 backend khi cài). Mở Docker Desktop và chờ trạng thái *Engine running* trước khi chạy lệnh.
+- Khoảng 3 GB dung lượng trống cho image và dữ liệu.
+
+### 2. Clone và chạy
 
 ```bash
-docker compose up -d --build          # dựng postgres:16, mongo:7 (replica set rs0), tạo schema, seed, chạy app
-# Website: http://localhost:8080     Admin: http://localhost:8080/admin/dashboard
-# Port khác (PowerShell): $env:APP_PORT=8081; docker compose up -d --build
+git clone https://github.com/lamelihuynh/vinfast.git
+cd vinfast
+git checkout develop-hybrid
+docker compose up -d --build
 ```
+
+Lần đầu mất khoảng 3–5 phút (tải image, cài extension PHP, composer). Lệnh tự làm theo thứ tự:
+
+1. `postgres`, `mongo` khởi động; `mongo` tự khởi tạo replica set `rs0` (cần cho transaction).
+2. `mongo-init` tạo collection, validator, index (`database/mongo/*.js`).
+3. `seed` tạo schema PostgreSQL (`database/postgres/*.sql`) và nạp dữ liệu mẫu. Chỉ chạy khi DB còn trống, nên các lần `up` sau không ghi đè dữ liệu.
+4. `app` chạy website.
+
+Kiểm tra: `docker compose ps` — `postgres`, `mongo`, `app` ở trạng thái *running/healthy*; `mongo-init`, `seed` ở trạng thái *exited (0)*.
+
+| | Địa chỉ |
+|---|---|
+| Website | http://localhost:8080 |
+| Admin | http://localhost:8080/admin/dashboard |
+
+**Tài khoản test** (chỉ dùng local, tạo bởi `database/seed/seed.php`):
+
+| Email | Mật khẩu | Vai trò |
+|---|---|---|
+| `admin@vinfast.vn` | `Admin@123` | admin |
+| `member@vinfast.vn` | `Member@123` | member |
+
+### 3. Dữ liệu mẫu có sẵn
+- 16 xe (2 danh mục) và 27 phụ kiện (Pin & Sạc, Thời trang, Phụ kiện xe) với phiên bản và tồn kho thật.
+- Tin tức, FAQ, trang Giới thiệu, cài đặt website, liên hệ, lái thử: lấy từ DB production cũ (`database/seed/legacy_data.json`; tài khoản người dùng thật đã được loại bỏ).
+- 3 đơn đặt cọc mẫu của `member@vinfast.vn`.
+
+Dữ liệu lớn cho benchmark (10k / 100k sản phẩm, đơn hàng, review, log…): xem [database/seed/README.md](database/seed/README.md) và [bench/README.md](bench/README.md).
+
+### 4. Làm việc hằng ngày
 
 | Việc | Lệnh |
 |---|---|
-| Reset dữ liệu về seed | `docker compose run --rm seed php database/seed/seed.php --force` |
-| Seed kèm dữ liệu benchmark | xem `database/seed/README.md` (`--size=small\|10k\|100k`) |
-| Xóa sạch cả volume | `docker compose down -v` |
-| psql | `docker compose exec postgres psql -U vinfast` (từ host: `localhost:5433`, user/pass `vinfast`) |
-| mongosh | `docker compose exec mongo mongosh vinfast` (từ host: `mongodb://localhost:27018/?directConnection=true`) |
+| Bật / tắt | `docker compose up -d` / `docker compose stop` |
+| Sửa code PHP, view, JS, CSS | Lưu file rồi tải lại trang (thư mục project được mount vào container) |
+| Sửa `Dockerfile` hoặc `composer.json` | `docker compose up -d --build` |
+| Xem log PHP / Apache | `docker compose logs -f app` |
+| Reset dữ liệu về seed ban đầu | `docker compose run --rm seed php database/seed/seed.php --force` |
+| Xóa sạch mọi thứ (cả volume DB) | `docker compose down -v` |
+| Chạy lệnh PHP trong container | `docker compose exec app php -v` |
+| Mở psql | `docker compose exec postgres psql -U vinfast` |
+| Mở mongosh | `docker compose exec mongo mongosh vinfast` |
 
-Tài khoản test (chỉ local): `admin@vinfast.vn / Admin@123`, `member@vinfast.vn / Member@123`.
+Kết nối DB bằng công cụ trên máy (DBeaver, pgAdmin, Compass…):
 
-Cấu trúc DB: `database/postgres/*.sql` (DDL), `database/mongo/*.js` (validator + index),
-`database/seed/` (seed từ dump production cũ `legacy_data.json`, catalog phụ kiện `accessories.php`).
-Kế hoạch chi tiết: `docs/hybrid-db-plan.html`, task từng topic: `docs/topics/`.
+| | Kết nối |
+|---|---|
+| PostgreSQL | host `localhost`, port `5433`, db `vinfast`, user `vinfast`, password `vinfast` |
+| MongoDB | `mongodb://localhost:27018/?directConnection=true`, db `vinfast` |
 
-### Sản phẩm: xe và phụ kiện
-- Category có `kind`: `vehicle` (đặt cọc, lái thử) hoặc `accessory` (pin & sạc, thời trang, phụ kiện xe — mua theo số lượng).
-- Mỗi category khai báo `dynamicAttributes` (thuộc tính sản phẩm) và `variantAttributes` (thuộc tính phiên bản: size/màu, dung lượng, dòng xe...).
-- Mỗi phiên bản có 1 dòng tồn kho trong PostgreSQL `inventory (product_id, variant_id)`.
+### 5. Lỗi thường gặp
 
----
+| Hiện tượng | Cách xử lý |
+|---|---|
+| `Bind for 0.0.0.0:8080 failed: port is already allocated` (hoặc 5433, 27018) | Copy `.env.example` thành `.env`, đổi `APP_PORT` / `PG_HOST_PORT` / `MONGO_HOST_PORT`, rồi `docker compose up -d` |
+| `seed` hoặc `mongo-init` báo lỗi, `app` không lên | `docker compose logs seed mongo-init` để xem lỗi; sửa xong chạy `docker compose up -d` lại |
+| `mongo` không healthy | Chờ thêm 30 giây (lần đầu khởi tạo replica set). Vẫn lỗi: `docker compose down -v` rồi `up` lại |
+| `bash\r: not found` / `$'\r': command not found` | File `.sh` bị đổi sang CRLF. Repo đã có `.gitattributes`; chạy `git rm --cached -r . && git reset --hard` để checkout lại đúng LF |
+| Trang trắng hoặc lỗi 500 | `docker compose logs app` |
+| Sau khi pull code mới có thay đổi schema (`database/postgres`, `database/mongo`) | `docker compose run --rm mongo-init` rồi reset dữ liệu bằng lệnh `seed ... --force` |
 
-## Installation cũ (MySQL / XAMPP — không còn dùng)
+### 6. Cấu trúc liên quan đến DB
 
-### Requirements
-- PHP >= 7.0 with PDO, PDO_MySQL, GD extensions
-- MySQL 5.7+ / MariaDB 10.3+
-- Apache with `mod_rewrite` + `AllowOverride All`
-  (or Laragon / XAMPP on Windows)
-
-### Steps
-```bash
-# 1. Place project in web root
-#    XAMPP: C:\xampp\htdocs\vinfast\
-
-# 2. Create DB and import schema // Luu ý : phải tắt mysql của máy trước rồi mới dùng sql của XAMPP, nếu SQL của XAMPP có cài mật khẩu thì mới dùng cờ -p không thì không gắn cờ đó : lệnh chạy bên máy của linh.  VD :
-# sudo /Applications/XAMPP/xamppfiles/bin/mysql -u root vinfast_db < database/schema.sql   (do lệnh mysql đã trùng với mysql cài trên máy )
-
-mysql -u root -p -e "CREATE DATABASE vinfast_db;"
-mysql -u root -p vinfast_db < database/schema.sql
-mysql -u root -p vinfast_db < database/vinfast.sql   # optional sample data
-
-# 3. Edit config/database.php (DB_USER, DB_PASS)
-#    Edit config/bootstrap.php (BASE_URL)
-
-# 4. Generate a real admin password hash (run once in PHP):
-#    echo password_hash('Admin@123', PASSWORD_BCRYPT);
-#    Paste the result into: UPDATE users SET password='...' WHERE email='admin@vinfast.vn';
-
-# 5. Download third-party libs into public/libs/:
-#    Srtdash  : https://github.com/puikinsh/srtdash-admin-dashboard
-#    TinyMCE  : https://www.tiny.cloud/get-tiny/self-hosted/
-#    Swiper   : https://swiperjs.com/get-started
-#    Dropzone : https://docs.dropzone.dev/
-
-# 6. Visit: http://localhost/vinfast/
-#    Admin:   http://localhost/vinfast/admin/dashboard
+```
+docker-compose.yml          postgres, mongo, mongo-init, seed, app
+docker-compose.bench.yml    k6 + cấu hình PostgreSQL cho benchmark
+app/core/Db.php             Db::pg() (PDO), Db::mongo(), Db::transaction()
+app/services/               InventoryService (tồn kho, hợp đồng T4↔T5) …
+database/postgres/          DDL: 001_schema, 002_indexes, 004_coupons
+database/mongo/             001_collections (validator), 002_indexes
+database/seed/              seed.php, generate.php, legacy_data.json, accessories.php
+bench/                      benchmark từng topic (t1 … t5)
+docs/                       kế hoạch hybrid DB và task từng topic
 ```
 
+- PostgreSQL: người dùng, đơn hàng, giỏ, wishlist, tồn kho, coupon, review, nội dung website.
+- MongoDB: `categories` (có `kind` = `vehicle` | `accessory`, thuộc tính động), `products` (phiên bản, màu, 5 review mới nhất), `userActivityLogs`.
+- `product_id` / `variant_id` bên PostgreSQL tham chiếu logic (không FK) sang `products.productID` / `variants.variantId` bên Mongo; đơn hàng lưu snapshot tên và giá.
+
+> Cách cài cũ bằng XAMPP + MySQL (`database/schema.sql`, `products.sql`) **không còn dùng** cho nhánh này. Các file đó chỉ giữ lại để tham khảo.

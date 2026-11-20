@@ -2,7 +2,7 @@
 #
 #   docker compose up -d --build        dựng DB, tạo schema, seed (chỉ lần đầu), chạy app
 #   http://localhost:8080               website        http://localhost:8080/admin
-#   (port khác: APP_PORT=8081 docker compose up -d)
+#   Port bị trùng: copy .env.example thành .env rồi đổi APP_PORT / PG_HOST_PORT / MONGO_HOST_PORT
 #
 # Reset toàn bộ dữ liệu về seed:
 #   docker compose down -v ; docker compose up -d --build
@@ -29,7 +29,7 @@ services:
       POSTGRES_USER: vinfast
       POSTGRES_PASSWORD: vinfast
     command: ["postgres", "-c", "max_connections=200"]
-    ports: ["5433:5432"]
+    ports: ["${PG_HOST_PORT:-5433}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vinfast -d vinfast"]
@@ -40,7 +40,7 @@ services:
   mongo:
     image: mongo:7
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
-    ports: ["27018:27017"]
+    ports: ["${MONGO_HOST_PORT:-27018}:27017"]
     volumes: [mongodata:/data/db]
     healthcheck:
       # Khởi tạo replica set 1 node (cần cho transaction) rồi chờ PRIMARY
