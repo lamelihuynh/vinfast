@@ -289,7 +289,7 @@ Kiểm tra: `docker compose ps` — `postgres`, `mongo`, `app` ở trạng thái
 | `member@vinfast.vn` | `Member@123` | member |
 
 ### 3. Dữ liệu mẫu có sẵn
-- 16 xe (2 danh mục) và 27 phụ kiện (Pin & Sạc, Thời trang, Phụ kiện xe) với phiên bản và tồn kho thật.
+- 16 xe (2 danh mục) và 44 phụ kiện (Pin & Sạc, Thời trang, Phụ kiện xe) lấy từ shop.vinfastauto.com: tên, giá, mã SKU, thông số và ảnh thật (xem đầu file `database/seed/accessories.php`). Tồn kho là số sinh ngẫu nhiên.
 - Tin tức, FAQ, trang Giới thiệu, cài đặt website, liên hệ, lái thử: lấy từ DB production cũ (`database/seed/legacy_data.json`; tài khoản người dùng thật đã được loại bỏ).
 - 3 đơn đặt cọc mẫu của `member@vinfast.vn`.
 
