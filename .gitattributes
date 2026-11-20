@@ -1,0 +1,4 @@
+# Script chạy trong container Linux phải giữ LF
+*.sh text eol=lf
+docker-compose*.yml text eol=lf
+Dockerfile text eol=lf
