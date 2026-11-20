@@ -22,7 +22,8 @@
   --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
   --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+html,body{overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
 .wrap{max-width:920px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
 header.top{padding-block:36px 18px}
@@ -48,23 +49,26 @@ nav.toc{display:flex;gap:4px;overflow-x:auto;margin-top:8px;scrollbar-width:thin
 nav.toc a{flex:none;font-size:12.5px;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;white-space:nowrap}
 nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent);outline:none}
 section{padding-top:36px;scroll-margin-top:110px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
 .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .grid>*{min-width:0}
 .tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:4px;vertical-align:middle}
 .tag.pg{background:var(--pg-soft);color:var(--pg)} .tag.mg{background:var(--mg-soft);color:var(--mg)}
 .tag.ddl{background:var(--warn-soft);color:var(--warn)} .tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.done{background:var(--ok-soft);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent)}
+.tag.lv{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;word-break:break-word}
-pre{background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:8px 0 12px}
+pre{background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:8px 0 12px;max-width:100%}
 pre code{background:none;padding:0;font-size:inherit;word-break:normal}
 ul,ol{margin:0 0 10px;padding-left:22px} li{margin:3px 0}
-.tbl{overflow-x:auto;margin:8px 0 14px;border:1px solid var(--line);border-radius:8px}
+.tbl{overflow-x:auto;margin:8px 0 14px;border:1px solid var(--line);border-radius:8px;max-width:100%}
 table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--bg)}
 tr:last-child td{border-bottom:none}
 .callout{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0}
 .callout.info{border-color:var(--accent);background:var(--accent-soft)}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
 .milestone>h2 .wk{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:400;margin-right:6px}
 .tasks{display:grid;gap:10px}
 .task{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -86,7 +90,22 @@ tr:last-child td{border-bottom:none}
 .files li code{font-weight:600}
 .dod{list-style:none;padding-left:0}
 .dod li::before{content:"✓ ";color:var(--ok);font-weight:700}
-@media (max-width:560px){.task-head{grid-template-columns:1fr auto}.tid{grid-column:1/2}.task-head h3{grid-column:1/3;grid-row:2}.task-head .meta{grid-column:1/3;grid-row:3}.status-slot{grid-row:1;grid-column:2}}
+.check{list-style:none;padding-left:0}
+.check li{margin:6px 0}
+.check label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:5px;flex:none}
+.qa li{margin:4px 0}
+dl.gloss{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 14px;margin:0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--fg)}
+@media (max-width:560px){
+  .task-head{grid-template-columns:1fr auto}.tid{grid-column:1/2}.task-head h3{grid-column:1/3;grid-row:2}.task-head .meta{grid-column:1/3;grid-row:3}.status-slot{grid-row:1;grid-column:2}
+  h1{font-size:24px}
+  .card{padding:14px}
+  .task-body{padding:0 12px 12px}
+  dl.gloss{grid-template-columns:1fr}
+  dl.gloss dd{margin-bottom:8px}
+}
 footer{margin-top:48px;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 </style>
@@ -95,7 +114,7 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
 <header class="top">
   <div class="eyebrow">Đồ án DBMS · VinFast hybrid DB · Topic T3</div>
   <h1>T3 · Xử lý truy vấn: danh sách việc</h1>
-  <p class="lede">Dashboard admin, lịch sử và chi tiết đơn, activity log, port Contact/TestDrive và thí nghiệm so sánh cách viết truy vấn trên PostgreSQL và MongoDB. Bấm vào từng task để xem các bước; trạng thái được chia sẻ cho cả nhóm. Các mục có nhãn DDL cần đối chiếu lại khi có file schema.</p>
+  <p class="lede">Bấm vào từng task để xem các bước. Trạng thái task được chia sẻ cho cả nhóm. Task có nhãn <span class="tag done">ĐÃ LÀM SẴN</span> đã được làm trong Phase 0/0.5: bạn chỉ cần đọc hiểu code và tự trả lời câu hỏi.</p>
 </header>
 
 <div class="bar" role="region" aria-label="Tiến độ">
@@ -110,58 +129,1185 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
     </div>
     <span class="sync" id="sync">Đang kết nối…</span>
   </div>
-  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#query-types">8 loại query</a><a href="#w2">Tuần 2</a><a href="#w3">Tuần 3</a><a href="#w4">Tuần 4</a><a href="#w5">Tuần 5</a><a href="#w6">Tuần 6</a><a href="#thi-nghiem">Thí nghiệm</a><a href="#report">Report &amp; demo</a><a href="#dod">DoD</a></nav>
+  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#kien-thuc">Kiến thức</a><a href="#bat-dau">30 phút đầu</a><a href="#san">Đã làm sẵn</a><a href="#w2">Tuần 2</a><a href="#w3">Tuần 3</a><a href="#w4">Tuần 4</a><a href="#w5">Tuần 5</a><a href="#w6">Tuần 6</a><a href="#query-types">8 loại query</a><a href="#thi-nghiem">Thí nghiệm</a><a href="#phoi-hop">Phối hợp</a><a href="#report">Report &amp; demo</a><a href="#dod">DoD</a><a href="#thuat-ngu">Thuật ngữ</a></nav>
 </div>
 
 <section id="tong-quan">
-<h2>Tổng quan topic</h2>
+<h2>Topic này nói về gì</h2>
 <div class="grid">
 <div class="card">
-<h3>Mục tiêu</h3>
-<p>Viết lại toàn bộ phần đọc dữ liệu đơn hàng và dashboard admin trên PostgreSQL, dùng snapshot trong <code>order_items</code> thay cho JOIN sang bảng <code>products</code> (nay ở MongoDB). Thêm activity log trên Mongo. Đo và giải thích chi phí của các cách viết truy vấn khác nhau trên cùng một dataset.</p>
+<h3>Tóm tắt</h3>
+<p>Khi bạn gửi một câu SQL, PostgreSQL không chạy nó "y như chữ". Bộ <b>planner</b> sẽ chọn cách đọc bảng (dùng index hay quét cả bảng) và cách nối bảng (nested loop, hash join, merge join). MongoDB cũng vậy với <b>aggregation pipeline</b>: thứ tự các stage quyết định có dùng được index hay không.</p>
+<p>App VinFast giờ có dữ liệu ở 2 nơi: đơn hàng ở PostgreSQL, sản phẩm ở MongoDB. Không thể <code>JOIN</code> giữa 2 DB, nên phải chọn: lưu sẵn tên sản phẩm trong đơn (snapshot), hay ghép dữ liệu ở PHP. T3 viết lại các trang đọc đơn hàng, dashboard admin và thống kê từ log, rồi đo xem cách viết nào nhanh hơn, vì sao.</p>
 </div>
 <div class="card">
-<h3>Người phụ trách</h3>
-<p>(điền)</p>
-<h3>Đầu ra cuối cùng</h3>
+<h3>Sau topic này bạn trả lời được</h3>
 <ul>
-<li>Code: <code>DashboardService</code>, phần đọc của <code>Order.php</code>, trang chi tiết đơn, <code>ActivityLog</code>, port Contact/TestDrive.</li>
-<li>Thí nghiệm: <code>bench/t3/</code> + <code>bench/results/t3_*.csv</code> + plan JSON + biểu đồ.</li>
-<li>Report: chương Query processing + bảng 8 loại query-update + demo 10 phút.</li>
+<li>Đọc một <code>EXPLAIN ANALYZE</code>: node nào tốn thời gian nhất, planner ước lượng sai ở đâu.</li>
+<li>Khi nào planner chọn Nested Loop, Hash Join, Merge Join.</li>
+<li>Subquery, JOIN, CTE, window function, <code>LATERAL</code>, materialized view khác nhau thế nào về plan và tốc độ.</li>
+<li>Viết pipeline <code>$match → $group → $sort → $limit → $lookup</code> đúng thứ tự để dùng index.</li>
+<li>Join trong DB vs join ở PHP vs N+1: tốn bao nhiêu round trip, bao nhiêu ms.</li>
+<li>Vì sao phân trang <code>OFFSET</code> chậm dần ở trang sâu, keyset thì không.</li>
 </ul>
 </div>
 </div>
-<h3 style="margin-top:22px">Phạm vi</h3>
+<h3 style="margin-top:22px">Đầu ra cuối cùng</h3>
+<ul>
+<li><b>Code:</b> <code>app/services/DashboardService.php</code> (mới), phần đọc của <code>app/models/Order.php</code>, trang <code>/order/detail/{id}</code>, hàm thống kê trong <code>app/models/ActivityLog.php</code>.</li>
+<li><b>Thí nghiệm:</b> script trong <code>bench/t3/</code>, kết quả <code>bench/results/t3_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code>, plan JSON, biểu đồ.</li>
+<li><b>Report:</b> chương Query processing, bảng 8 loại query-update, demo 10 phút.</li>
+</ul>
+<h3>Phạm vi</h3>
 <div class="tbl"><table>
-<thead><tr><th>Trong phạm vi</th><th>Ngoài phạm vi (topic khác làm)</th></tr></thead>
+<thead><tr><th>T3 làm (phần ĐỌC)</th><th>Topic khác làm</th></tr></thead>
 <tbody>
-<tr><td>Đọc đơn: <code>getByUserId</code>, <code>countByUserId</code>, <code>getById</code>, <code>getAdminList</code>, <code>countAdminList</code>, <code>countAdminPaymentSummary</code>, <code>buildAdminFilters</code>, <code>paymentStatusSql</code>, <code>getPaymentStatusFromNote</code></td><td>Ghi đơn: <code>create</code>, <code>updateStatus</code>, <code>updatePaymentStatus</code>, <code>OrderService</code> (T4)</td></tr>
-<tr><td>Trang <code>/order/detail/{id}</code>, <code>/user/orders</code>, <code>/order</code>, admin chi tiết đơn có bảng item</td><td>Giỏ hàng, checkout, coupon (T4)</td></tr>
-<tr><td><code>DashboardService</code>, partial <code>low-stock.php</code>, <code>top-selling.php</code></td><td>Query tồn kho <code>Inventory::lowStock</code> (T5 cung cấp)</td></tr>
-<tr><td><code>ActivityLog</code> model + thống kê từ khóa</td><td>Chèn lời gọi <code>ActivityLog::record</code> vào Product/Cart/Wishlist/OrderService (T1, T2, T4)</td></tr>
-<tr><td>Port <code>Contact.php</code>, <code>TestDrive.php</code>, <code>ContactAdminController.php</code>; phần sinh đơn hàng cho seed</td><td>Khung <code>seed.php</code>, khung <code>bench/</code> (T5); file index (T2)</td></tr>
-</tbody>
-</table></div>
-<h3>Giao diện với topic khác</h3>
-<div class="tbl"><table>
-<thead><tr><th>Hướng</th><th>Nội dung</th><th>Với ai</th><th>Hạn</th></tr></thead>
-<tbody>
-<tr><td>Cần</td><td>DDL <code>orders</code>, <code>order_items</code> (cột snapshot), <code>contacts</code>, <code>test_drives</code></td><td>Bạn viết DDL / T1</td><td>Tối nay</td></tr>
-<tr><td>Cần</td><td><code>seed.php --size=small|10k|100k</code> có điểm gắn generator đơn hàng, RNG seed cố định</td><td>T5</td><td>Giữa tuần 2</td></tr>
-<tr><td>Cần</td><td><code>OrderService::place()</code> ghi đủ snapshot <code>order_items</code> và <code>orders.total_amount</code>, <code>payment_status</code></td><td>T4</td><td>Cuối tuần 3</td></tr>
-<tr><td>Cần</td><td><code>Inventory::lowStock(int $threshold, int $limit): array</code></td><td>T5</td><td>Tuần 4</td></tr>
-<tr><td>Cần</td><td><code>Product::findManyByIds(array $ids): array</code> (một lần <code>$in</code>), <code>Product::countActive()</code></td><td>T1</td><td>Cuối tuần 2</td></tr>
-<tr><td>Cần</td><td>Index <code>orders(user_id, created_at DESC)</code>, <code>order_items(order_id)</code>, <code>(product_id)</code></td><td>T2</td><td>Tuần 3</td></tr>
-<tr><td>Cung cấp</td><td><code>ActivityLog::record(?int $userId, string $actionType, array $data = [])</code></td><td>T1, T2, T4</td><td>Đầu tuần 3</td></tr>
-<tr><td>Cung cấp</td><td>Generator đơn hàng (50 đơn small, 100k/300k bench) + collection <code>orders_bench</code></td><td>T5, T4</td><td>Cuối tuần 2 / tuần 5</td></tr>
-<tr><td>Cung cấp</td><td>Hai index Mongo cho <code>userActivityLogs</code> để T2 đưa vào <code>database/mongo/002_indexes.js</code></td><td>T2</td><td>Tuần 3</td></tr>
-<tr><td>Cung cấp</td><td>Bảng đối chiếu 8 loại query-update (khung + phần của T3), các topic điền dòng của mình</td><td>Cả nhóm</td><td>Tuần 4</td></tr>
+<tr><td>Đọc đơn: <code>Order::getByUserId</code>, <code>getById</code>, <code>getAdminList</code>, <code>countAdminList</code>, <code>countAdminPaymentSummary</code>, <code>buildAdminFilters</code>; hàm mới <code>getItemsByOrderIds</code>, <code>getByIdForUser</code></td><td>Ghi đơn: <code>Order::create</code>, <code>updateStatus</code>, <code>updatePaymentStatus</code>, checkout giỏ hàng, coupon (T4)</td></tr>
+<tr><td>Trang <code>/order</code>, <code>/user/orders</code>, <code>/order/detail/{id}</code>, <code>/admin/orders</code>, <code>/admin/orders/detail/{id}</code></td><td>Trừ tồn kho <code>InventoryService::decrement</code> (T5)</td></tr>
+<tr><td>Dashboard admin: tách SQL ra <code>DashboardService</code>, thêm khối bán chạy, sắp hết hàng, từ khóa tìm nhiều, sản phẩm xem nhiều</td><td>Index baseline <code>002_indexes.sql</code>, <code>002_indexes.js</code> (T2)</td></tr>
+<tr><td>Hàm thống kê trên <code>userActivityLogs</code></td><td>Gọi <code>ActivityLog::record</code> ở Cart, Wishlist, OrderService (T2, T4)</td></tr>
+<tr><td>Thí nghiệm <code>bench/t3/</code></td><td>Khung seed, k6 (T5); thí nghiệm index (T2)</td></tr>
 </tbody>
 </table></div>
 </section>
+
+<section id="kien-thuc">
+<h2>Kiến thức cần nắm trước</h2>
+<p>Đọc lướt phần này trước khi làm task. Mỗi khái niệm có ví dụ trên dữ liệu VinFast.</p>
+<div class="grid">
+<div class="card">
+<h3>Planner và EXPLAIN</h3>
+<p>Planner ước lượng <b>cost</b> cho nhiều cách chạy rồi chọn cách rẻ nhất. Cost là đơn vị tương đối, không phải ms.</p>
+<p><code>EXPLAIN</code> in plan dự kiến. <code>EXPLAIN ANALYZE</code> chạy thật và in thêm thời gian, số dòng thật. Đọc plan từ node thụt sâu nhất ra ngoài.</p>
+<p>Ví dụ: lọc <code>orders WHERE user_id = 2</code> sẽ thấy <code>Index Scan using idx_orders_user_created</code>. Bỏ điều kiện thì thấy <code>Seq Scan on orders</code>.</p>
+</div>
+<div class="card">
+<h3>3 thuật toán join</h3>
+<ul>
+<li><b>Nested Loop:</b> với mỗi dòng bảng ngoài, tìm dòng khớp ở bảng trong (tốt khi bảng ngoài ít dòng và bảng trong có index). Ví dụ: 10 đơn của 1 user → tìm item theo <code>idx_order_items_order</code>.</li>
+<li><b>Hash Join:</b> dựng bảng băm từ bảng nhỏ, quét bảng lớn để dò. Tốt khi nối nhiều dòng, điều kiện <code>=</code>. Ví dụ: toàn bộ <code>orders ⋈ order_items</code> để tính top bán chạy.</li>
+<li><b>Merge Join:</b> hai phía đã sắp theo khóa join rồi trộn. Tốt khi cả hai đã có thứ tự (index hoặc Sort).</li>
+</ul>
+</div>
+<div class="card">
+<h3>CTE, window function, LATERAL</h3>
+<p><b>CTE</b> (<code>WITH x AS (...)</code>) giúp chia câu dài thành từng bước. Từ PostgreSQL 12, CTE thường được "inline" vào câu chính. Viết <code>AS MATERIALIZED</code> để bắt nó chạy riêng một lần.</p>
+<p><b>Window function</b> tính trên một "cửa sổ" dòng mà không gộp dòng. Ví dụ <code>COUNT(*) OVER()</code> trả tổng số đơn cạnh từng dòng; <code>ROW_NUMBER() OVER (PARTITION BY tháng ORDER BY qty DESC)</code> lấy top 3 sản phẩm mỗi tháng.</p>
+<p><b>LATERAL</b>: subquery bên phải được dùng cột của bảng bên trái. <code>Order.php</code> dùng nó để lấy item đầu tiên của mỗi đơn.</p>
+</div>
+<div class="card">
+<h3>Aggregation pipeline (MongoDB)</h3>
+<p>Pipeline là một mảng stage, dữ liệu chảy qua từng stage theo thứ tự.</p>
+<ul>
+<li><code>$match</code>: lọc (như <code>WHERE</code>). Đặt đầu tiên thì dùng được index.</li>
+<li><code>$group</code>: gộp (như <code>GROUP BY</code>).</li>
+<li><code>$sort</code>, <code>$limit</code>, <code>$project</code>.</li>
+<li><code>$unwind</code>: tách mảng thành nhiều document (mỗi item một document).</li>
+<li><code>$lookup</code>: "join" sang collection khác <b>trong cùng DB Mongo</b>. Không join được sang PostgreSQL.</li>
+</ul>
+<p>Xem plan bằng <code>db.coll.explain("executionStats").aggregate([...])</code>, tìm <code>IXSCAN</code> (dùng index) hay <code>COLLSCAN</code> (quét hết).</p>
+</div>
+<div class="card">
+<h3>Join khi dữ liệu ở 2 DB</h3>
+<p><code>order_items</code> ở PG, <code>products</code> ở Mongo. Có 3 cách hiện tên sản phẩm trong lịch sử đơn:</p>
+<ol>
+<li><b>Snapshot:</b> đọc <code>order_items.product_name_snapshot</code>. 1 DB, ít round trip. Tên là tên lúc mua.</li>
+<li><b>Join ở backend:</b> lấy <code>product_id</code> từ PG, gọi Mongo một lần <code>{productID: {$in: [...]}}</code>, ghép trong PHP.</li>
+<li><b>N+1:</b> mỗi item gọi Mongo một lần. Code ngắn nhưng chậm khi nhiều item.</li>
+</ol>
+</div>
+<div class="card">
+<h3>Phân trang OFFSET và keyset</h3>
+<p><code>LIMIT 20 OFFSET 20000</code> vẫn phải đọc và bỏ đi 20 000 dòng đầu. Trang càng sâu càng chậm.</p>
+<p>Keyset nhớ dòng cuối của trang trước: <code>WHERE (created_at, id) &lt; (:last_created, :last_id) ORDER BY created_at DESC, id DESC LIMIT 20</code>. Có index thì tốc độ gần như không đổi theo số trang. Đổi lại, không nhảy thẳng tới trang 500 được.</p>
+</div>
+</div>
+<h3 style="margin-top:18px">Tài liệu chính thức</h3>
+<ul>
+<li>PostgreSQL 16: <a href="https://www.postgresql.org/docs/16/using-explain.html">Using EXPLAIN</a> (đọc mục 14.1).</li>
+<li>PostgreSQL 16: <a href="https://www.postgresql.org/docs/16/planner-optimizer.html">Planner/Optimizer</a> (các thuật toán join).</li>
+<li>MongoDB: <a href="https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/">Aggregation Pipeline Optimization</a> (thứ tự stage, dùng index).</li>
+</ul>
+</section>
+
+<section id="bat-dau">
+<h2>Bắt đầu trong 30 phút</h2>
+<ol>
+<li><b>Chạy app.</b> Làm theo README mục "Cài đặt và chạy trên máy local": <code>git checkout develop-hybrid</code>, <code>docker compose up -d --build</code>, mở <a href="http://localhost:8080">http://localhost:8080</a>. Đăng nhập tài khoản test <code>member@vinfast.vn</code> (mật khẩu trong README), mở <code>/user/orders</code>. Đăng nhập <code>admin@vinfast.vn</code>, mở <code>/admin/dashboard</code>.</li>
+<li><b>Mở psql</b> (PostgreSQL trong container):
+<pre><code>docker compose exec postgres psql -U vinfast -d vinfast</code></pre></li>
+<li><b>Chạy truy vấn mẫu:</b> các đơn của member (user id 2), kèm tên item đầu tiên. Đây chính là cách <code>Order.php</code> đang làm.
+<pre><code>SELECT o.id, o.type, o.status, o.total_amount, p.product_name
+FROM orders o
+LEFT JOIN LATERAL (
+  SELECT oi.product_name_snapshot AS product_name
+  FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id LIMIT 1
+) p ON TRUE
+WHERE o.user_id = 2
+ORDER BY o.created_at DESC;</code></pre>
+<p>Kết quả mong đợi trên seed cơ bản: 3 đơn đặt cọc (<code>VinFast Evo</code> 2 000 000, <code>VinFast AMIO</code> 15 000 000, <code>VinFast VF 3 Eco</code> 15 000 000). Nếu bạn đã đặt thêm đơn thì sẽ có nhiều dòng hơn.</p>
+<p>Thêm <code>EXPLAIN</code> ở đầu câu. Bạn sẽ thấy <code>Nested Loop Left Join</code>, bên ngoài là <code>Index Scan using idx_orders_user_created</code>, bên trong là <code>Index Scan using idx_order_items_order</code>. Thoát psql bằng <code>\q</code>.</p></li>
+<li><b>Mở mongosh và chạy 1 pipeline:</b> đếm sản phẩm đang bán theo danh mục.
+<pre><code>docker compose exec mongo mongosh vinfast
+
+db.products.aggregate([
+  { $match: { isActive: true } },
+  { $group: { _id: "$categoryID", soSanPham: { $sum: 1 }, giaTB: { $avg: "$basePrice" } } },
+  { $sort: { _id: 1 } }
+])</code></pre>
+<p>Kết quả mong đợi trên seed cơ bản: 5 nhóm, <code>_id</code> 1 đến 5, số sản phẩm lần lượt 6, 10, 8, 21, 15 (16 xe + 44 phụ kiện = 60 sản phẩm). Xem tên danh mục: <code>db.categories.find({}, {_id:0, categoryID:1, name:1, kind:1})</code>.</p></li>
+<li><b>Đọc 5 file theo thứ tự:</b>
+<ol>
+<li><code>database/postgres/001_schema.sql</code> mục 5 (bảng <code>orders</code>, <code>order_items</code>).</li>
+<li><code>app/models/Order.php</code>: hằng <code>FIRST_ITEM_JOIN</code>, <code>SQL_BASE</code>, hàm <code>getByUserId</code>, <code>getAdminList</code>.</li>
+<li><code>app/controllers/admin/DashboardAdminController.php</code>: các hàm <code>build*</code>.</li>
+<li><code>app/models/ActivityLog.php</code> và chỗ gọi trong <code>app/controllers/frontend/ProductController.php</code> (tìm <code>ActivityLog::record</code>).</li>
+<li><code>database/postgres/002_indexes.sql</code> và <code>database/mongo/002_indexes.js</code>: index nào phục vụ câu nào.</li>
+</ol></li>
+</ol>
+<div class="callout info">Thí nghiệm cần dữ liệu lớn. Không seed lớn vào DB dev <code>vinfast</code>; dùng DB riêng <code>vinfast_bench</code> theo <code>bench/README.md</code> (xem task T3-25).</div>
+</section>
+
+<section class="milestone" id="san">
+<h2><span class="wk">Phase 0/0.5</span>Đã làm sẵn: đọc hiểu</h2>
+<div class="callout ok">Các task dưới đây đã có trong code. Việc của bạn: đọc file, chạy lệnh kiểm tra, tự trả lời câu hỏi (ghi câu trả lời ngắn vào <code>bench/t3/README.md</code> mục "Ghi chú đọc hiểu"). Trạng thái mặc định là Xong.</div>
+<div class="tasks">
+<article class="task" data-task="t3-01" data-default="done">
+<div class="task-head">
+<span class="tid">T3-01</span>
+<h3>Đọc hiểu schema đơn hàng (orders, order_items)</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag done">ĐÃ LÀM SẴN</span> <span class="tag lv">Dễ</span> ~1h · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu cấu trúc bảng đơn hàng mà mọi câu truy vấn của T3 dựa vào.</p>
+<h4>Vì sao cần</h4>
+<p>Mọi câu SQL trong T3 đọc 2 bảng này. Hiểu sai một cột (ví dụ <code>total_amount</code>) là dashboard sai số.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Đọc <code>database/postgres/001_schema.sql</code> mục 5 và <code>002_indexes.sql</code>.</li>
+<li>Xem bảng thật: <code>docker compose exec postgres psql -U vinfast -d vinfast -c '\d+ order_items'</code>.</li>
+<li>Trả lời các câu hỏi dưới.</li>
+</ol>
+<h4>Câu hỏi tự trả lời</h4>
+<ol class="qa">
+<li>Vì sao <code>order_items</code> lưu <code>product_name_snapshot</code>, <code>unit_price</code> thay vì JOIN sang bảng sản phẩm?</li>
+<li><code>subtotal ... GENERATED ALWAYS AS (unit_price * quantity) STORED</code> nghĩa là gì? Có <code>INSERT</code> giá trị tay vào cột này được không?</li>
+<li>Ràng buộc <code>ck_orders_total</code> bảo vệ điều gì? Doanh thu dashboard nên cộng cột nào?</li>
+<li><code>order_items.product_id</code> là <code>VARCHAR(32)</code> và không có FOREIGN KEY. Vì sao?</li>
+<li>Index nào phục vụ "lịch sử đơn của 1 user, mới nhất trước"? Index nào phục vụ "top sản phẩm bán chạy"?</li>
+</ol>
+<h4>Kết quả mong đợi</h4>
+<p>5 câu trả lời ngắn trong <code>bench/t3/README.md</code>.</p>
+</div>
+</article>
+<article class="task" data-task="t3-02" data-default="done">
+<div class="task-head">
+<span class="tid">T3-02</span>
+<h3>Đọc hiểu Contact.php đã chạy trên PostgreSQL</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag done">ĐÃ LÀM SẴN</span> <span class="tag lv">Dễ</span> ~30 phút · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu các thay đổi khi chuyển câu SQL MySQL sang PostgreSQL.</p>
+<h4>Đã có trong code</h4>
+<p><code>app/models/Contact.php</code>: <code>FIELD(status, ...)</code> đã đổi thành <code>CASE c.status WHEN 'unread' THEN 1 ...</code>; chuỗi dùng nháy đơn.</p>
+<h4>Câu hỏi tự trả lời</h4>
+<ol class="qa">
+<li>Ở PostgreSQL, <code>"unread"</code> (nháy kép) và <code>'unread'</code> (nháy đơn) khác nhau thế nào?</li>
+<li><code>ORDER BY CASE ...</code> có dùng được index <code>idx_contacts_status_created</code> không? Kiểm tra bằng <code>EXPLAIN</code>.</li>
+<li>Mở <code>ContactAdminController::index</code>: trang danh sách liên hệ gửi bao nhiêu câu <code>COUNT</code>? (Câu trả lời dẫn tới task T3-23.)</li>
+</ol>
+</div>
+</article>
+<article class="task" data-task="t3-03" data-default="done">
+<div class="task-head">
+<span class="tid">T3-03</span>
+<h3>Đọc hiểu TestDrive: snapshot tên xe thay cho JOIN products</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag done">ĐÃ LÀM SẴN</span> <span class="tag lv">Dễ</span> ~30 phút · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> thấy một ví dụ nhỏ của chiến lược snapshot.</p>
+<h4>Đã có trong code</h4>
+<p><code>TestDrive::create</code> đọc tên xe từ Mongo (<code>Product::getByIdAdmin</code>) đúng một lần lúc tạo, lưu vào <code>test_drives.product_name_snapshot</code>. <code>getPaginated</code> chỉ đọc PG, không JOIN.</p>
+<h4>Câu hỏi tự trả lời</h4>
+<ol class="qa">
+<li>Admin đổi tên xe trong Mongo. Danh sách lái thử hiện tên cũ hay mới? Như vậy đúng hay sai về nghiệp vụ?</li>
+<li>Nếu Mongo tắt đúng lúc khách đăng ký lái thử thì <code>product_name_snapshot</code> nhận giá trị gì?</li>
+<li>So với cách "mỗi dòng gọi Mongo một lần", cách snapshot tiết kiệm bao nhiêu round trip cho trang 7 dòng?</li>
+</ol>
+</div>
+</article>
+<article class="task" data-task="t3-04" data-default="done">
+<div class="task-head">
+<span class="tid">T3-04</span>
+<h3>Đọc hiểu generator dữ liệu đơn hàng (small, 10k, 100k)</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag done">ĐÃ LÀM SẴN</span> <span class="tag lv">Vừa</span> ~1.5h · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> biết dữ liệu benchmark trông thế nào trước khi đo.</p>
+<h4>Đã có trong code</h4>
+<p><code>database/seed/generate.php</code> (hàm <code>generateBenchData</code>) sinh users, orders, order_items, review, giỏ hàng, coupon và <code>userActivityLogs</code>. Seed tất định (<code>mt_srand(20261121)</code>). Số dòng thực tế ghi trong <code>database/seed/README.md</code>: ví dụ 100k có 100 000 đơn và 151 263 order_items (khoảng 1.5 item/đơn).</p>
+<h4>Các bước</h4>
+<ol>
+<li>Đọc <code>database/seed/README.md</code> mục "Kích thước" và "Dữ liệu sinh ra trông như thế nào".</li>
+<li>Đọc phần sinh đơn trong <code>generate.php</code> (tìm <code>order_items</code>).</li>
+<li>Trên DB <code>vinfast_bench</code> (task T3-25 có lệnh tạo), chạy kiểm tra:
+<pre><code>SELECT COUNT(*) FROM orders o
+WHERE o.subtotal_amount &lt;&gt; (SELECT SUM(subtotal) FROM order_items i WHERE i.order_id = o.id);</code></pre></li>
+</ol>
+<h4>Câu hỏi tự trả lời</h4>
+<ol class="qa">
+<li>Phân bố trạng thái đơn và loại đơn (<code>deposit</code>/<code>purchase</code>) trong dữ liệu sinh ra? Chạy <code>SELECT type, status, COUNT(*) FROM orders GROUP BY 1,2</code>.</li>
+<li>Câu kiểm tra trên trả về bao nhiêu? (Mong đợi 0. Khác 0 thì báo nhóm.)</li>
+<li>Vì sao thời gian đơn được tính lùi từ ngày chạy? Ảnh hưởng gì tới so sánh kết quả giữa 2 ngày chạy?</li>
+</ol>
+</div>
+</article>
+<article class="task" data-task="t3-10" data-default="done">
+<div class="task-head">
+<span class="tid">T3-10</span>
+<h3>Đọc hiểu ActivityLog::record và index của userActivityLogs</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag done">ĐÃ LÀM SẴN</span> <span class="tag lv">Dễ</span> ~1h · <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> biết log được ghi ở đâu, có những trường nào, để viết thống kê ở T3-15.</p>
+<h4>Đã có trong code</h4>
+<ul>
+<li><code>ActivityLog::record(string $actionType, ?string $targetId = null, array $metadata = [])</code> ghi vào collection <code>userActivityLogs</code>, bọc <code>try/catch</code>.</li>
+<li><code>ProductController</code> đang ghi <code>search</code> (trang 1 có từ khóa, lưu ở <code>metadata.keyword</code>) và <code>view_product</code> (<code>targetId</code> = <code>productID</code>).</li>
+<li>Validator ở <code>database/mongo/001_collections.js</code>; index ở <code>002_indexes.js</code>: <code>idx_user_time</code>, <code>idx_action_time</code>, <code>idx_search_keyword</code> (partial, chỉ log <code>search</code>).</li>
+</ul>
+<h4>Các bước</h4>
+<ol>
+<li>Tìm vài từ khóa trên <code>/products</code>, mở vài trang sản phẩm.</li>
+<li>Xem log: <code>db.userActivityLogs.find({}, {_id:0}).sort({timestamp:-1}).limit(3)</code>.</li>
+<li>Xem index: <code>db.userActivityLogs.getIndexes()</code>.</li>
+</ol>
+<h4>Câu hỏi tự trả lời</h4>
+<ol class="qa">
+<li>Vì sao ghi log lỗi không được làm hỏng trang? Đoạn code nào đảm bảo điều này?</li>
+<li>Tìm "VF 8" rồi "vf 8": log lưu 2 từ khóa giống hay khác nhau? (Hiện code chưa chuẩn hóa chữ hoa/thường, xử lý ở T3-15.)</li>
+<li><code>docker compose stop mongo</code>, mở một trang sản phẩm, đo thời gian tải, rồi <code>docker compose start mongo</code>. Trang có chậm hẳn không? <code>Db::mongo()</code> có đặt <code>serverSelectionTimeoutMS</code> không? Nếu chậm nhiều giây, báo người giữ <code>app/core/Db.php</code>.</li>
+</ol>
+</div>
+</article>
+</div>
+</section>
+
+<section class="milestone" id="w2">
+<h2><span class="wk">Tuần 2</span>Khởi động với EXPLAIN, đọc đơn hàng</h2>
+<div class="tasks">
+<article class="task" data-task="t3-25">
+<div class="task-head">
+<span class="tid">T3-25</span>
+<h3>Khởi động: dựng vinfast_bench, đọc EXPLAIN và 3 thuật toán join</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag new">MỚI</span> <span class="tag lv">Dễ</span> ~4h · Phụ thuộc: không · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> tự tay thấy Nested Loop, Hash Join, Merge Join trên cùng một câu SQL.</p>
+<h4>Vì sao cần</h4>
+<p>Đây là nền cho mọi thí nghiệm tuần 5. Trên DB dev chỉ có 3 đơn, planner luôn chọn Nested Loop. Cần dữ liệu 10k để thấy khác biệt.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Tạo DB benchmark (lệnh từ <code>bench/README.md</code>):
+<pre><code>docker compose exec -T postgres createdb -U vinfast vinfast_bench
+docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php database/seed/seed.php --force --size=10k</code></pre></li>
+<li>Mở psql vào DB đó: <code>docker compose exec postgres psql -U vinfast -d vinfast_bench</code>.</li>
+<li>Chạy câu join và ghi lại node join:
+<pre><code>EXPLAIN (ANALYZE, BUFFERS)
+SELECT oi.product_id, SUM(oi.quantity) AS qty
+FROM orders o JOIN order_items oi ON oi.order_id = o.id
+WHERE o.status &lt;&gt; 'cancelled'
+GROUP BY oi.product_id ORDER BY qty DESC LIMIT 10;</code></pre></li>
+<li>Ép planner đổi thuật toán (chỉ trong phiên psql này), chạy lại câu trên sau mỗi lệnh:
+<pre><code>SET enable_hashjoin = off;   -- thường thấy Merge Join
+SET enable_mergejoin = off;  -- giờ còn Nested Loop
+RESET ALL;</code></pre></li>
+<li>Thử 3 kỹ thuật khác, mỗi kỹ thuật xem plan:
+<pre><code>-- CTE: so sánh 2 plan
+WITH valid AS (SELECT id FROM orders WHERE status &lt;&gt; 'cancelled')
+SELECT COUNT(*) FROM order_items oi JOIN valid v ON v.id = oi.order_id;
+WITH valid AS MATERIALIZED (SELECT id FROM orders WHERE status &lt;&gt; 'cancelled')
+SELECT COUNT(*) FROM order_items oi JOIN valid v ON v.id = oi.order_id;
+
+-- Window function: top 3 sản phẩm mỗi tháng
+WITH monthly AS (
+  SELECT date_trunc('month', o.created_at) AS m, oi.product_id,
+         MIN(oi.product_name_snapshot) AS name, SUM(oi.quantity) AS qty
+  FROM orders o JOIN order_items oi ON oi.order_id = o.id
+  WHERE o.status &lt;&gt; 'cancelled'
+  GROUP BY 1, 2)
+SELECT to_char(m, 'YYYY-MM') AS ym, name, qty, rn FROM (
+  SELECT m, name, qty, ROW_NUMBER() OVER (PARTITION BY m ORDER BY qty DESC, name) AS rn
+  FROM monthly) t
+WHERE rn &lt;= 3 ORDER BY m, rn;</code></pre></li>
+<li>Lưu các câu vào <code>bench/t3/warmup.sql</code>, ghi nhận xét vào <code>bench/t3/README.md</code>.</li>
+</ol>
+<h4>File</h4>
+<ul class="files"><li><code>bench/t3/warmup.sql</code> <span class="tag new">MỚI</span>, <code>bench/t3/README.md</code> <span class="tag new">MỚI</span></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Có ghi chép cho cả 3 node: <code>Hash Join</code>, <code>Merge Join</code>, <code>Nested Loop</code>, kèm thời gian <code>Execution Time</code> của mỗi lần.</li>
+<li>Trả lời được: planner tự chọn thuật toán nào, vì sao, và <code>rows=</code> ước lượng lệch bao nhiêu so với <code>actual rows</code>.</li>
+<li>Câu window function trả tối đa 3 dòng mỗi tháng.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Quên <code>-d vinfast_bench</code> nên chạy trên DB dev (chỉ 3 đơn).</li>
+<li>Quên <code>RESET ALL</code> rồi đo câu khác: kết quả bị sai vì planner vẫn đang bị cấm hash join.</li>
+<li>Chạy <code>EXPLAIN ANALYZE</code> với câu <code>UPDATE</code>/<code>DELETE</code>: nó chạy thật. Bọc trong <code>BEGIN; ... ROLLBACK;</code>.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-05">
+<div class="task-head">
+<span class="tid">T3-05</span>
+<h3>Order.php: lấy đủ item của đơn, chi tiết đơn an toàn</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~5h · Phụ thuộc: T3-01 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> trang danh sách đơn tối đa 2 round trip, trang chi tiết đơn 1 round trip PG, hiện đủ mọi item.</p>
+<h4>Vì sao cần</h4>
+<p>Hiện tại <code>Order.php</code> chỉ lấy <b>item đầu tiên</b> (qua <code>FIRST_ITEM_JOIN</code>, dùng <code>LEFT JOIN LATERAL ... LIMIT 1</code>). Đơn mua phụ kiện có 1–4 món, nên trang đơn đang thiếu dữ liệu.</p>
+<h4>Đã có sẵn</h4>
+<p>Đã bỏ JOIN <code>products</code>, đã dùng snapshot và cột <code>payment_status</code>. Phần dưới đây là phần còn thiếu.</p>
+<h4>Các bước</h4>
+<ol>
+<li><code>getByUserId</code>: thêm <code>o.id DESC</code> vào <code>ORDER BY</code> (thứ tự ổn định khi 2 đơn cùng giờ) và <code>COUNT(*) OVER() AS total_rows</code> để controller khỏi gọi <code>countByUserId</code>.</li>
+<li>Thêm <code>getItemsByOrderIds(array $ids): array</code>, trả <code>[orderId =&gt; [item, ...]]</code> bằng <b>một</b> câu <code>= ANY(...)</code>.</li>
+<li>Thêm <code>getByIdForUser(int $id, int $userId): ?array</code>: một câu, item gom bằng <code>json_agg</code>. Điều kiện <code>user_id</code> nằm trong SQL để user không xem được đơn người khác.</li>
+<li>Giữ các khóa cũ (<code>product_name</code>, <code>price</code>) để view cũ không vỡ.</li>
+</ol>
+<pre><code>-- round trip 1: danh sách đơn
+SELECT o.id, o.type, o.status, o.payment_status, o.total_amount, o.created_at,
+       COUNT(*) OVER() AS total_rows
+FROM orders o
+WHERE o.user_id = :uid
+ORDER BY o.created_at DESC, o.id DESC
+LIMIT :limit OFFSET :offset;
+
+-- round trip 2: item của các đơn trên
+SELECT oi.order_id, oi.product_id, oi.variant_id, oi.product_name_snapshot,
+       oi.variant_name_snapshot, oi.color_name_snapshot, oi.unit_price, oi.quantity, oi.subtotal
+FROM order_items oi
+WHERE oi.order_id = ANY(CAST(:ids AS bigint[]))   -- bind chuỗi '{12,15,18}'
+ORDER BY oi.order_id, oi.id;
+
+-- getByIdForUser: 1 round trip
+SELECT o.*, u.name AS user_name, u.email,
+       COALESCE(json_agg(json_build_object(
+           'product_id', oi.product_id, 'variant_id', oi.variant_id,
+           'product_name', oi.product_name_snapshot, 'variant_name', oi.variant_name_snapshot,
+           'color_name', oi.color_name_snapshot, 'unit_price', oi.unit_price,
+           'quantity', oi.quantity, 'subtotal', oi.subtotal)
+         ORDER BY oi.id) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
+FROM orders o
+JOIN users u ON u.id = o.user_id
+LEFT JOIN order_items oi ON oi.order_id = o.id
+WHERE o.id = :id AND o.user_id = :uid
+GROUP BY o.id, u.id;</code></pre>
+<h4>File</h4>
+<ul class="files"><li><code>app/models/Order.php</code>, chỉ phần đọc (không sửa <code>create</code>, <code>updateStatus</code>, <code>updatePaymentStatus</code> của T4)</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Chạy 3 câu trên trong psql với <code>user_id = 2</code>: câu 1 có <code>total_rows = 3</code>; câu 3 với <code>id = 1</code> trả 1 dòng, cột <code>items</code> là mảng JSON 1 phần tử.</li>
+<li>Câu 3 với <code>user_id</code> khác chủ đơn trả 0 dòng.</li>
+<li><code>EXPLAIN</code> câu 1 có <code>Index Scan using idx_orders_user_created</code>.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>PDO không bind được mảng PHP. Đổi thành chuỗi: <code>'{' . implode(',', array_map('intval', $ids)) . '}'</code>.</li>
+<li>Mảng <code>$ids</code> rỗng: trả <code>[]</code> ngay, đừng gửi câu SQL.</li>
+<li>PDO trả <code>items</code> dạng chuỗi JSON: phải <code>json_decode($row['items'], true)</code>.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-23">
+<div class="task-head">
+<span class="tid">T3-23</span>
+<h3>Gộp các câu COUNT theo trạng thái thành 1 câu</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag new">MỚI</span> <span class="tag lv">Dễ</span> ~3h · Phụ thuộc: T3-02 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> trang <code>/admin/contacts</code> chỉ gửi 1 câu đếm thay vì 5–6 câu.</p>
+<h4>Vì sao cần</h4>
+<p><code>ContactAdminController::index</code> gọi <code>Contact::countAll</code> 5 lần (tab liên hệ) và <code>TestDrive::countAll</code> 6 lần (tab lái thử). Mỗi lần là một round trip. Đây là dạng "nhiều câu nhỏ" giống N+1.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Thêm <code>Contact::countByStatus(): array</code> và <code>TestDrive::countByStatus(): array</code>, trả <code>['all' =&gt; .., 'unread' =&gt; .., ...]</code>.</li>
+<li>Viết bằng <code>COUNT(*) FILTER</code> (1 dòng kết quả) hoặc <code>GROUP BY status</code> (nhiều dòng, ghép ở PHP). Chọn một, giải thích vì sao.</li>
+<li>Trong controller, lấy <code>$total</code> từ mảng đếm thay vì gọi thêm <code>countAll($status)</code>.</li>
+</ol>
+<pre><code>SELECT COUNT(*)                                   AS "all",
+       COUNT(*) FILTER (WHERE status = 'unread')  AS unread,
+       COUNT(*) FILTER (WHERE status = 'read')    AS "read",
+       COUNT(*) FILTER (WHERE status = 'replied') AS replied
+FROM contacts;</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/models/Contact.php</code>, <code>app/models/TestDrive.php</code></li>
+<li><code>app/controllers/admin/ContactAdminController.php</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Số trên các tab khớp <code>SELECT status, COUNT(*) FROM contacts GROUP BY status</code>.</li>
+<li>Bật log câu SQL (xem mục <a href="#thi-nghiem">Thí nghiệm</a>), tải <code>/admin/contacts</code>: còn 2 câu (1 đếm + 1 danh sách).</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li><code>read</code>, <code>all</code> là từ khóa SQL: đặt alias trong nháy kép.</li></ul>
+</div>
+</article>
+</div>
+</section>
+
+<section class="milestone" id="w3">
+<h2><span class="wk">Tuần 3</span>Các trang đơn hàng</h2>
+<div class="tasks">
+<article class="task" data-task="t3-06">
+<div class="task-head">
+<span class="tid">T3-06</span>
+<h3>Danh sách đơn admin: tìm theo mọi item, 2 round trip</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~4h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> <code>/admin/orders</code> tìm đúng theo tên mọi sản phẩm trong đơn và chỉ gửi 2 câu SQL.</p>
+<h4>Đã có sẵn</h4>
+<p><code>buildAdminFilters</code> đã dùng <code>ILIKE</code>, <code>o.id::text</code>, khoảng ngày nửa mở (<code>&gt;= ngày</code> và <code>&lt; ngày + 1 day</code>), cột <code>o.payment_status</code> thật.</p>
+<h4>Vì sao cần</h4>
+<ul>
+<li>Tìm theo tên hiện chỉ so với <b>item đầu</b> (<code>p.product_name</code> từ LATERAL). Đơn có "Thảm lót sàn" ở item thứ 2 sẽ không được tìm thấy.</li>
+<li>Controller gọi <code>countAdminList</code> và <code>countAdminPaymentSummary</code> cùng một bộ lọc: 2 câu đếm trùng nhau.</li>
+</ul>
+<h4>Các bước</h4>
+<ol>
+<li>Thay <code>p.product_name ILIKE :q3</code> bằng <code>EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.product_name_snapshot ILIKE :q3)</code>.</li>
+<li><code>countAdminPaymentSummary</code>: đổi <code>SUM(CASE ...)</code> thành <code>COUNT(*) FILTER (WHERE o.payment_status = 'paid')</code>. Bỏ <code>FIRST_ITEM_JOIN</code> khỏi câu đếm (không cần nữa sau bước 1).</li>
+<li><code>OrderAdminController::index</code>: dùng <code>$summary['all']</code> làm tổng cho <code>Pagination</code>, bỏ lời gọi <code>countAdminList</code>.</li>
+<li><code>getAdminList</code>: trong LATERAL lấy thêm số item để view hiện "VF 8 + 2 sản phẩm khác".</li>
+<li>So sánh <code>EXPLAIN ANALYZE</code> của bản cũ và bản mới trên <code>vinfast_bench</code>, ghi vào <code>bench/t3/README.md</code>.</li>
+</ol>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/models/Order.php</code> (<code>buildAdminFilters</code>, <code>countAdminPaymentSummary</code>, <code>getAdminList</code>)</li>
+<li><code>app/controllers/admin/OrderAdminController.php::index</code></li>
+<li><code>app/views/admin/orders/partials/</code> (bảng danh sách)</li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li><code>?q=vf</code> và <code>?q=VF</code> trả cùng kết quả; tìm theo tên item thứ 2 ra đúng đơn.</li>
+<li>Thanh tổng hợp khớp <code>SELECT payment_status, COUNT(*) FROM orders GROUP BY 1</code>.</li>
+<li>Log SQL: 2 câu mỗi lần tải trang.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>PDO dùng prepared thật (<code>ATTR_EMULATE_PREPARES = false</code>): một tên tham số không dùng 2 lần trong một câu. Vì thế code có <code>:q1</code>…<code>:q4</code>.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-07">
+<div class="task-head">
+<span class="tid">T3-07</span>
+<h3>Danh sách đơn của user: /order và /user/orders</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~4h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hai trang dùng chung một hàm trình bày, hiện đủ item, đúng số tiền và trạng thái thanh toán.</p>
+<h4>Vì sao cần</h4>
+<ul>
+<li><code>OrderController::index</code> và <code>UserController::orders</code> lặp cùng một đoạn map dữ liệu.</li>
+<li>Cả hai đọc trạng thái thanh toán bằng <code>Order::getPaymentStatusFromNote</code> (từ JSON <code>note</code>) và số tiền từ <code>note['deposit_amount']</code>. Đơn sinh từ seed lớn có thể không có các khóa này trong <code>note</code>, trong khi cột <code>payment_status</code>, <code>total_amount</code> mới là nguồn chuẩn.</li>
+</ul>
+<h4>Các bước</h4>
+<ol>
+<li>Thêm <code>Order::presentForUser(array $row, array $items): array</code>, trả các khóa view đang dùng (<code>orderId</code>, <code>orderDbId</code>, <code>carName</code>, <code>orderDate</code>, <code>depositAmount</code>, <code>paymentStatus</code>, ...) và khóa mới <code>items</code>, <code>totalAmount</code>, <code>type</code>.</li>
+<li><code>paymentStatus</code> lấy từ cột <code>payment_status</code>; <code>depositAmount</code>/<code>totalAmount</code> lấy từ <code>total_amount</code>.</li>
+<li>Hai controller gọi <code>getByUserId</code> + <code>getItemsByOrderIds</code> (T3-05). <code>UserController::orders</code> lấy tổng từ <code>total_rows</code> thay vì <code>countByUserId</code>.</li>
+<li><code>OrderController::index</code> hiện lấy 12 đơn, không có phân trang: thêm <code>Pagination</code>.</li>
+<li><code>carName</code> = tên item đầu, thêm " + N sản phẩm" nếu nhiều item. Thêm link tới <code>order/detail/{orderDbId}</code>.</li>
+</ol>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/controllers/frontend/OrderController.php::index</code> (T4 sửa <code>checkout</code> cùng file: chỉ sửa <code>index</code>, <code>detail</code>)</li>
+<li><code>app/controllers/frontend/UserController.php::orders</code></li>
+<li><code>app/views/frontend/order/index.php</code>, <code>app/views/frontend/user/partials/</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Đăng nhập một user sinh ra (email trong <code>database/seed/README.md</code>): đơn 3 món hiện "Tên + 2 sản phẩm".</li>
+<li>Trạng thái thanh toán trên trang khớp cột <code>orders.payment_status</code>.</li>
+<li>Log SQL: 2 câu mỗi lần tải trang.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Trang vượt quá trang cuối: <code>COUNT(*) OVER()</code> không có dòng nào để trả về. Khi kết quả rỗng và <code>page &gt; 1</code>, gọi <code>countByUserId</code> để biết tổng.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-08">
+<div class="task-head">
+<span class="tid">T3-08</span>
+<h3>Trang chi tiết đơn /order/detail/{id}: join ở backend</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag new">MỚI</span> <span class="tag lv">Vừa</span> ~5h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> trang mới hiện bảng item từ snapshot, ảnh và link sản phẩm từ Mongo, tổng cộng 2 round trip (1 PG + 1 Mongo).</p>
+<h4>Vì sao cần</h4>
+<p>Đây là ví dụ "join ở backend" chuẩn: PG không biết ảnh sản phẩm, Mongo không biết đơn hàng. Ghép bằng <b>một</b> lần <code>$in</code>, không phải mỗi item một lần.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Thêm <code>Product::findManyByIds(array $ids): array</code> (trả <code>[productID =&gt; product]</code>, một lần <code>find</code>). Báo người giữ <code>Product.php</code> (T1) để review.</li>
+<li><code>OrderController::detail($id = 0)</code>: kiểm tra đăng nhập như <code>index</code>, gọi <code>Order::getByIdForUser</code>. Không có đơn thì flash + chuyển về <code>/order</code>.</li>
+<li>Gom <code>product_id</code> từ items, gọi <code>Product::findManyByIds</code>. Sản phẩm đã ẩn/xóa vẫn hiện tên snapshot, chỉ không có link.</li>
+<li>View: mã đơn, ngày, trạng thái, thanh toán, bảng item (tên, phiên bản, màu, đơn giá, SL, thành tiền), giảm giá, tổng.</li>
+</ol>
+<pre><code>// app/models/Product.php
+public static function findManyByIds(array $ids): array
+{
+    $ids = array_values(array_unique(array_map('strval', $ids)));
+    if (!$ids) { return []; }
+    $out = [];
+    foreach (self::collection()-&gt;find(['productID' =&gt; ['$in' =&gt; $ids]]) as $doc) {
+        $p = self::formatProduct($doc);
+        $out[$p['product_id']] = $p;
+    }
+    return $out;
+}
+
+// app/controllers/frontend/OrderController.php
+public function detail($id = 0): void
+{
+    if (!Auth::check()) { /* giống index() */ }
+    $order = Order::getByIdForUser((int)$id, (int)Auth::id());       // PG: 1 câu
+    if (!$order) { $_SESSION['flash'] = 'Không tìm thấy đơn hàng.'; header('Location: ' . BASE_URL . 'order'); exit; }
+    $items = json_decode($order['items'], true) ?: [];
+    $products = Product::findManyByIds(array_column($items, 'product_id')); // Mongo: 1 lần $in
+    SEO::set('Đơn hàng #' . (int)$order['id']);
+    View::render('frontend/order/detail', compact('order', 'items', 'products'));
+}</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/models/Product.php</code> thêm <code>findManyByIds</code></li>
+<li><code>app/controllers/frontend/OrderController.php</code> thêm <code>detail</code></li>
+<li><code>app/views/frontend/order/detail.php</code> <span class="tag new">MỚI</span></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>User A mở đơn của user B bằng URL: bị chuyển về <code>/order</code>.</li>
+<li>Tổng các dòng − giảm giá = <code>orders.total_amount</code>.</li>
+<li>Đổi tên sản phẩm trong mongosh (<code>db.products.updateOne({productID:"165"}, {$set:{name:"Tên thử"}})</code>), tải lại: tên trong đơn không đổi. Nhớ đổi tên lại.</li>
+<li>Đặt <code>isActive:false</code> cho sản phẩm: trang vẫn hiện tên, không lỗi.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li><code>productID</code> trong Mongo là <b>chuỗi</b> (<code>"165"</code>). Truyền số <code>165</code> vào <code>$in</code> sẽ không khớp gì.</li>
+<li>Router gọi <code>detail('5')</code> với tham số chuỗi: ép <code>(int)</code>.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-09">
+<div class="task-head">
+<span class="tid">T3-09</span>
+<h3>Admin chi tiết đơn có bảng item</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Dễ</span> ~3h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> <code>/admin/orders/detail/{id}</code> hiện đủ item thay vì một sản phẩm.</p>
+<h4>Vì sao cần</h4>
+<p>View <code>app/views/admin/orders/detail.php</code> đang hiện <code>$order['product_name']</code> và <code>$order['price']</code> (chỉ item đầu).</p>
+<h4>Các bước</h4>
+<ol>
+<li><code>OrderAdminController::detail</code>: gọi thêm <code>Order::getItemsByOrderIds([$id])</code> (hoặc thêm hàm <code>getByIdWithItems</code> không lọc user), truyền <code>items</code> vào view.</li>
+<li>Thay khối "Sản phẩm" bằng bảng item; thêm dòng tạm tính, giảm giá, tổng.</li>
+<li>Sửa tương tự trong modal chi tiết ở <code>app/views/admin/orders/partials/</code> nếu modal đọc <code>product_name</code>.</li>
+</ol>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/controllers/admin/OrderAdminController.php::detail</code></li>
+<li><code>app/views/admin/orders/detail.php</code>, <code>app/views/admin/orders/partials/</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Đơn 3 item hiện 3 dòng, tổng khớp <code>total_amount</code>.</li>
+<li>Đổi trạng thái, trạng thái thanh toán từ trang chi tiết vẫn chạy.</li>
+</ul>
+</div>
+</article>
+</div>
+</section>
+
+<section class="milestone" id="w4">
+<h2><span class="wk">Tuần 4</span>Dashboard admin và thống kê</h2>
+<div class="tasks">
+<article class="task" data-task="t3-11">
+<div class="task-head">
+<span class="tid">T3-11</span>
+<h3>Tách SQL khỏi DashboardAdminController sang DashboardService</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~4h · Phụ thuộc: không · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> controller chỉ gọi service và render; mọi truy vấn nằm trong <code>DashboardService</code>.</p>
+<h4>Vì sao cần</h4>
+<p>Controller đang chứa SQL ở nhiều hàm <code>build*</code>. Tách ra thì đo được từng khối, và script benchmark gọi lại được mà không cần Apache.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Tạo <code>app/services/DashboardService.php</code> (autoload sẵn tìm trong <code>app/services/</code>) theo bảng ánh xạ dưới. Ban đầu chỉ chuyển code, chưa tối ưu.</li>
+<li><code>index()</code> giữ nguyên các khóa của mảng <code>$dashboard</code> để view không phải sửa.</li>
+<li>Mỗi hàm tự bắt lỗi, trả giá trị rỗng và <code>error_log</code> (giữ hành vi cũ: một khối lỗi không làm hỏng cả trang).</li>
+<li>Giữ <code>buildQuickActions</code>, <code>mock*</code> trong controller (không có SQL).</li>
+</ol>
+<div class="tbl"><table>
+<thead><tr><th>Hàm cũ trong controller</th><th>Hàm mới</th><th>Nguồn</th><th>Task tối ưu</th></tr></thead>
+<tbody>
+<tr><td><code>buildSummary</code> + <code>countRows</code> + <code>sumDepositRevenue</code> + <code>countActiveProducts</code></td><td><code>summary()</code></td><td>PG + Mongo</td><td>T3-12</td></tr>
+<tr><td><code>buildMonthlyTrend</code></td><td><code>monthlyTrend(int $months = 6)</code></td><td>PG</td><td>T3-12</td></tr>
+<tr><td><code>buildOrdersByModel</code></td><td><code>ordersByModel(int $limit = 6)</code></td><td>PG snapshot</td><td>T3-13</td></tr>
+<tr><td><code>buildModelStats</code></td><td><code>modelStats(int $limit = 6)</code></td><td>PG + Mongo</td><td>T3-13</td></tr>
+<tr><td><code>buildRecentOrders</code></td><td><code>recentOrders(int $limit = 6)</code></td><td>PG</td><td>T3-13</td></tr>
+<tr><td><code>buildRecentContacts</code></td><td><code>recentContacts(int $limit = 5)</code></td><td>PG</td><td>—</td></tr>
+<tr><td><code>buildActivities</code></td><td><code>activities(array $orders, array $contacts, int $limit = 8)</code></td><td>Dùng lại kết quả đã có + log Mongo</td><td>T3-15</td></tr>
+<tr><td>(mới)</td><td><code>topSelling()</code>, <code>lowStock()</code></td><td>PG (+ Mongo)</td><td>T3-14</td></tr>
+<tr><td>(mới)</td><td><code>searchKeywords()</code>, <code>topViewedProducts()</code></td><td>Mongo</td><td>T3-15</td></tr>
+</tbody>
+</table></div>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/services/DashboardService.php</code> <span class="tag new">MỚI</span></li>
+<li><code>app/controllers/admin/DashboardAdminController.php</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li><code>grep -nE '\$pdo|SELECT|prepare\(' app/controllers/admin/DashboardAdminController.php</code> không ra kết quả.</li>
+<li><code>/admin/dashboard</code> hiện giống hệt trước khi tách.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li><code>buildActivities</code> cũ gọi lại <code>buildRecentOrders</code> và <code>buildRecentContacts</code>: 2 câu SQL thừa. Hàm mới nhận kết quả đã có làm tham số.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-12">
+<div class="task-head">
+<span class="tid">T3-12</span>
+<h3>Summary 1 câu và doanh thu theo tháng bằng generate_series</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~4h · Phụ thuộc: T3-11 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> khối số tổng từ 11 câu PG còn 1 câu; biểu đồ theo tháng không cần vòng lặp điền số 0 trong PHP.</p>
+<h4>Đã có sẵn</h4>
+<p>Doanh thu đã tính từ <code>total_amount</code> của đơn chưa hủy; <code>buildMonthlyTrend</code> đã dùng <code>to_char</code>, <code>FILTER</code>.</p>
+<h4>Các bước</h4>
+<ol>
+<li><code>summary()</code>: một câu dùng <code>COUNT(*) FILTER</code> trên <code>orders</code> + subquery cho users, contacts, news, comments. Số sản phẩm vẫn gọi <code>Product::countFiltered()</code> (Mongo).</li>
+<li><code>monthlyTrend()</code>: <code>generate_series</code> sinh đủ tháng, <code>LEFT JOIN orders</code>. Giữ nhãn <code>'T' . số tháng</code>.</li>
+<li>Viết câu kiểm tra tay tương ứng vào <code>bench/t3/verify.sql</code>.</li>
+<li>So <code>EXPLAIN ANALYZE</code> của bản cũ (11 câu, cộng thời gian) và bản mới trên <code>vinfast_bench</code>.</li>
+</ol>
+<pre><code>-- summary: 1 round trip
+SELECT COUNT(*)                                                      AS orders_total,
+       COUNT(*) FILTER (WHERE status = 'pending')                    AS orders_pending,
+       COUNT(*) FILTER (WHERE status = 'done')                       AS orders_done,
+       COALESCE(SUM(total_amount) FILTER (WHERE status &lt;&gt; 'cancelled'), 0) AS revenue,
+       (SELECT COUNT(*) FROM users)                                  AS users,
+       (SELECT COUNT(*) FROM contacts)                               AS contacts_total,
+       (SELECT COUNT(*) FROM contacts WHERE status = 'unread')       AS contacts_unread,
+       (SELECT COUNT(*) FROM news)                                   AS news_total,
+       (SELECT COUNT(*) FROM comments)                               AS comments_total,
+       (SELECT COUNT(*) FROM comments WHERE NOT is_approved)         AS comments_pending
+FROM orders;
+
+-- monthlyTrend
+WITH months AS (
+  SELECT generate_series(date_trunc('month', now()) - make_interval(months =&gt; CAST(:months AS int) - 1),
+                         date_trunc('month', now()), interval '1 month') AS m)
+SELECT to_char(months.m, 'YYYY-MM') AS ym,
+       COUNT(o.id)                  AS orders,
+       COALESCE(SUM(o.total_amount) FILTER (WHERE o.status &lt;&gt; 'cancelled'), 0) AS revenue
+FROM months
+LEFT JOIN orders o ON o.created_at &gt;= months.m AND o.created_at &lt; months.m + interval '1 month'
+GROUP BY months.m
+ORDER BY months.m;</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/services/DashboardService.php</code></li>
+<li><code>bench/t3/verify.sql</code> <span class="tag new">MỚI</span></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Trên DB dev: câu monthlyTrend trả đúng 6 dòng, tháng không có đơn có <code>orders = 0</code>.</li>
+<li>Số trên các thẻ dashboard bằng kết quả câu summary chạy tay.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Viết <code>COUNT(*)</code> thay vì <code>COUNT(o.id)</code> sau <code>LEFT JOIN</code>: tháng trống thành 1 thay vì 0.</li>
+<li>Lọc <code>WHERE o.status ...</code> sau <code>LEFT JOIN</code> biến nó thành INNER JOIN, mất tháng trống. Dùng <code>FILTER</code> hoặc đưa điều kiện vào <code>ON</code>.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-13">
+<div class="task-head">
+<span class="tid">T3-13</span>
+<h3>modelStats: bỏ việc tải toàn bộ sản phẩm vào PHP</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~5h · Phụ thuộc: T3-11, T3-08 (findManyByIds) · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> khối "thống kê dòng xe" chỉ đọc top N từ PG rồi lấy đúng N sản phẩm từ Mongo.</p>
+<h4>Vì sao cần</h4>
+<p><code>buildModelStats</code> hiện làm join ở backend theo cách tốn nhất: (1) PG đếm đơn cho <b>mọi</b> sản phẩm, (2) <code>Product::filterAll()</code> tải <b>mọi</b> sản phẩm active từ Mongo, (3) PHP ghép, sắp xếp, cắt 6 dòng. Với dataset 100k là khoảng 100 000 document chỉ để hiện 6 dòng.</p>
+<h4>Đã có sẵn</h4>
+<p><code>buildOrdersByModel</code> và <code>buildRecentOrders</code> đã đọc snapshot <code>order_items</code> và dùng <code>LATERAL</code>: chỉ cần chuyển sang service.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Đo bản cũ: viết <code>bench/t3/dashboard_timing.php</code> gọi từng hàm của service, in ms và số document Mongo đọc. Chạy trên <code>vinfast_bench</code>:
+<pre><code>docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench \
+  seed php bench/t3/dashboard_timing.php</code></pre></li>
+<li>Viết lại: top N từ PG (câu dưới), rồi <code>Product::findManyByIds</code> lấy giá, quãng đường, danh mục.</li>
+<li>Bản cũ hiện cả xe 0 đơn khi chưa đủ N dòng. Nếu cần giữ, bổ sung bằng một truy vấn Mongo có <code>limit</code>.</li>
+<li>Đo lại, ghi cả 2 số vào <code>bench/t3/README.md</code>.</li>
+</ol>
+<pre><code>SELECT oi.product_id,
+       (ARRAY_AGG(oi.product_name_snapshot ORDER BY oi.id DESC))[1] AS name,
+       COUNT(DISTINCT oi.order_id) AS orders
+FROM order_items oi
+GROUP BY oi.product_id
+ORDER BY orders DESC, name
+LIMIT :limit;</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/services/DashboardService.php</code></li>
+<li><code>bench/t3/dashboard_timing.php</code> <span class="tag new">MỚI</span></li>
+<li><code>app/views/admin/dashboard/partials/model-stats.php</code> nếu đổi khóa</li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Bản mới: Mongo chỉ đọc đúng N document cho khối này (kiểm tra bằng bộ đếm trong script).</li>
+<li>6 dòng trên dashboard giống bản cũ (trừ trường hợp hòa số đơn).</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Sắp theo tên khi hòa số đơn ở PG nhưng ghép xong lại mất thứ tự: duyệt theo thứ tự kết quả PG, không theo kết quả Mongo.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-14">
+<div class="task-head">
+<span class="tid">T3-14</span>
+<h3>Khối bán chạy và sắp hết hàng</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag new">MỚI</span> <span class="tag lv">Vừa</span> ~5h · Phụ thuộc: T3-11, T3-08 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hai khối mới trên dashboard: top 10 sản phẩm bán chạy 30 ngày, 10 phiên bản sắp hết hàng.</p>
+<h4>Vì sao cần</h4>
+<p>Admin cần biết nhập hàng gì. Đây cũng là 2 truy vấn tổng hợp điển hình để đưa vào report (GROUP BY + JOIN, và lọc theo biểu thức <code>stock - reserved</code>).</p>
+<h4>Các bước</h4>
+<ol>
+<li><code>topSelling(int $limit = 10, int $days = 30)</code>: câu dưới, loại đơn hủy.</li>
+<li><code>lowStock(int $threshold = 5, int $limit = 10)</code>: thêm <code>InventoryService::lowStock</code> (báo T5, người giữ file) hoặc để SQL trong service kèm TODO. Ghép tên sản phẩm, tên phiên bản bằng <code>Product::findManyByIds</code>.</li>
+<li>Tạo 2 partial theo kiểu <code>model-stats.php</code>, include trong <code>app/views/admin/dashboard/index.php</code>.</li>
+</ol>
+<pre><code>-- topSelling
+SELECT oi.product_id,
+       MIN(oi.product_name_snapshot) AS product_name,
+       SUM(oi.quantity)              AS qty,
+       SUM(oi.subtotal)              AS revenue
+FROM order_items oi
+JOIN orders o ON o.id = oi.order_id
+WHERE o.status &lt;&gt; 'cancelled'
+  AND o.created_at &gt;= now() - make_interval(days =&gt; CAST(:days AS int))
+GROUP BY oi.product_id
+ORDER BY qty DESC, oi.product_id
+LIMIT :limit;
+
+-- lowStock
+SELECT product_id, variant_id, stock, reserved, stock - reserved AS available
+FROM inventory
+WHERE stock - reserved &lt;= :threshold
+ORDER BY available, product_id
+LIMIT :limit;</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/services/DashboardService.php</code>, <code>app/services/InventoryService.php</code> (phối hợp T5)</li>
+<li><code>app/views/admin/dashboard/partials/top-selling.php</code>, <code>low-stock.php</code> <span class="tag new">MỚI</span></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Đặt 1 đơn mới: sản phẩm đó xuất hiện (hoặc tăng) trong top bán chạy.</li>
+<li>Xem <code>EXPLAIN</code> câu lowStock trên <code>vinfast_bench</code>: có dùng index không? Vì sao không (điều kiện là biểu thức)? Ghi lại cho T2.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li><code>MAX(product_name_snapshot)</code>/<code>MIN</code> chỉ lấy một tên bất kỳ theo thứ tự chữ cái, không phải tên mới nhất. Nêu rõ trong report.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-15">
+<div class="task-head">
+<span class="tid">T3-15</span>
+<h3>Thống kê từ userActivityLogs: từ khóa tìm nhiều, sản phẩm xem nhiều</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~5h · Phụ thuộc: T3-10, T3-11 · <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> dashboard hiện top từ khóa và top sản phẩm được xem trong 30 ngày, thay dần <code>mockActivities</code>.</p>
+<h4>Vì sao cần</h4>
+<p>Đây là phần aggregation pipeline chính của T3: có <code>$match</code> dùng index, <code>$group</code>, <code>$sort</code>, <code>$limit</code> và <code>$lookup</code> sang <code>products</code> (cùng DB Mongo nên join được).</p>
+<h4>Các bước</h4>
+<ol>
+<li>Thêm <code>ActivityLog::topKeywords(int $days = 30, int $limit = 10)</code>. Chuẩn hóa từ khóa trong pipeline (<code>$toLower</code>, <code>$trim</code>) vì log hiện lưu nguyên chữ người dùng gõ.</li>
+<li>Thêm <code>ActivityLog::topViewedProducts(int $days = 30, int $limit = 10)</code>: <code>$group</code> theo <code>targetId</code>, rồi <code>$lookup</code> sang <code>products</code> để lấy tên.</li>
+<li>Thử đổi thứ tự stage: đặt <code>$lookup</code> trước <code>$group</code>/<code>$limit</code>. So <code>executionStats</code> hai bản, ghi kết luận.</li>
+<li>Chạy <code>explain("executionStats")</code> để chắc <code>$match</code> dùng <code>IXSCAN</code> trên <code>idx_action_time</code>.</li>
+<li>Thêm khối hiển thị trong <code>activities.php</code> hoặc partial riêng.</li>
+</ol>
+<pre><code>// Từ khóa tìm nhiều (đã chạy thử trên DB dev, dùng IXSCAN idx_action_time)
+const since = new Date(Date.now() - 30 * 864e5);
+db.userActivityLogs.aggregate([
+  { $match: { actionType: "search", timestamp: { $gte: since } } },
+  { $project: { userId: 1, kw: { $toLower: { $trim: { input: { $ifNull: ["$metadata.keyword", ""] } } } } } },
+  { $match: { kw: { $ne: "" } } },
+  { $group: { _id: "$kw", count: { $sum: 1 }, users: { $addToSet: "$userId" } } },
+  { $project: { _id: 0, keyword: "$_id", count: 1, uniqueUsers: { $size: "$users" } } },
+  { $sort: { count: -1, keyword: 1 } },
+  { $limit: 10 }
+]);
+
+// Sản phẩm xem nhiều: $limit TRƯỚC $lookup để chỉ tra 10 sản phẩm
+db.userActivityLogs.aggregate([
+  { $match: { actionType: "view_product", timestamp: { $gte: since } } },
+  { $group: { _id: "$targetId", views: { $sum: 1 } } },
+  { $sort: { views: -1 } },
+  { $limit: 10 },
+  { $lookup: { from: "products", localField: "_id", foreignField: "productID", as: "p" } },
+  { $unwind: "$p" },
+  { $project: { _id: 0, productID: "$_id", name: "$p.name", views: 1 } }
+]);</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>app/models/ActivityLog.php</code></li>
+<li><code>app/services/DashboardService.php</code> (<code>searchKeywords</code>, <code>topViewedProducts</code>, <code>activities</code>)</li>
+<li><code>app/views/admin/dashboard/partials/activities.php</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Tìm "VF 8" 2 lần và "vf 8" 1 lần: khối từ khóa hiện <code>vf 8</code> (3).</li>
+<li>Explain: thấy <code>IXSCAN</code> với <code>indexName: "idx_action_time"</code>; <code>totalDocsExamined</code> xấp xỉ số log search trong 30 ngày.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Đặt <code>$project</code>/<code>$addFields</code> trước <code>$match</code> đầu tiên: Mongo có thể không dùng được index.</li>
+<li><code>$unwind</code> sau <code>$lookup</code> làm mất sản phẩm đã bị xóa. Muốn giữ thì dùng <code>preserveNullAndEmptyArrays: true</code>.</li>
+<li>Bộ nhớ <code>$group</code> vượt 100MB trên dataset lớn: thêm <code>{ allowDiskUse: true }</code> và ghi chú trong report.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-16">
+<div class="task-head">
+<span class="tid">T3-16</span>
+<h3>Điền bảng 8 loại query-update</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Dễ</span> ~3h · Phụ thuộc: danh sách 8 loại, các topic · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> bảng đối chiếu 8 loại query-update có đủ 8 dòng, mỗi dòng trỏ vào code thật.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Lấy danh sách 8 loại chính thức (đề bài hoặc giảng viên), sửa cột Loại ở <a href="#query-types">bảng đối chiếu</a>.</li>
+<li>Mỗi loại chọn 1 chức năng thật: ghi route, file, tên hàm, câu lệnh rút gọn, DB.</li>
+<li>Mở từng route trên seed cơ bản để chắc nó chạy.</li>
+<li>Chép bảng vào report.</li>
+</ol>
+<h4>File</h4>
+<ul class="files"><li><code>docs/topics/t3-query.html</code> mục bảng đối chiếu; bản trong report</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul><li>8/8 dòng đủ cột; tên hàm khớp code trên <code>develop-hybrid</code>.</li></ul>
+</div>
+</article>
+</div>
+</section>
+
+<section class="milestone" id="w5">
+<h2><span class="wk">Tuần 5</span>Thí nghiệm</h2>
+<div class="tasks">
+<article class="task" data-task="t3-17">
+<div class="task-head">
+<span class="tid">T3-17</span>
+<h3>Dựng dataset 10k/100k và orders_bench trên Mongo</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~4h · Phụ thuộc: T3-25 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> một bộ lệnh dựng đúng dataset dùng chung; cùng dữ liệu đơn hàng có ở cả PG (<code>orders</code> + <code>order_items</code>) và Mongo (<code>orders_bench</code>, item nhúng).</p>
+<h4>Vì sao cần</h4>
+<p>So sánh PG và Mongo chỉ có ý nghĩa khi hai bên chạy trên đúng một bộ dữ liệu. Generator hiện chỉ ghi đơn vào PG.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Seed <code>vinfast_bench</code> ở size cần đo (<code>--size=10k</code> hoặc <code>--size=100k</code>, lệnh ở T3-25). Mỗi lần chỉ có một size; đo xong size này mới seed size kia.</li>
+<li>Viết <code>bench/t3/build_orders_bench.php</code>: đọc đơn + item từ PG theo lô, ghi vào Mongo <code>orders_bench</code> dạng <code>{orderId, userId, status, type, totalAmount, createdAt, items:[{productId, productName, quantity, unitPrice}]}</code>. Xóa collection trước khi ghi.</li>
+<li><code>bench/t3/setup.sql</code>: <code>VACUUM ANALYZE</code>; tạo <code>mv_monthly_revenue</code>, <code>mv_product_sales</code> + unique index.</li>
+<li><code>bench/t3/setup_mongo.js</code>: index <code>{status: 1, createdAt: 1}</code> cho <code>orders_bench</code>.</li>
+<li>Ghi số dòng, kích thước (<code>pg_total_relation_size</code>, <code>db.orders_bench.stats().size</code>) vào <code>bench/results/t3_dataset_&lt;size&gt;.csv</code>.</li>
+</ol>
+<pre><code>docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php bench/t3/build_orders_bench.php
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -f /dev/stdin &lt; bench/t3/setup.sql
+docker compose exec -T mongo mongosh vinfast_bench --quiet --file /dev/stdin &lt; bench/t3/setup_mongo.js</code></pre>
+<pre><code>-- bench/t3/setup.sql
+VACUUM ANALYZE orders; VACUUM ANALYZE order_items;
+DROP MATERIALIZED VIEW IF EXISTS mv_monthly_revenue, mv_product_sales;
+CREATE MATERIALIZED VIEW mv_monthly_revenue AS
+SELECT date_trunc('month', created_at) AS month, COUNT(*) AS orders,
+       SUM(total_amount) FILTER (WHERE status &lt;&gt; 'cancelled') AS revenue
+FROM orders GROUP BY 1;
+CREATE UNIQUE INDEX ON mv_monthly_revenue (month);
+CREATE MATERIALIZED VIEW mv_product_sales AS
+SELECT oi.product_id, MIN(oi.product_name_snapshot) AS product_name, SUM(oi.quantity) AS qty
+FROM order_items oi JOIN orders o ON o.id = oi.order_id
+WHERE o.status &lt;&gt; 'cancelled' GROUP BY oi.product_id;
+CREATE UNIQUE INDEX ON mv_product_sales (product_id);</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>bench/t3/build_orders_bench.php</code>, <code>bench/t3/setup.sql</code>, <code>bench/t3/setup_mongo.js</code> <span class="tag new">MỚI</span></li>
+<li><code>bench/results/t3_dataset_10k.csv</code>, <code>t3_dataset_100k.csv</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Số đơn khớp <code>database/seed/README.md</code> (100k: 100 000 đơn, 151 263 item).</li>
+<li><code>db.orders_bench.countDocuments()</code> = <code>SELECT COUNT(*) FROM orders</code>; tổng số item hai bên bằng nhau.</li>
+<li>Doanh thu từng tháng từ MV, từ SQL gốc và từ pipeline Mongo bằng nhau.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Tiền là <code>NUMERIC</code> ở PG, PDO trả chuỗi. Ghi sang Mongo phải ép kiểu (số nguyên đồng là đủ, <code>NUMERIC(15,0)</code>).</li>
+<li>Múi giờ: PG đặt <code>Asia/Ho_Chi_Minh</code>, Mongo lưu UTC. Nhóm theo tháng ở Mongo cần <code>timezone: "Asia/Ho_Chi_Minh"</code> trong <code>$dateToString</code>, nếu không đơn đầu tháng sẽ lệch tháng.</li>
+<li>Quên <code>-e MONGO_DB=vinfast_bench</code>: ghi <code>orders_bench</code> vào DB dev.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-18">
+<div class="task-head">
+<span class="tid">T3-18</span>
+<h3>Bench doanh thu tháng và top-10: 6 cách viết</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Khó</span> ~8h · Phụ thuộc: T3-17 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> so subquery, JOIN, CTE, materialized view và pipeline Mongo cho cùng 2 câu hỏi, có plan JSON để giải thích.</p>
+<h4>Vì sao cần</h4>
+<p>Đây là thí nghiệm chính của chương Query processing: cùng một kết quả, plan khác nhau, chi phí khác nhau.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Viết các biến thể trong <code>bench/t3/queries/</code>: <code>top10_subquery_in.sql</code>, <code>top10_subquery_corr.sql</code>, <code>top10_join.sql</code>, <code>top10_cte.sql</code>, <code>top10_cte_mat.sql</code>, <code>top10_mv.sql</code>, <code>top10_mongo.js</code>; tương tự <code>revenue_*</code>.</li>
+<li>Kiểm tra mọi biến thể trả cùng kết quả (so output) trước khi đo.</li>
+<li><code>bench/t3/run_sql.sh</code>: mỗi biến thể 5 lần khởi động + 30 lần đo; lưu plan JSON của lần cuối vào <code>bench/results/t3_plans/</code>; ghi CSV.</li>
+<li>Thêm lượt ép join (<code>join_nohash</code>, <code>join_nomerge</code>) như T3-25.</li>
+<li>Đo chi phí <code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> (cái giá của MV).</li>
+<li>Chạy ở 10k và 100k.</li>
+</ol>
+<pre><code>-- top10_subquery_in.sql
+SELECT oi.product_id, MIN(oi.product_name_snapshot) AS name, SUM(oi.quantity) AS qty
+FROM order_items oi
+WHERE oi.order_id IN (SELECT id FROM orders WHERE status &lt;&gt; 'cancelled')
+GROUP BY oi.product_id ORDER BY qty DESC, oi.product_id LIMIT 10;
+
+-- top10_join.sql
+SELECT oi.product_id, MIN(oi.product_name_snapshot) AS name, SUM(oi.quantity) AS qty
+FROM order_items oi JOIN orders o ON o.id = oi.order_id
+WHERE o.status &lt;&gt; 'cancelled'
+GROUP BY oi.product_id ORDER BY qty DESC, oi.product_id LIMIT 10;
+
+-- top10_mv.sql
+SELECT product_id, product_name AS name, qty FROM mv_product_sales
+ORDER BY qty DESC, product_id LIMIT 10;
+
+// top10_mongo.js
+db.orders_bench.aggregate([
+  { $match: { status: { $ne: "cancelled" } } },
+  { $unwind: "$items" },
+  { $group: { _id: "$items.productId", name: { $min: "$items.productName" }, qty: { $sum: "$items.quantity" } } },
+  { $sort: { qty: -1, _id: 1 } },
+  { $limit: 10 }
+]);</code></pre>
+<pre><code># Lưu plan JSON (file .sql bắt đầu bằng EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON))
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -X -A -t -f /dev/stdin \
+  &lt; bench/t3/explain/top10_join.sql &gt; bench/results/t3_plans/top10_join_100k.json</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>bench/t3/queries/</code>, <code>bench/t3/explain/</code>, <code>bench/t3/run_sql.sh</code>, <code>bench/t3/run_mongo.sh</code> <span class="tag new">MỚI</span></li>
+<li><code>bench/results/t3_top10_&lt;size&gt;.csv</code>, <code>t3_revenue_&lt;size&gt;.csv</code>, <code>t3_mv-refresh_&lt;size&gt;.csv</code>, <code>bench/results/t3_plans/*.json</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Mỗi (biến thể, size) có 30 dòng đo; cột <code>rows</code> giống nhau giữa các biến thể.</li>
+<li>Có ít nhất 1 plan cho mỗi thuật toán join.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Thiếu tie-break trong <code>ORDER BY</code> (<code>oi.product_id</code>): khi hòa số lượng, các biến thể trả thứ tự khác nhau, so output báo sai.</li>
+<li>Chạy song song với thí nghiệm của T2/T5 trên cùng máy: số đo nhiễu. Hẹn giờ với nhóm.</li>
+</ul>
+</div>
+</article>
+<article class="task" data-task="t3-19">
+<div class="task-head">
+<span class="tid">T3-19</span>
+<h3>Bench lịch sử đơn: snapshot vs join ở backend vs N+1</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Khó</span> ~6h · Phụ thuộc: T3-05, T3-08, T3-17 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> đo trang lịch sử đơn (10 đơn/trang) theo 3 cách, ghi cả ms và số round trip.</p>
+<h4>Vì sao cần</h4>
+<p>Trả lời bằng số câu hỏi trung tâm của hybrid DB: khi dữ liệu ở 2 DB, ghép ở đâu thì rẻ nhất?</p>
+<h4>Các bước</h4>
+<ol>
+<li><code>bench/t3/order_history.php</code>: chạy CLI (không qua Apache), <code>require</code> <code>config/bootstrap.php</code>, đếm round trip bằng cách bọc lời gọi PDO và Mongo.</li>
+<li>Biến thể <code>snapshot</code>: 2 câu như T3-05. <code>backend</code>: 2 câu PG chỉ lấy <code>product_id</code> + 1 lần <code>find({productID: {$in: [...]}})</code>. <code>n-plus-1</code>: 1 câu đơn, mỗi đơn 1 câu item, mỗi item 1 <code>findOne</code>.</li>
+<li>Chọn 2 user: số đơn ở mức trung vị và user nhiều đơn nhất (ghi <code>user_id</code> vào CSV).</li>
+<li>5 lần khởi động + 30 lần đo; đo bằng <code>hrtime(true)</code>.</li>
+</ol>
+<pre><code>docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed \
+  php bench/t3/order_history.php --variant=snapshot --user=1234 --page=1 --per-page=10 \
+  --warmup=5 --runs=30 --size=100k --out=bench/results/t3_order-history_100k.csv</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>bench/t3/order_history.php</code> <span class="tag new">MỚI</span></li>
+<li><code>bench/results/t3_order-history_10k.csv</code>, <code>t3_order-history_100k.csv</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Cột <code>round_trips</code>: snapshot = 2, backend = 3, n-plus-1 = 1 + số đơn + số item.</li>
+<li>Ba biến thể trả cùng danh sách item (so hash ở lần chạy đầu).</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Lần chạy đầu chậm vì kết nối và cache lạnh: luôn bỏ các lần khởi động khi tính p50/p95.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-24">
+<div class="task-head">
+<span class="tid">T3-24</span>
+<h3>Bench phân trang: OFFSET vs keyset trên danh sách đơn admin</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag new">MỚI</span> <span class="tag lv">Vừa</span> ~4h · Phụ thuộc: T3-17 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> chứng minh bằng số rằng <code>OFFSET</code> chậm dần theo số trang, keyset thì gần như không đổi.</p>
+<h4>Vì sao cần</h4>
+<p><code>/admin/orders</code> dùng <code>LIMIT ... OFFSET</code> trên toàn bộ đơn. Với 100 000 đơn và 20 đơn/trang là 5 000 trang. Danh sách đơn của một user thì ngắn (vài đơn), nên thí nghiệm này làm trên danh sách admin.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Viết 2 câu trong <code>bench/t3/queries/</code> (dưới). Index dùng: <code>idx_orders_created</code>.</li>
+<li>Đo ở trang 1, 10, 100, 1 000, 5 000. Với keyset, lấy <code>(created_at, id)</code> của dòng cuối trang trước bằng một câu phụ (không tính vào thời gian đo).</li>
+<li>Lưu plan JSON cho trang 1 000 của cả hai cách; so <code>Rows Removed</code>/số dòng đọc.</li>
+<li>Ghi nhận xét: keyset được gì, mất gì (không nhảy trang, cần cột duy nhất để tie-break).</li>
+</ol>
+<pre><code>-- pagination_offset.sql
+SELECT id, user_id, status, total_amount, created_at
+FROM orders
+ORDER BY created_at DESC, id DESC
+LIMIT 20 OFFSET :offset;
+
+-- pagination_keyset.sql
+SELECT id, user_id, status, total_amount, created_at
+FROM orders
+WHERE (created_at, id) &lt; (CAST(:last_created AS timestamptz), :last_id)
+ORDER BY created_at DESC, id DESC
+LIMIT 20;</code></pre>
+<h4>File</h4>
+<ul class="files">
+<li><code>bench/t3/queries/pagination_*.sql</code>, <code>bench/t3/run_pagination.sh</code> <span class="tag new">MỚI</span></li>
+<li><code>bench/results/t3_pagination_&lt;size&gt;.csv</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Hai cách trả đúng cùng 20 dòng ở mỗi trang đã đo.</li>
+<li>Plan OFFSET trang sâu đọc nhiều dòng hơn hẳn số dòng trả về; plan keyset có điều kiện trên index.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Keyset chỉ theo <code>created_at</code> (không có <code>id</code>): hai đơn cùng thời điểm có thể bị mất hoặc lặp giữa 2 trang.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-20">
+<div class="task-head">
+<span class="tid">T3-20</span>
+<h3>Phân tích plan và vẽ biểu đồ</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~5h · Phụ thuộc: T3-18, T3-19, T3-24 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> biến CSV và plan JSON thành biểu đồ và bảng số liệu cho report.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Script đọc plan JSON, trích theo từng node: <code>Node Type</code>, <code>Total Cost</code>, <code>Plan Rows</code> vs <code>Actual Rows</code>, <code>Actual Total Time</code>, buffers. Xuất <code>bench/results/t3_plan-nodes_&lt;size&gt;.csv</code>.</li>
+<li>Tính p50/p95 cho mỗi (experiment, variant, size), bỏ dòng <code>warmup=1</code>.</li>
+<li>Vẽ các biểu đồ ở mục <a href="#thi-nghiem">Thí nghiệm</a>.</li>
+<li>Viết 3–5 câu nhận xét cho mỗi biểu đồ vào <code>bench/t3/README.md</code>. Chỉ dùng số trong CSV.</li>
+</ol>
+<h4>File</h4>
+<ul class="files">
+<li><code>bench/t3/parse_plans.py</code>, <code>bench/t3/plot.py</code> <span class="tag new">MỚI</span></li>
+<li><code>bench/results/t3_*.png</code></li>
+</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul><li>Chạy lại script từ CSV đã commit ra đúng các hình đã commit.</li></ul>
+</div>
+</article>
+</div>
+</section>
+
+<section class="milestone" id="w6">
+<h2><span class="wk">Tuần 6</span>Report và demo</h2>
+<div class="tasks">
+<article class="task" data-task="t3-21">
+<div class="task-head">
+<span class="tid">T3-21</span>
+<h3>Viết chương Query processing</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Vừa</span> ~8h · Phụ thuộc: T3-20 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> chương report theo dàn ý ở mục <a href="#report">Report</a>, mọi khẳng định có plan hoặc con số đi kèm.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Viết theo dàn ý; mỗi khẳng định dẫn tới một plan hoặc một dòng CSV.</li>
+<li>Chèn bảng 8 loại query-update (T3-16).</li>
+<li>Nhờ một bạn khác đọc và chạy lại 1 lệnh trong chương.</li>
+</ol>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul><li>Mọi hình và bảng có nguồn là file trong <code>bench/results/</code>.</li></ul>
+</div>
+</article>
+<article class="task" data-task="t3-22">
+<div class="task-head">
+<span class="tid">T3-22</span>
+<h3>Kịch bản demo và chạy thử</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lv">Dễ</span> ~4h · Phụ thuộc: T3-21 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> demo 10 phút chạy được từ máy trắng.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Chuẩn bị <code>bench/t3/demo.sh</code> chứa đúng các lệnh sẽ gõ.</li>
+<li>Chạy thử 2 lần có bấm giờ; lần 2 bắt đầu từ <code>docker compose down -v</code>.</li>
+<li>Dựng sẵn <code>vinfast_bench</code> 100k trước giờ demo (seed mất khoảng 1 phút).</li>
+<li>Chuẩn bị ảnh chụp dự phòng cho từng bước.</li>
+</ol>
+<h4>File</h4>
+<ul class="files"><li><code>bench/t3/demo.sh</code> <span class="tag new">MỚI</span></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul><li>Demo xong trong 10 phút, không phải sửa tay dữ liệu.</li></ul>
+</div>
+</article>
+</div>
+</section>
+
 <section id="query-types">
 <h2>Đối chiếu 8 loại query-update</h2>
-<div class="callout">Danh sách 8 loại bắt buộc chưa được xác nhận (master plan ghi "chưa kiểm chứng"). Khi có danh sách, điền cột Loại trước, rồi mỗi topic điền dòng thuộc chức năng của mình. Mỗi ô Câu lệnh ghi tên hàm + dòng, không dán cả câu dài.</div>
+<div class="callout">Danh sách 8 loại bắt buộc chưa được xác nhận. Khi có danh sách, điền cột Loại trước, rồi mỗi topic điền dòng thuộc chức năng của mình. Cột Câu lệnh ghi tên hàm, không dán cả câu dài.</div>
 <div class="tbl"><table>
 <thead><tr><th>#</th><th>Loại</th><th>Chức năng</th><th>Route</th><th>File</th><th>Câu lệnh/Pipeline</th><th>DB</th></tr></thead>
 <tbody>
@@ -176,948 +1322,168 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
 </tbody>
 </table></div>
 </section>
-<section class="milestone" id="w2">
-<h2><span class="wk">Tuần 2</span>Port Contact/TestDrive, seed đơn hàng</h2>
-<div class="tasks">
-<article class="task" data-task="t3-01">
-<div class="task-head">
-<span class="tid">T3-01</span>
-<h3>Đối chiếu DDL với phần đọc đơn hàng</h3>
-<span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: DDL · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
-</div>
-<div class="task-body">
-<p>Chốt tên bảng, cột, kiểu dữ liệu mà toàn bộ code T3 sẽ dùng, trước khi viết dòng code nào. Ghi ra một bảng ánh xạ để T4 và T5 cùng dùng.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Đọc <code>database/postgres/001_schema.sql</code>, ghi lại cột của <code>orders</code>: có <code>total_amount</code>, <code>payment_status</code>, <code>type</code> (<code>purchase|deposit</code>), <code>note JSONB</code>, <code>coupon_id</code>, <code>discount_amount</code> không.</li>
-<li>Ghi lại cột snapshot của <code>order_items</code>: <code>product_id</code>, <code>variant_id</code>, <code>product_name</code>, <code>variant_name</code>, <code>color_name</code>, <code>unit_price</code>, <code>quantity</code>, có <code>line_total</code> sinh tự động không.</li>
-<li>Kiểm tra <code>contacts.updated_at</code>, <code>test_drives.updated_at</code> có trigger <code>set_updated_at()</code> (Contact.php:36 và TestDrive.php:55 sắp xếp theo cột này), <code>test_drives.product_id</code> là VARCHAR hay BIGINT, có <code>product_name_snapshot</code> (quyết định 14) không.</li>
-<li>Quyết định doanh thu: <code>SUM(total_amount)</code> với <code>status &lt;&gt; 'cancelled'</code> (giữ ngữ nghĩa cũ của <code>sumDepositRevenue</code>) hay chỉ <code>payment_status = 'paid'</code>. Ghi vào bảng ánh xạ, hỏi nhóm trong buổi họp DDL.</li>
-<li>Đặt tên bảng/cột thành hằng trong <code>Order.php</code> (theo mục rủi ro của master plan).</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>bench/t3/README.md</code> mục "Ánh xạ cột" (bảng cột cũ → cột mới)</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\d+ order_items'</code> khớp với bảng ánh xạ.</li>
-<li>Bảng ánh xạ đã được T4 xác nhận trong PR hoặc nhóm chat.</li>
-</ul>
-</div>
-</article>
-<article class="task" data-task="t3-02">
-<div class="task-head">
-<span class="tid">T3-02</span>
-<h3>Port Contact.php sang PostgreSQL</h3>
-<span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: Phase 0 · <span class="tag pg">PG</span></span>
-</div>
-<div class="task-body">
-<p>Module liên hệ chạy y như cũ trên PG. Nhánh <code>port/contact-testdrive</code> (bước 2 trong thứ tự merge).</p>
-<h4>Các bước</h4>
-<ol>
-<li>Contact.php:19: chuỗi <code>"unread"</code> trong nháy kép là tên cột ở PG. Đổi thành tham số hoặc <code>'unread'</code>.</li>
-<li>Contact.php:36: thay <code>FIELD(status, "unread", "read", "replied")</code> bằng <code>CASE status WHEN 'unread' THEN 1 WHEN 'read' THEN 2 WHEN 'replied' THEN 3 ELSE 4 END</code>.</li>
-<li>Thêm <code>Contact::latest(int $limit): array</code> để <code>DashboardService::recentContacts</code> gọi (bỏ SQL ở DashboardAdminController.php:236).</li>
-<li>ContactAdminController::index (dòng 40-46) gọi <code>countAll</code> 4 lần. Thêm <code>Contact::countByStatus(): array</code> bằng một câu <code>GROUP BY status</code> để giảm còn 1 round trip.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/models/Contact.php</code> sửa nháy, CASE, thêm <code>latest</code>, <code>countByStatus</code></li>
-<li><code>app/controllers/admin/ContactAdminController.php</code> dùng <code>countByStatus</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Gửi form <code>/contact</code> → có dòng mới <code>status='unread'</code>.</li>
-<li><code>/admin/contacts</code>: danh sách sắp unread trước, đếm từng tab khớp <code>SELECT status, COUNT(*) FROM contacts GROUP BY status</code>.</li>
-<li>Đổi trạng thái, xóa: chạy không lỗi.</li>
-</ul>
-</div>
-</article>
-<article class="task" data-task="t3-03">
-<div class="task-head">
-<span class="tid">T3-03</span>
-<h3>Port TestDrive: bỏ JOIN products, dùng snapshot tên</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-01, T1 Product đọc · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag ddl">DDL</span></span>
-</div>
-<div class="task-body">
-<p>Danh sách lái thử không còn JOIN sang bảng <code>products</code>. Tên xe lấy từ <code>product_name_snapshot</code>, dòng cũ chưa có snapshot thì tra Mongo một lần theo lô.</p>
-<h4>Các bước</h4>
-<ol>
-<li>TestDrive.php:47-49: bỏ <code>LEFT JOIN products</code>, chọn <code>td.*, td.product_name_snapshot AS product_name</code>.</li>
-<li>TestDrive.php:55: <code>FIELD(td.status, ...)</code> → <code>CASE td.status WHEN 'pending' THEN 1 WHEN 'confirmed' THEN 2 WHEN 'done' THEN 3 ELSE 4 END</code>. Dòng 27: <code>"pending"</code> → <code>'pending'</code>.</li>
-<li>Đổi chữ ký <code>create(..., string $productId, ..., ?string $note, ?string $productName = null)</code>, bind id dạng chuỗi (quyết định 1). Cho phép <code>variant_id</code> null nếu DDL có cột này.</li>
-<li>ContactController::processTestDrive (dòng 171 ép <code>(int)</code>, dòng 203 đã gọi <code>Product::getById</code>): truyền <code>(string)$productId</code> và <code>$product['name']</code> vào <code>TestDrive::create</code> (dòng 210).</li>
-<li>ContactAdminController::index: sau <code>TestDrive::getPaginated</code>, gom các <code>product_id</code> có <code>product_name</code> rỗng, gọi <code>Product::findManyByIds($ids)</code> một lần, ghép tên. Model TestDrive không chạm Mongo (quyết định 9).</li>
-<li>Gộp 5 lần <code>TestDrive::countAll</code> (dòng 29-36) thành <code>countByStatus()</code> như T3-02.</li>
-<li>Dữ liệu cũ <code>database/legacy/contacts-test_drive-data.sql</code>: viết câu UPDATE điền snapshot cho các dòng đã import (chạy trong seed base).</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/models/TestDrive.php</code> CASE, nháy, chữ ký <code>create</code>, <code>countByStatus</code></li>
-<li><code>app/controllers/frontend/ContactController.php</code> dòng 171, 210 (không có trong bảng port của master plan)</li>
-<li><code>app/controllers/admin/ContactAdminController.php</code> ghép tên theo lô</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Đăng ký lái thử ở <code>/contact?tab=test-drive</code> → dòng mới có <code>product_name_snapshot</code> đúng tên xe.</li>
-<li><code>/admin/contacts?section=test-drives</code> hiện tên xe cho cả dòng cũ và mới; log query chỉ có 1 lệnh <code>find</code> Mongo cho cả trang.</li>
-<li><code>grep -n "JOIN products" app/models/TestDrive.php</code> không còn kết quả.</li>
-</ul>
-</div>
-</article>
-<article class="task" data-task="t3-04">
-<div class="task-head">
-<span class="tid">T3-04</span>
-<h3>Generator đơn hàng cho seed (small, 10k, 100k)</h3>
-<span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: T3-01, T5 khung seed · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag ddl">DDL</span></span>
-</div>
-<div class="task-body">
-<p>Sinh đơn hàng có snapshot đúng để dashboard và lịch sử đơn có dữ liệu ngay từ tuần 2. Cùng một hàm dùng cho dataset benchmark (100k đơn / 300k item) ở tuần 5.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Thống nhất với T5 điểm gắn: <code>seed.php</code> gọi <code>seedOrders()</code> sau khi đã có users và products.</li>
-<li>Phân bố: small = 50 đơn; 10k; 100k đơn, trung bình 3 item/đơn (1-5). <code>created_at</code> rải đều 12 tháng gần nhất. <code>status</code>: pending 20%, confirmed 25%, done 45%, cancelled 10%. <code>type</code>: deposit 30% (1 item), purchase 70%.</li>
-<li>Snapshot lấy từ product/variant Mongo đã seed (tên, giá variant). <code>total_amount = SUM(unit_price * quantity) - discount_amount</code>. <code>payment_status</code> nhất quán với <code>status</code>.</li>
-<li>Chèn bằng <code>COPY</code> hoặc INSERT nhiều dòng theo lô 1000, trong một transaction cho mỗi lô.</li>
-<li>Có cờ <code>--orders-bench</code>: ghi thêm cùng dữ liệu vào Mongo <code>orders_bench</code> (item nhúng) để hai DB so sánh trên đúng một dataset.</li>
-<li>Viết <code>bench/t3/verify_small.sql</code>: các câu kiểm tra tay dùng cho DoD dashboard.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>database/seed/orders.php</code> <span class="tag new">MỚI</span> <code>seedOrders()</code>, <code>seedOrdersBench()</code></li>
-<li><code>database/seed/seed.php</code> thêm 1 dòng gọi (phối hợp T5)</li>
-<li><code>bench/t3/verify_small.sql</code> <span class="tag new">MỚI</span></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>docker compose exec app composer db:reset -- --size=small</code> → <code>SELECT COUNT(*) FROM orders</code> = 50.</li>
-<li><code>SELECT COUNT(*) FROM orders o WHERE total_amount &lt;&gt; (SELECT SUM(unit_price*quantity) FROM order_items i WHERE i.order_id=o.id) - COALESCE(discount_amount,0)</code> = 0.</li>
-<li>Chạy seed 2 lần cùng RNG seed → <code>md5</code> của <code>SELECT string_agg(id||':'||total_amount, ',' ORDER BY id) FROM orders</code> giống nhau.</li>
-<li>100k: <code>db.orders_bench.countDocuments()</code> = <code>SELECT COUNT(*) FROM orders</code>; tổng item hai bên bằng nhau.</li>
-</ul>
-<pre><code>function seedOrders(PDO $pdo, array $userIds, array $variants, int $n, int $rngSeed): array
-// $variants: [['productId'=&gt;'165','variantId'=&gt;'165-STD','name'=&gt;'VF 8','variantName'=&gt;'Tiêu chuẩn','price'=&gt;1090000000], ...]
-// trả về danh sách order đã sinh (để seedOrdersBench dùng lại, không random lần hai)
-mt_srand($rngSeed);</code></pre>
-</div>
-</article>
-</div>
-</section>
-<section class="milestone" id="w3">
-<h2><span class="wk">Tuần 3</span>Lịch sử và chi tiết đơn, activity log</h2>
-<div class="tasks">
-<article class="task" data-task="t3-05">
-<div class="task-head">
-<span class="tid">T3-05</span>
-<h3>Order.php: đọc đơn của user và chi tiết đơn</h3>
-<span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: T3-01, T4 bảng order_items · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
-</div>
-<div class="task-body">
-<p>Viết lại <code>getByUserId</code>, <code>countByUserId</code>, <code>getById</code> trên <code>orders</code> + <code>order_items</code>, không JOIN <code>products</code>. Trang danh sách tối đa 2 round trip, trang chi tiết 1 round trip PG.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Xóa <code>SQL_BASE</code> (Order.php:25-28) và mọi <code>JOIN products</code> (dòng 49, 69, 81, 123).</li>
-<li><code>getByUserId</code>: thêm <code>COUNT(*) OVER() AS total_rows</code> để khỏi gọi <code>countByUserId</code> riêng. Trang vượt cuối trả rỗng → khi đó mới gọi <code>countByUserId</code>.</li>
-<li>Thêm <code>getItemsByOrderIds(array $ids): array</code> trả <code>[orderId =&gt; items[]]</code> bằng một câu <code>= ANY(CAST(:ids AS bigint[]))</code>.</li>
-<li><code>getById</code>: một câu với <code>json_agg</code> item. Vẫn trả khóa cũ <code>product_name</code>, <code>price</code> (lấy từ item đầu) để <code>OrderAdminController::setstatus</code>, <code>setpayment</code> và view cũ không vỡ.</li>
-<li>Thêm <code>getByIdForUser(int $id, int $userId)</code> (điều kiện <code>user_id</code> nằm trong SQL, chống xem đơn người khác).</li>
-<li><code>getPaymentStatusFromNote</code>: đọc cột <code>payment_status</code> nếu có trong <code>$row</code>, chỉ fallback sang note. Phối hợp T4 vì <code>updatePaymentStatus</code> (dòng 275) phải ghi cột cùng lúc.</li>
-<li>Thay <code>getAll</code>, <code>getByStatus</code> (dòng 74, 114) bằng <code>getAdminList</code> nếu không còn nơi gọi (<code>grep -rn "Order::getAll\|getByStatus" app</code>).</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>app/models/Order.php</code> phần đọc (không đụng <code>create</code>, <code>updateStatus</code>, <code>updatePaymentStatus</code> của T4)</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Bật <code>log_min_duration_statement=0</code> trên container PG, mở <code>/user/orders</code>: log có đúng 2 câu.</li>
-<li><code>EXPLAIN</code> câu đầu dùng <code>Index Scan</code> trên index <code>orders(user_id, created_at DESC)</code> của T2.</li>
-<li>Đổi tên sản phẩm trong Mongo (<code>db.products.updateOne({productID:"165"},{$set:{name:"X"}})</code>) → tên trong đơn cũ không đổi.</li>
-</ul>
-<pre><code>-- round trip 1
-SELECT o.id, o.type, o.status, o.payment_status, o.total_amount, o.note, o.created_at,
-       COUNT(*) OVER() AS total_rows
-FROM orders o
-WHERE o.user_id = :uid
-ORDER BY o.created_at DESC, o.id DESC
-LIMIT :limit OFFSET :offset;
 
--- round trip 2
-SELECT oi.order_id, oi.product_id, oi.variant_id, oi.product_name, oi.variant_name,
-       oi.color_name, oi.unit_price, oi.quantity
-FROM order_items oi
-WHERE oi.order_id = ANY(CAST(:ids AS bigint[]))   -- bind '{12,15,18}'
-ORDER BY oi.order_id, oi.id;
-
--- getById: 1 round trip
-SELECT o.*, u.name AS user_name, u.email,
-       COALESCE(json_agg(json_build_object(
-           'product_id', oi.product_id, 'variant_id', oi.variant_id,
-           'product_name', oi.product_name, 'variant_name', oi.variant_name,
-           'color_name', oi.color_name, 'unit_price', oi.unit_price, 'quantity', oi.quantity)
-         ORDER BY oi.id) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
-FROM orders o
-JOIN users u ON u.id = o.user_id
-LEFT JOIN order_items oi ON oi.order_id = o.id
-WHERE o.id = :id
-GROUP BY o.id, u.id;</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-06">
-<div class="task-head">
-<span class="tid">T3-06</span>
-<h3>Danh sách đơn admin: lọc, tìm, payment_status</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
-</div>
-<div class="task-body">
-<p>Sửa <code>getAdminList</code>, <code>countAdminList</code>, <code>countAdminPaymentSummary</code>, <code>buildAdminFilters</code>, <code>paymentStatusSql</code> cho PG và cột <code>payment_status</code> thật.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>paymentStatusSql()</code> (dòng 327-333) trả <code>"COALESCE(o.payment_status, 'pending_verify')"</code>. Phương án dự phòng nếu DDL không có cột: <code>COALESCE(NULLIF(o.note-&gt;&gt;'payment_status',''),'pending_verify')</code> + expression index.</li>
-<li><code>countAdminPaymentSummary</code>: <code>SUM(CASE ...)</code> → <code>COUNT(*) FILTER (WHERE ... = 'paid')</code>.</li>
-<li><code>buildAdminFilters</code> dòng 349: <code>LIKE</code> → <code>ILIKE</code>; <code>CAST(o.id AS CHAR)</code> → <code>CAST(o.id AS TEXT)</code>; <code>p.name LIKE</code> → <code>EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.product_name ILIKE :q3)</code>.</li>
-<li>Dòng 357, 362: <code>DATE(o.created_at) &gt;= :d</code> → <code>o.created_at &gt;= :d</code> và <code>o.created_at &lt; CAST(:d AS date) + 1</code> (khoảng nửa mở, dùng được index).</li>
-<li><code>getAdminList</code>: hiển thị tên item đầu và số item bằng <code>LEFT JOIN LATERAL (... LIMIT 1)</code>; chỉ JOIN <code>users</code>.</li>
-<li><code>countAdminList</code> và <code>countAdminPaymentSummary</code> nhận cùng filter (OrderAdminController.php:35, 39) nên <code>summary['all']</code> chính là tổng. Bỏ lời gọi <code>countAdminList</code> trong controller → trang admin còn 2 round trip.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/models/Order.php</code> dòng 136-220, 327-369</li>
-<li><code>app/controllers/admin/OrderAdminController.php::index</code> dòng 35-44</li>
-<li><code>app/views/admin/orders/partials/table.php</code> cột "Sản phẩm" hiện "VF 8 + 2 sản phẩm khác"</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>/admin/orders?q=vf</code> và <code>?q=VF</code> trả cùng kết quả.</li>
-<li>Lọc <code>date_from=date_to=</code> một ngày → gồm cả đơn lúc 23:59.</li>
-<li>Số trên thanh summary khớp <code>SELECT payment_status, COUNT(*) FROM orders GROUP BY 1</code>.</li>
-</ul>
-</div>
-</article>
-<article class="task" data-task="t3-07">
-<div class="task-head">
-<span class="tid">T3-07</span>
-<h3>Danh sách đơn của user: /order và /user/orders</h3>
-<span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span></span>
-</div>
-<div class="task-body">
-<p>Hai controller đang lặp cùng một đoạn map dữ liệu. Gom về một hàm, hiển thị nhiều item, có link sang trang chi tiết.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Thêm <code>Order::presentForUser(array $row, array $items): array</code> trả đúng các khóa view đang dùng (<code>orderId</code>, <code>orderDbId</code>, <code>carName</code>, <code>orderDate</code>, <code>depositAmount</code>, <code>paymentStatus</code>, ...) + khóa mới <code>items</code>, <code>totalAmount</code>, <code>type</code>.</li>
-<li>OrderController::index (dòng 315-355) và UserController::orders (dòng 130-176): gọi <code>getByUserId</code> + <code>getItemsByOrderIds</code>, dùng <code>presentForUser</code>. UserController lấy <code>total_rows</code> cho <code>Pagination</code> thay vì <code>countByUserId</code> (dòng 135).</li>
-<li><code>carName</code> = tên item đầu, thêm " + N sản phẩm" nếu nhiều item. <code>depositAmount</code> = <code>total_amount</code> với đơn deposit.</li>
-<li>View: <code>frontend/order/index.php</code> dòng 72 đang link tới <code>order/confirmation</code>, đổi thành <code>order/detail/{orderDbId}</code>; <code>user/partials/orders-list.php</code> thêm link tương tự.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/controllers/frontend/OrderController.php::index</code> (T4 sửa <code>checkout</code> cùng file: chỉ sửa trong <code>index</code>, <code>detail</code>)</li>
-<li><code>app/controllers/frontend/UserController.php::orders</code></li>
-<li><code>app/views/frontend/order/index.php</code>, <code>app/views/frontend/user/partials/orders-list.php</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>User có 12 đơn, <code>perPage=5</code>: trang 3 hiện 2 đơn, phân trang đúng 3 trang.</li>
-<li>Đơn purchase 3 item hiện "VF 8 + 2 sản phẩm"; đơn deposit hiện như cũ.</li>
-<li>Log PG: 2 câu mỗi lần tải trang.</li>
-</ul>
-</div>
-</article>
-<article class="task" data-task="t3-08">
-<div class="task-head">
-<span class="tid">T3-08</span>
-<h3>Trang chi tiết đơn cho user: /order/detail/{id}</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-05, T1 findManyByIds · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag new">MỚI</span></span>
-</div>
-<div class="task-body">
-<p>Route mới trong danh sách smoke test. Hiện bảng item theo snapshot, ảnh và link sản phẩm lấy từ Mongo bằng một lần <code>$in</code>. Tổng cộng 2 round trip (1 PG + 1 Mongo).</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>OrderController::detail($id = 0)</code>: kiểm tra đăng nhập như <code>index</code>, gọi <code>Order::getByIdForUser($id, Auth::id())</code>; không có → flash + redirect <code>/order</code> (không lộ việc đơn tồn tại).</li>
-<li>Gom <code>product_id</code> từ items, gọi <code>Product::findManyByIds($ids)</code> để lấy ảnh, slug. Sản phẩm đã xóa/ẩn: vẫn hiện tên snapshot, không có link.</li>
-<li>View: thông tin đơn (mã, ngày, trạng thái, thanh toán), bảng item (tên, phiên bản, màu, đơn giá, SL, thành tiền), giảm giá, tổng; với đơn deposit hiện thêm thông tin từ <code>note</code> (tỉnh, showroom).</li>
-<li>Thêm route vào danh sách smoke test ở <code>bench/README.md</code> hoặc file smoke test chung.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/controllers/frontend/OrderController.php</code> thêm <code>detail</code></li>
-<li><code>app/views/frontend/order/detail.php</code> <span class="tag new">MỚI</span> (dùng lại Tailwind class của <code>order/index.php</code>)</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>User A mở đơn của user B bằng URL → bị chuyển về <code>/order</code>.</li>
-<li>Tổng tiền trên trang = <code>orders.total_amount</code>; tổng các dòng − giảm giá = tổng.</li>
-<li>Đặt <code>isActive=false</code> cho sản phẩm trong Mongo → trang vẫn hiện tên, không lỗi.</li>
-</ul>
-<pre><code>public function detail($id = 0): void
-{
-    if (!Auth::check()) { /* giống index() dòng 317-321 */ }
-    $order = Order::getByIdForUser((int)$id, (int)Auth::id());   // PG: 1 câu
-    if (!$order) { $_SESSION['flash'] = 'Không tìm thấy đơn hàng.'; header('Location: ' . BASE_URL . 'order'); exit; }
-    $ids = array_values(array_unique(array_column($order['items'], 'product_id')));
-    $products = $ids ? Product::findManyByIds($ids) : [];          // Mongo: 1 lần $in
-    SEO::set('Đơn hàng #' . (int)$order['id']);
-    View::render('frontend/order/detail', ['order' =&gt; $order, 'products' =&gt; $products]);
-}</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-09">
-<div class="task-head">
-<span class="tid">T3-09</span>
-<h3>Admin chi tiết đơn có bảng item</h3>
-<span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span></span>
-</div>
-<div class="task-body">
-<p>Trang <code>/admin/orders/detail/{id}</code> hiện đủ item thay vì một sản phẩm duy nhất.</p>
-<h4>Các bước</h4>
-<ol>
-<li>OrderAdminController::detail (dòng 75-106): <code>note</code> giờ là JSONB, PDO trả chuỗi JSON, vẫn <code>json_decode</code> như dòng 91-97. Truyền thêm <code>items</code>.</li>
-<li><code>admin/orders/detail.php</code> dòng 71-75: thay khối "Sản phẩm" bằng bảng item; thêm dòng giảm giá, tổng tiền, mã coupon nếu có.</li>
-<li><code>partials/detail-modal.php</code>: cập nhật tương tự nếu modal đang đọc <code>product_name</code>, <code>price</code>.</li>
-<li><code>setstatus</code>, <code>setpayment</code>: dùng <code>$order['payment_status']</code> thay cho <code>getPaymentStatusFromNote</code> (dòng 128).</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/controllers/admin/OrderAdminController.php</code> <code>detail</code>, dòng 128</li>
-<li><code>app/views/admin/orders/detail.php</code>, <code>app/views/admin/orders/partials/detail-modal.php</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Đơn 3 item hiện 3 dòng, tổng khớp <code>total_amount</code>.</li>
-<li>Đổi trạng thái và thanh toán từ trang chi tiết vẫn chạy (smoke test admin Order).</li>
-</ul>
-</div>
-</article>
-<article class="task" data-task="t3-10">
-<div class="task-head">
-<span class="tid">T3-10</span>
-<h3>ActivityLog model trên Mongo</h3>
-<span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: Phase 0 Db::mongo · <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Cung cấp <code>ActivityLog::record()</code> sớm (đầu tuần 3) để T1, T2, T4 gọi. Ghi log không bao giờ làm request lỗi hay chậm.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Tạo model với hằng <code>ACTIONS</code>; chuẩn hóa <code>keyword</code> (<code>mb_strtolower</code>, <code>trim</code>, gộp khoảng trắng).</li>
-<li>Bọc <code>try/catch (\Throwable)</code>, chỉ <code>error_log</code>. Write concern <code>w:1</code>, <code>wtimeout</code> 200ms.</li>
-<li>Kiểm tra <code>Db::mongo()</code> đặt <code>serverSelectionTimeoutMS</code> nhỏ (~1000ms). Mặc định 30s sẽ làm mọi trang treo khi Mongo tắt dù đã có try/catch. Báo T1 nếu Phase 0 chưa đặt.</li>
-<li>Gửi T2 hai index để đưa vào <code>database/mongo/002_indexes.js</code>.</li>
-<li>Báo cho T1/T2/T4 danh sách <code>actionType</code> và vị trí gọi (Product detail/search, Cart add/remove, Wishlist toggle, <code>OrderService::place</code> sau commit).</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>app/models/ActivityLog.php</code> <span class="tag new">MỚI</span></li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>docker compose stop mongo</code>, mở <code>/products/detail/165</code> → trang vẫn trả 200, thời gian thêm dưới 1.5s; <code>docker compose start mongo</code>.</li>
-<li>Tìm "VF 8" rồi "vf  8" → <code>db.userActivityLogs.find({actionType:"search"}).sort({timestamp:-1}).limit(2)</code> có cùng <code>keyword:"vf 8"</code>.</li>
-<li><code>db.userActivityLogs.getIndexes()</code> có 2 index trên.</li>
-</ul>
-<pre><code>final class ActivityLog
-{
-    public const COLLECTION = 'userActivityLogs';
-    public const ACTIONS = ['view_product', 'search', 'add_to_cart', 'remove_from_cart',
-                            'wishlist_toggle', 'place_order'];
-
-    /** Không bao giờ ném lỗi. $data: productId, variantId, keyword, orderId, resultCount... */
-    public static function record(?int $userId, string $actionType, array $data = []): void
-    {
-        try {
-            if (!in_array($actionType, self::ACTIONS, true)) { return; }
-            Db::mongo()-&gt;selectCollection(self::COLLECTION)-&gt;insertOne([
-                'userId'     =&gt; $userId,
-                'sessionId'  =&gt; session_id() ?: null,
-                'actionType' =&gt; $actionType,
-                'productId'  =&gt; isset($data['productId']) ? (string)$data['productId'] : null,
-                'keyword'    =&gt; isset($data['keyword']) ? self::normalize($data['keyword']) : null,
-                'meta'       =&gt; array_diff_key($data, ['productId' =&gt; 1, 'keyword' =&gt; 1]),
-                'timestamp'  =&gt; new MongoDB\BSON\UTCDateTime(),
-            ], ['writeConcern' =&gt; new MongoDB\Driver\WriteConcern(1, 200)]);
-        } catch (\Throwable $e) {
-            error_log('[ActivityLog] ' . $e-&gt;getMessage());
-        }
-    }
-
-    // topKeywords(), recent(), countByAction(): xem T3-15
-}
-
-// database/mongo/002_indexes.js (T2 đưa vào)
-db.userActivityLogs.createIndex({ userId: 1, timestamp: -1 });
-db.userActivityLogs.createIndex({ actionType: 1, timestamp: -1 });</code></pre>
-</div>
-</article>
-</div>
-</section>
-<section class="milestone" id="w4">
-<h2><span class="wk">Tuần 4</span>Dashboard trên DashboardService</h2>
-<div class="tasks">
-<article class="task" data-task="t3-11">
-<div class="task-head">
-<span class="tid">T3-11</span>
-<h3>Khung DashboardService, controller không còn SQL</h3>
-<span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T3-05 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Chuyển mọi hàm chạm DB trong <code>DashboardAdminController.php</code> (dòng 48-331, không chỉ 65-330: <code>buildSummary</code> và <code>buildRecentContacts</code> cũng có SQL) sang service. Controller chỉ gọi service và render.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Tạo service theo bảng ánh xạ bên dưới, ban đầu có thể trả mảng rỗng để controller chạy được ngay.</li>
-<li><code>index()</code> giữ nguyên khóa của mảng <code>$dashboard</code> (dòng 18-31) để view không phải sửa; thêm khóa <code>topSelling</code>, <code>lowStock</code>, <code>keywords</code>.</li>
-<li>Mỗi phương thức tự bắt lỗi và trả giá trị rỗng (giữ hành vi cũ: một khối lỗi không làm hỏng cả dashboard), có <code>error_log</code>.</li>
-<li>Giữ <code>buildQuickActions</code>, <code>mock*</code> trong controller (không có SQL). Xóa <code>countRows</code>, <code>extractDepositFromNote</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/services/DashboardService.php</code> <span class="tag new">MỚI</span></li>
-<li><code>app/controllers/admin/DashboardAdminController.php</code> rút gọn còn ~80 dòng</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>grep -nE "\$pdo|SELECT|prepare\(" app/controllers/admin/DashboardAdminController.php</code> không có kết quả.</li>
-<li><code>/admin/dashboard</code> trả 200 trên seed small.</li>
-</ul>
-<div class="tbl"><table>
-<thead><tr><th>Hàm cũ (dòng)</th><th>Hàm mới</th><th>Nguồn dữ liệu</th></tr></thead>
-<tbody>
-<tr><td><code>buildSummary</code> + <code>countRows</code> (48, 301)</td><td><code>summary(): array</code></td><td>PG 1 câu + Mongo <code>Product::countActive()</code></td></tr>
-<tr><td><code>sumDepositRevenue</code> (313)</td><td>gộp vào <code>summary()['revenue']</code></td><td>PG <code>orders.total_amount</code></td></tr>
-<tr><td><code>buildMonthlyTrend</code> (65)</td><td><code>monthlyTrend(int $months = 6)</code></td><td>PG</td></tr>
-<tr><td><code>buildOrdersByModel</code> (118)</td><td><code>ordersByModel(int $limit = 6)</code></td><td>PG <code>order_items</code> snapshot</td></tr>
-<tr><td><code>buildModelStats</code> (145)</td><td><code>modelStats(int $limit = 6)</code></td><td>PG tổng hợp + Mongo <code>$in</code></td></tr>
-<tr><td><code>buildRecentOrders</code> (191)</td><td><code>recentOrders(int $limit = 6)</code></td><td>PG</td></tr>
-<tr><td><code>buildRecentContacts</code> (231)</td><td><code>recentContacts(int $limit = 5)</code> → <code>Contact::latest</code></td><td>PG</td></tr>
-<tr><td><code>buildActivities</code> (260)</td><td><code>activities(int $limit = 8)</code></td><td>Dùng lại kết quả đã lấy + <code>ActivityLog::recent</code></td></tr>
-<tr><td>(mới)</td><td><code>topSelling(int $limit = 10, int $days = 30)</code></td><td>PG</td></tr>
-<tr><td>(mới)</td><td><code>lowStock(int $threshold = 5, int $limit = 10)</code></td><td>PG <code>Inventory::lowStock</code> + Mongo <code>$in</code></td></tr>
-<tr><td>(mới)</td><td><code>searchKeywords(int $days = 30, int $limit = 10)</code></td><td>Mongo <code>ActivityLog::topKeywords</code></td></tr>
-</tbody>
-</table></div>
-<p><code>buildActivities</code> cũ gọi lại <code>buildRecentOrders</code> và <code>buildRecentContacts</code> (thừa 2 query): <code>activities(array $orders, array $contacts, int $limit)</code> nhận kết quả đã có. Constructor nhận <code>PDO $pdo</code>.</p>
-</div>
-</article>
-<article class="task" data-task="t3-12">
-<div class="task-head">
-<span class="tid">T3-12</span>
-<h3>Summary và doanh thu theo tháng trên PG</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-11, T3-04 · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
-</div>
-<div class="task-body">
-<p>Thay <code>DATE_FORMAT</code>, <code>DATE_SUB</code>, <code>CURDATE</code>, <code>JSON_EXTRACT</code> (dòng 84-96, 318-325) bằng <code>date_trunc</code>, <code>to_char</code>, <code>generate_series</code> và cột <code>total_amount</code>. Summary từ 11 câu <code>countRows</code> còn 1 câu PG.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>summary()</code>: một câu dùng <code>COUNT(*) FILTER</code> trên <code>orders</code> + subquery vô hướng cho users, contacts, news, comments. <code>comments_pending</code> dùng <code>is_approved = FALSE</code> (dòng 60). Số sản phẩm: <code>Product::countActive()</code> (dòng 52 đang đếm bảng <code>products</code> đã chuyển sang Mongo).</li>
-<li><code>monthlyTrend()</code>: <code>generate_series</code> sinh đủ tháng nên bỏ được vòng lặp điền 0 (dòng 72-81); giữ nhãn <code>'T' . n</code>.</li>
-<li>Khoảng thời gian nửa mở <code>created_at &gt;= m AND created_at &lt; m + interval '1 month'</code>.</li>
-<li>Ghi lại vào <code>bench/t3/verify_small.sql</code> câu kiểm tra tay tương ứng.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/services/DashboardService.php</code> <code>summary</code>, <code>monthlyTrend</code></li>
-<li><code>app/views/admin/dashboard/partials/stat-cards.php</code> dòng 12: <code>deposit_revenue</code> → <code>revenue</code> (hoặc giữ tên khóa cũ)</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Trên seed small: 6 cột biểu đồ khớp từng dòng của <code>verify_small.sql</code>.</li>
-<li>Tháng không có đơn vẫn hiện cột 0.</li>
-</ul>
-<pre><code>-- summary: 1 round trip
-SELECT COUNT(*)                                             AS orders_total,
-       COUNT(*) FILTER (WHERE status = 'pending')           AS orders_pending,
-       COUNT(*) FILTER (WHERE status = 'done')              AS orders_done,
-       COALESCE(SUM(total_amount) FILTER (WHERE status &lt;&gt; 'cancelled'), 0) AS revenue,
-       (SELECT COUNT(*) FROM users)                         AS users,
-       (SELECT COUNT(*) FROM contacts)                      AS contacts_total,
-       (SELECT COUNT(*) FROM contacts WHERE status = 'unread') AS contacts_unread,
-       (SELECT COUNT(*) FROM news)                          AS news_total,
-       (SELECT COUNT(*) FROM comments)                      AS comments_total,
-       (SELECT COUNT(*) FROM comments WHERE is_approved = FALSE) AS comments_pending
-FROM orders;
-
--- monthlyTrend
-WITH months AS (
-    SELECT generate_series(
-             date_trunc('month', now()) - make_interval(months =&gt; CAST(:months AS int) - 1),
-             date_trunc('month', now()),
-             interval '1 month') AS m
-)
-SELECT to_char(months.m, 'YYYY-MM') AS ym,
-       COUNT(o.id)                  AS orders,
-       COALESCE(SUM(o.total_amount) FILTER (WHERE o.status &lt;&gt; 'cancelled'), 0) AS revenue
-FROM months
-LEFT JOIN orders o
-       ON o.created_at &gt;= months.m
-      AND o.created_at &lt;  months.m + interval '1 month'
-GROUP BY months.m
-ORDER BY months.m;</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-13">
-<div class="task-head">
-<span class="tid">T3-13</span>
-<h3>Theo dòng xe, model stats, đơn gần đây</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-11, T1 findManyByIds · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Ba khối đang JOIN <code>products</code> (dòng 125, 157-158, 205). Viết lại trên <code>order_items</code>; thuộc tính sản phẩm hiện tại (giá, quãng đường, danh mục) lấy từ Mongo bằng một lần <code>$in</code>.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>ordersByModel</code>: <code>GROUP BY oi.product_id</code>, đếm số đơn khác nhau <code>COUNT(DISTINCT oi.order_id)</code>, tên từ snapshot mới nhất.</li>
-<li><code>modelStats</code>: lấy top N từ PG, rồi <code>Product::findManyByIds</code> để có <code>basePrice</code>, <code>attributes.rangeKm</code>, tên danh mục (thay <code>specs.category</code>, <code>specs.range</code> ở dòng 170-179). Lưu ý bản cũ dùng <code>LEFT JOIN</code> nên hiện cả xe 0 đơn: nếu cần giữ, bổ sung từ danh sách sản phẩm active trong Mongo.</li>
-<li><code>recentOrders</code>: <code>orders JOIN users</code> + <code>LATERAL</code> lấy tên item đầu; <code>deposit</code> = <code>total_amount</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/services/DashboardService.php</code></li>
-<li><code>app/views/admin/dashboard/partials/model-stats.php</code>, <code>recent-orders.php</code> nếu đổi khóa</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Toàn trang dashboard: log Mongo chỉ có 1 lệnh <code>find</code> với <code>$in</code> cho model stats (không có N+1).</li>
-<li>Kết quả khớp <code>verify_small.sql</code>.</li>
-</ul>
-<pre><code>SELECT oi.product_id,
-       (ARRAY_AGG(oi.product_name ORDER BY o.created_at DESC))[1] AS name,
-       COUNT(DISTINCT oi.order_id) AS orders
-FROM order_items oi
-JOIN orders o ON o.id = oi.order_id
-GROUP BY oi.product_id
-ORDER BY orders DESC, name ASC
-LIMIT :limit;</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-14">
-<div class="task-head">
-<span class="tid">T3-14</span>
-<h3>Partial bán chạy và sắp hết hàng</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-11, T5 Inventory::lowStock · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Hai khối mới trên dashboard. Top-selling tính theo số lượng bán trong N ngày; low-stock dùng hàm của T5 và ghép tên từ Mongo.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>topSelling</code>: SQL bên dưới, loại đơn cancelled.</li>
-<li><code>lowStock</code>: gọi <code>Inventory::lowStock($threshold, $limit)</code> của T5 (nếu T5 chưa xong, dùng câu SQL tạm bên dưới và ghi TODO). Gom <code>product_id</code> → <code>Product::findManyByIds</code> lấy tên, tên variant.</li>
-<li>Hai partial theo kiểu Srtdash như <code>model-stats.php</code>, có link sang <code>/admin/products</code>; include trong <code>dashboard/index.php</code> ở hàng thứ 4 (cột <code>col-xl-5</code> còn trống cạnh model stats).</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/views/admin/dashboard/partials/top-selling.php</code> <span class="tag new">MỚI</span></li>
-<li><code>app/views/admin/dashboard/partials/low-stock.php</code> <span class="tag new">MỚI</span></li>
-<li><code>app/views/admin/dashboard/index.php</code> thêm 2 include</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Admin chỉnh tồn kho một SKU xuống 2 → xuất hiện ở low-stock sau khi tải lại.</li>
-<li>Đặt 1 đơn mới 5 xe một mẫu → mẫu đó lên đầu top-selling.</li>
-</ul>
-<pre><code>-- topSelling
-SELECT oi.product_id,
-       MAX(oi.product_name)               AS product_name,
-       SUM(oi.quantity)                   AS qty,
-       SUM(oi.quantity * oi.unit_price)   AS revenue
-FROM order_items oi
-JOIN orders o ON o.id = oi.order_id
-WHERE o.status &lt;&gt; 'cancelled'
-  AND o.created_at &gt;= now() - make_interval(days =&gt; CAST(:days AS int))
-GROUP BY oi.product_id
-ORDER BY qty DESC
-LIMIT :limit;
-
--- lowStock (bản tạm cho tới khi có Inventory::lowStock của T5)
-SELECT product_id, variant_id, stock, reserved, stock - reserved AS available
-FROM inventory
-WHERE stock - reserved &lt;= :threshold
-ORDER BY available ASC, product_id
-LIMIT :limit;</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-15">
-<div class="task-head">
-<span class="tid">T3-15</span>
-<h3>Thống kê từ khóa và hoạt động từ ActivityLog</h3>
-<span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T3-10, T2 gọi record ở search · <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Hiện top từ khóa tìm kiếm và hoạt động gần đây thật, thay dần <code>mockActivities</code> (dòng 361).</p>
-<h4>Các bước</h4>
-<ol>
-<li>Viết <code>topKeywords</code>, <code>recent</code>, <code>countByAction</code> bằng aggregate.</li>
-<li><code>activities()</code> trộn đơn mới, liên hệ mới, log Mongo; sắp theo thời gian.</li>
-<li>Thêm khối "Từ khóa tìm kiếm" vào <code>activities.php</code> hoặc partial riêng.</li>
-<li>Chạy <code>explain("executionStats")</code> để chắc pipeline dùng <code>IXSCAN</code> trên <code>{actionType:1, timestamp:-1}</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/models/ActivityLog.php</code></li>
-<li><code>app/services/DashboardService.php</code> <code>searchKeywords</code>, <code>activities</code></li>
-<li><code>app/views/admin/dashboard/partials/activities.php</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Tìm "vf 8" 3 lần, "vf 3" 1 lần → khối từ khóa hiện vf 8 (3), vf 3 (1).</li>
-<li>Explain: <code>winningPlan</code> có <code>IXSCAN</code>, <code>totalDocsExamined</code> = số log search trong khoảng.</li>
-</ul>
-<pre><code>// ActivityLog::topKeywords
-[
-  { $match: { actionType: "search", timestamp: { $gte: since }, keyword: { $nin: [null, ""] } } },
-  { $group: { _id: "$keyword", count: { $sum: 1 }, users: { $addToSet: "$userId" } } },
-  { $project: { _id: 0, keyword: "$_id", count: 1, uniqueUsers: { $size: "$users" } } },
-  { $sort: { count: -1, keyword: 1 } },
-  { $limit: 10 }
-]</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-16">
-<div class="task-head">
-<span class="tid">T3-16</span>
-<h3>Điền bảng 8 loại query-update</h3>
-<span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: danh sách 8 loại, các topic · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Đầu ra tuần 4 của cả nhóm theo roadmap. T3 giữ khung, điền dòng của mình và đôn đốc các topic khác.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Lấy danh sách 8 loại chính thức (đề bài / giảng viên), sửa cột Loại ở mục <a href="#query-types">bảng đối chiếu</a>.</li>
-<li>Mỗi loại chọn 1 chức năng thật, ghi route, file:dòng, câu lệnh rút gọn, DB.</li>
-<li>Kiểm tra từng dòng bằng cách chạy route trên seed small.</li>
-<li>Chép bảng vào report.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>docs/topics/t3-query.html</code> mục bảng đối chiếu; bản trong report</li></ul>
-<h4>Kiểm tra</h4>
-<ul><li>8/8 dòng có đủ 6 cột, mỗi route mở được và câu lệnh khớp code trên <code>develop-hybrid</code>.</li></ul>
-</div>
-</article>
-</div>
-</section>
-<section class="milestone" id="w5">
-<h2><span class="wk">Tuần 5</span>Thí nghiệm</h2>
-<div class="tasks">
-<article class="task" data-task="t3-17">
-<div class="task-head">
-<span class="tid">T3-17</span>
-<h3>Dựng dataset 100k và các đối tượng benchmark</h3>
-<span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T3-04, T2 index · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Một lệnh dựng đúng dataset dùng chung: 100k đơn / ~300k item ở PG và <code>orders_bench</code> ở Mongo, cùng nội dung.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>composer db:reset -- --size=100k</code> rồi <code>php database/seed/orders.php --orders-bench</code> (hoặc cờ tương đương trong seed.php).</li>
-<li><code>bench/t3/setup.sql</code>: <code>VACUUM ANALYZE</code>; tạo <code>mv_monthly_revenue</code>, <code>mv_product_sales</code> + unique index (để <code>REFRESH ... CONCURRENTLY</code>).</li>
-<li><code>bench/t3/setup_mongo.js</code>: index <code>{status:1, createdAt:1}</code> cho <code>orders_bench</code>.</li>
-<li>Ghi số dòng, kích thước bảng (<code>pg_total_relation_size</code>), <code>db.orders_bench.stats().size</code> vào <code>bench/results/t3_dataset.csv</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>bench/t3/setup.sql</code>, <code>bench/t3/setup_mongo.js</code> <span class="tag new">MỚI</span></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>SELECT COUNT(*) FROM orders</code> = 100000, <code>SELECT COUNT(*) FROM order_items</code> trong khoảng 290k-310k.</li>
-<li>Doanh thu theo tháng từ <code>mv_monthly_revenue</code>, từ SQL gốc và từ pipeline Mongo bằng nhau từng tháng.</li>
-</ul>
-<pre><code>CREATE MATERIALIZED VIEW mv_monthly_revenue AS
-SELECT date_trunc('month', created_at) AS month,
-       COUNT(*) AS orders,
-       SUM(total_amount) FILTER (WHERE status &lt;&gt; 'cancelled') AS revenue
-FROM orders GROUP BY 1;
-CREATE UNIQUE INDEX ON mv_monthly_revenue (month);
-
-CREATE MATERIALIZED VIEW mv_product_sales AS
-SELECT oi.product_id, MAX(oi.product_name) AS product_name, SUM(oi.quantity) AS qty
-FROM order_items oi JOIN orders o ON o.id = oi.order_id
-WHERE o.status &lt;&gt; 'cancelled' GROUP BY oi.product_id;
-CREATE UNIQUE INDEX ON mv_product_sales (product_id);</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-18">
-<div class="task-head">
-<span class="tid">T3-18</span>
-<h3>Bench doanh thu tháng và top-10: 6 cách viết</h3>
-<span class="status-slot"></span>
-<span class="meta">~8h · Phụ thuộc: T3-17 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>So sánh subquery, JOIN, CTE, materialized view và pipeline Mongo cho cùng hai câu hỏi. Lưu plan JSON để phân tích node, cost ước lượng so với thời gian thực.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Viết các biến thể trong <code>bench/t3/queries/</code>: <code>top10_subquery_in.sql</code>, <code>top10_subquery_corr.sql</code>, <code>top10_join.sql</code>, <code>top10_cte.sql</code> (thêm bản <code>AS MATERIALIZED</code>: PG 12+ mặc định inline CTE), <code>top10_mv.sql</code>, <code>top10_mongo.js</code>; tương tự cho <code>revenue_*</code>.</li>
-<li>Kiểm tra mọi biến thể trả cùng kết quả (diff output) trước khi đo.</li>
-<li><code>bench/t3/run_sql.sh</code>: mỗi biến thể 5 lần khởi động + 30 lần đo, lưu 1 plan JSON cuối, ghi CSV.</li>
-<li>Thêm lượt ép thuật toán join (<code>SET enable_hashjoin = off</code>, rồi <code>enable_mergejoin = off</code>) cho <code>top10_join</code> để có đủ Hash / Merge / Nested Loop cho report.</li>
-<li>Đo thêm chi phí <code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> (cái giá của MV).</li>
-<li>Chạy ở 10k và 100k.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>bench/t3/queries/*.sql</code>, <code>*.js</code>, <code>bench/t3/run_sql.sh</code>, <code>bench/t3/run_mongo.sh</code> <span class="tag new">MỚI</span></li>
-<li><code>bench/results/t3_revenue.csv</code>, <code>t3_top10.csv</code>, <code>bench/results/t3_plans/*.json</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>CSV có 30 dòng đo cho mỗi (variant, dataset); không dòng nào <code>rows</code> khác nhau giữa các biến thể.</li>
-<li>Có ít nhất một plan cho mỗi thuật toán join.</li>
-</ul>
-<pre><code>-- top10_subquery_in.sql
-SELECT oi.product_id, MAX(oi.product_name) AS name, SUM(oi.quantity) AS qty
-FROM order_items oi
-WHERE oi.order_id IN (SELECT id FROM orders WHERE status &lt;&gt; 'cancelled')
-GROUP BY oi.product_id ORDER BY qty DESC LIMIT 10;
-
--- top10_join.sql
-SELECT oi.product_id, MAX(oi.product_name) AS name, SUM(oi.quantity) AS qty
-FROM order_items oi JOIN orders o ON o.id = oi.order_id
-WHERE o.status &lt;&gt; 'cancelled'
-GROUP BY oi.product_id ORDER BY qty DESC LIMIT 10;
-
--- top10_cte.sql (chạy thêm bản "AS MATERIALIZED")
-WITH valid AS (SELECT id FROM orders WHERE status &lt;&gt; 'cancelled'),
-     sales AS (SELECT oi.product_id, MAX(oi.product_name) AS name, SUM(oi.quantity) AS qty
-               FROM order_items oi JOIN valid v ON v.id = oi.order_id GROUP BY oi.product_id)
-SELECT * FROM sales ORDER BY qty DESC LIMIT 10;
-
-// top10_mongo.js
-db.orders_bench.aggregate([
-  { $match: { status: { $ne: "cancelled" } } },
-  { $unwind: "$items" },
-  { $group: { _id: "$items.productId", name: { $max: "$items.productName" },
-              qty: { $sum: "$items.quantity" } } },
-  { $sort: { qty: -1 } },
-  { $limit: 10 }
-]);
-
-// revenue_mongo.js
-db.orders_bench.aggregate([
-  { $match: { createdAt: { $gte: ISODate("2025-12-01") }, status: { $ne: "cancelled" } } },
-  { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-              orders: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } },
-  { $sort: { _id: 1 } }
-]);</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-19">
-<div class="task-head">
-<span class="tid">T3-19</span>
-<h3>Bench lịch sử đơn: snapshot vs backend join vs N+1</h3>
-<span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: T3-05, T3-17 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Đo trang lịch sử đơn (10 đơn/trang) theo ba cách, ghi cả ms và số round trip, cho user có ít đơn và user có rất nhiều đơn.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>bench/t3/order_history.php</code> chạy trong container app (không qua Apache), bọc PDO và Mongo collection bằng bộ đếm round trip.</li>
-<li>Biến thể <code>snapshot</code>: 2 câu như T3-05. <code>backend</code>: 2 câu PG không dùng tên snapshot + 1 lần <code>find({productID:{$in:[...]}})</code>. <code>n_plus_1</code>: 1 câu đơn, mỗi đơn 1 câu item, mỗi item 1 <code>findOne</code>.</li>
-<li>Chọn user: số đơn ở p50 và lớn nhất trong dataset 100k (ghi <code>user_id</code> vào CSV). Thêm trang 1 và trang sâu (OFFSET lớn) để thấy chi phí OFFSET.</li>
-<li>5 lần khởi động + 30 lần đo cho mỗi biến thể; dùng <code>hrtime(true)</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>bench/t3/order_history.php</code> <span class="tag new">MỚI</span></li>
-<li><code>bench/results/t3_order_history.csv</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Cột <code>round_trips</code>: snapshot = 2, backend = 3, n_plus_1 = 1 + 10 + số item.</li>
-<li>Ba biến thể trả cùng danh sách item (so sánh hash trong lần chạy đầu).</li>
-</ul>
-<pre><code>docker compose exec app php bench/t3/order_history.php \
-  --variant=snapshot|backend|n_plus_1 --user=1234 --page=1 --per-page=10 \
-  --warmup=5 --runs=30 --dataset=100k --out=bench/results/t3_order_history.csv</code></pre>
-</div>
-</article>
-<article class="task" data-task="t3-20">
-<div class="task-head">
-<span class="tid">T3-20</span>
-<h3>Phân tích plan và vẽ biểu đồ</h3>
-<span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T3-18, T3-19 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Biến CSV và plan JSON thành biểu đồ, bảng số liệu cho report.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Script đọc plan JSON, trích theo từng node: <code>Node Type</code>, <code>Total Cost</code>, <code>Plan Rows</code> vs <code>Actual Rows</code>, <code>Actual Total Time</code>, buffers. Xuất <code>bench/results/t3_plan_nodes.csv</code>.</li>
-<li>Tính p50/p95 cho mỗi (experiment, variant, dataset).</li>
-<li>Vẽ các biểu đồ ở mục <a href="#thi-nghiem">Thí nghiệm</a>; dùng script vẽ chung của khung bench (T5) nếu có.</li>
-<li>Viết 3-5 câu nhận xét cho mỗi biểu đồ vào <code>bench/t3/README.md</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>bench/t3/parse_plans.py</code>, <code>bench/t3/plot.py</code> <span class="tag new">MỚI</span></li>
-<li><code>bench/results/t3_*.png</code></li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul><li>Chạy lại script từ CSV đã commit ra đúng các PNG đã commit.</li></ul>
-</div>
-</article>
-</div>
-</section>
-<section class="milestone" id="w6">
-<h2><span class="wk">Tuần 6</span>Report và demo</h2>
-<div class="tasks">
-<article class="task" data-task="t3-21">
-<div class="task-head">
-<span class="tid">T3-21</span>
-<h3>Viết chương Query processing</h3>
-<span class="status-slot"></span>
-<span class="meta">~8h · Phụ thuộc: T3-20 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Chương report theo dàn ý ở mục <a href="#report">Report</a>, dùng số liệu và plan thật từ tuần 5.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Viết theo dàn ý; mỗi khẳng định đi kèm một plan hoặc một con số từ CSV.</li>
-<li>Chèn bảng 8 loại query-update (T3-16).</li>
-<li>Nhờ một thành viên khác đọc và chạy lại 1 lệnh trong chương.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li>File report chung của nhóm, chương T3</li></ul>
-<h4>Kiểm tra</h4>
-<ul><li>Mọi hình và bảng trong chương có nguồn là file trong <code>bench/results/</code>.</li></ul>
-</div>
-</article>
-<article class="task" data-task="t3-22">
-<div class="task-head">
-<span class="tid">T3-22</span>
-<h3>Kịch bản demo và chạy thử</h3>
-<span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T3-21, script reset (T5) · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
-</div>
-<div class="task-body">
-<p>Demo 10 phút chạy được từ máy trắng bằng script reset, theo kịch bản ở mục <a href="#report">Report</a>.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Chuẩn bị <code>bench/t3/demo.sh</code> chứa đúng các lệnh sẽ gõ.</li>
-<li>Chạy thử 2 lần có bấm giờ; lần 2 bắt đầu từ <code>docker compose down -v</code>.</li>
-<li>Chuẩn bị ảnh chụp dự phòng cho từng bước nếu máy demo chậm.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>bench/t3/demo.sh</code> <span class="tag new">MỚI</span></li></ul>
-<h4>Kiểm tra</h4>
-<ul><li>Demo xong trong 10 phút, không cần sửa tay dữ liệu.</li></ul>
-</div>
-</article>
-</div>
-</section>
 <section id="thi-nghiem">
 <h2>Quy trình thí nghiệm</h2>
-<div class="callout info">Quy trình giống T1: cùng giới hạn container, seed cố định, 5 lần khởi động + 30 lần đo, báo cáo p50/p95. Không đo khi bật Xdebug, DB dùng named volume.</div>
-<h3>Dataset</h3>
+<div class="callout info">Mọi thí nghiệm chạy trên DB <code>vinfast_bench</code> (cả PG và Mongo), không chạy trên DB dev <code>vinfast</code>. Seed cố định, 5 lần khởi động + 30 lần đo, báo cáo p50/p95. Ghi rõ cấu hình máy trong report.</div>
+<h3>Dataset (số đo thực tế từ database/seed/README.md)</h3>
 <div class="tbl"><table>
-<thead><tr><th>Tên</th><th>orders</th><th>order_items</th><th>Dùng cho</th></tr></thead>
+<thead><tr><th>Size</th><th>orders</th><th>order_items</th><th>userActivityLogs</th><th>Dùng cho</th></tr></thead>
 <tbody>
-<tr><td><code>small</code></td><td>50</td><td>~150</td><td>Kiểm tra đúng (verify_small.sql), demo</td></tr>
-<tr><td><code>10k</code></td><td>10 000</td><td>~30 000</td><td>Điểm giữa của đường scaling</td></tr>
-<tr><td><code>100k</code></td><td>100 000</td><td>~300 000</td><td>Thí nghiệm chính; <code>orders_bench</code> cùng nội dung</td></tr>
+<tr><td><code>small</code></td><td>50</td><td>78</td><td>200</td><td>Kiểm tra đúng, demo</td></tr>
+<tr><td><code>10k</code></td><td>10 000</td><td>15 082</td><td>20 000</td><td>Điểm giữa, T3-25</td></tr>
+<tr><td><code>100k</code></td><td>100 000</td><td>151 263</td><td>200 000</td><td>Thí nghiệm chính; <code>orders_bench</code> cùng nội dung</td></tr>
 </tbody>
 </table></div>
 <h3>Lệnh</h3>
-<pre><code># 1. Dựng dataset
-docker compose up -d --build
-docker compose exec app composer db:reset -- --size=100k
-docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X' &lt; bench/t3/setup.sql
-docker compose exec -T mongo mongosh vinfast --quiet &lt; bench/t3/setup_mongo.js
+<pre><code># 1. Dựng dataset (xem bench/README.md)
+docker compose exec -T postgres createdb -U vinfast vinfast_bench      # lần đầu
+docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php database/seed/seed.php --force --size=100k
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php bench/t3/build_orders_bench.php
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -f /dev/stdin &lt; bench/t3/setup.sql
+docker compose exec -T mongo mongosh vinfast_bench --quiet --file /dev/stdin &lt; bench/t3/setup_mongo.js
 
-# 2. Plan PG (lưu JSON)
-docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X -A -t \
-  -c "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) $(cat)"' \
-  &lt; bench/t3/queries/top10_join.sql &gt; bench/results/t3_plans/top10_join_100k.json
+# 2. Plan PG dạng JSON
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -X -A -t -f /dev/stdin \
+  &lt; bench/t3/explain/top10_join.sql &gt; bench/results/t3_plans/top10_join_100k.json
 
 # 3. Explain Mongo
-docker compose exec -T mongo mongosh vinfast --quiet --eval '
+docker compose exec -T mongo mongosh vinfast_bench --quiet --eval '
   printjson(db.orders_bench.explain("executionStats").aggregate([
     { $match: { status: { $ne: "cancelled" } } }, { $unwind: "$items" },
     { $group: { _id: "$items.productId", qty: { $sum: "$items.quantity" } } },
     { $sort: { qty: -1 } }, { $limit: 10 } ]))' &gt; bench/results/t3_plans/top10_mongo_100k.json
 
-# 4. Chạy đo hàng loạt (ghi CSV)
-bash bench/t3/run_sql.sh   --dataset=100k --warmup=5 --runs=30
-bash bench/t3/run_mongo.sh --dataset=100k --warmup=5 --runs=30
-docker compose exec app php bench/t3/order_history.php --variant=snapshot --user=1234 --runs=30 --dataset=100k</code></pre>
-<p><code>execution_ms</code> lấy từ plan JSON (trong DB), <code>elapsed_ms</code> đo phía client. Ghi lại <code>work_mem</code>, <code>shared_buffers</code>, <code>max_parallel_workers_per_gather</code> và giữ nguyên giữa các biến thể. Biến thể ép join: thêm <code>SET enable_hashjoin = off;</code> trước <code>EXPLAIN</code>.</p>
-<h3>Cột CSV <code>bench/results/t3_*.csv</code></h3>
-<pre><code>run_id,experiment,variant,db,dataset,iteration,warmup,elapsed_ms,planning_ms,execution_ms,rows,round_trips,top_node,join_type,est_cost,est_rows,actual_rows,shared_hit,shared_read,user_id,page,pg_version,mongo_version,ts</code></pre>
+# 4. Đo hàng loạt (ghi CSV)
+bash bench/t3/run_sql.sh   --size=100k --warmup=5 --runs=30
+bash bench/t3/run_mongo.sh --size=100k --warmup=5 --runs=30
+
+# Dọn dẹp khi xong
+docker compose exec -T postgres dropdb -U vinfast vinfast_bench
+docker compose exec -T mongo mongosh vinfast_bench --quiet --eval 'db.dropDatabase()'</code></pre>
+<p><b>Xem các câu SQL app gửi</b> (đếm round trip): <code>docker compose exec postgres psql -U vinfast -d vinfast -c "ALTER SYSTEM SET log_min_duration_statement = 0" -c "SELECT pg_reload_conf()"</code>, rồi <code>docker compose logs -f postgres</code>. Tắt lại bằng <code>ALTER SYSTEM RESET log_min_duration_statement</code> + <code>pg_reload_conf()</code>.</p>
+<p>Ghi lại <code>work_mem</code>, <code>shared_buffers</code>, <code>max_parallel_workers_per_gather</code> (<code>SHOW ...</code>) và giữ nguyên giữa các biến thể.</p>
+<h3>File kết quả: <code>bench/results/t3_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code></h3>
+<p>Tên thí nghiệm dùng gạch ngang: <code>top10</code>, <code>revenue</code>, <code>mv-refresh</code>, <code>order-history</code>, <code>pagination</code>, <code>dataset</code>, <code>plan-nodes</code>. Ví dụ <code>t3_order-history_100k.csv</code>. Plan JSON ở <code>bench/results/t3_plans/</code>.</p>
+<pre><code>run_id,experiment,variant,db,size,iteration,warmup,elapsed_ms,planning_ms,execution_ms,rows,round_trips,top_node,join_type,est_cost,est_rows,actual_rows,shared_hit,shared_read,user_id,page,pg_version,mongo_version,ts</code></pre>
 <ul>
-<li><code>experiment</code>: <code>revenue | top10 | order_history | mv_refresh</code>. <code>variant</code>: <code>subquery_in, subquery_corr, join, join_nohash, join_nomerge, cte, cte_mat, mv, mongo, snapshot, backend, n_plus_1</code>. <code>db</code>: <code>pg | mongo | pg+mongo</code>.</li>
+<li><code>variant</code>: <code>subquery-in, subquery-corr, join, join-nohash, join-nomerge, cte, cte-mat, mv, mongo, snapshot, backend, n-plus-1, offset, keyset</code>. <code>db</code>: <code>pg | mongo | pg+mongo</code>.</li>
 <li><code>warmup=1</code> là lần khởi động, bị loại khi tính p50/p95. <code>elapsed_ms</code> đo phía client; <code>planning_ms</code>, <code>execution_ms</code> lấy từ plan (Mongo: <code>executionTimeMillis</code>).</li>
-<li><code>top_node</code>, <code>join_type</code>, <code>est_cost</code>, <code>est_rows</code>, <code>actual_rows</code> của node gốc; <code>shared_hit/read</code> là buffers PG (Mongo ghi <code>totalDocsExamined</code> vào <code>shared_read</code>). <code>user_id</code>, <code>page</code> chỉ cho order_history. File: <code>t3_revenue.csv</code>, <code>t3_top10.csv</code>, <code>t3_order_history.csv</code>, <code>t3_dataset.csv</code>, <code>t3_plan_nodes.csv</code>.</li>
+<li><code>shared_hit/read</code> là buffers PG (Mongo ghi <code>totalDocsExamined</code> vào <code>shared_read</code>). <code>user_id</code>, <code>page</code> chỉ dùng cho order-history và pagination.</li>
 </ul>
 <h3>Biểu đồ</h3>
 <ul>
-<li><code>t3_top10.png</code>, <code>t3_revenue.png</code>: cột nhóm, trục x = biến thể, trục y = <code>execution_ms</code> p50 (thang log), vạch lỗi tới p95, hai màu cho 10k và 100k.</li>
-<li><code>t3_cost_vs_actual.png</code>: điểm, trục x = <code>est_cost</code>, trục y = <code>execution_ms</code>, mỗi điểm một biến thể; thêm bảng <code>est_rows</code> vs <code>actual_rows</code>.</li>
-<li><code>t3_order_history.png</code>: cột ms p50 cho 3 biến thể × (user p50, user nhiều đơn), ghi số round trip trên đầu cột.</li>
+<li><code>t3_top10.png</code>, <code>t3_revenue.png</code>: cột nhóm, trục x = biến thể, trục y = <code>execution_ms</code> p50 (thang log), vạch tới p95, 2 màu cho 10k và 100k.</li>
+<li><code>t3_cost_vs_actual.png</code>: trục x = <code>est_cost</code>, trục y = <code>execution_ms</code>; kèm bảng <code>est_rows</code> vs <code>actual_rows</code>.</li>
+<li><code>t3_order_history.png</code>: ms p50 cho 3 biến thể × 2 user, ghi số round trip trên đầu cột.</li>
+<li><code>t3_pagination.png</code>: đường, trục x = số trang (thang log), trục y = ms, 2 đường OFFSET và keyset.</li>
 <li><code>t3_mv_tradeoff.png</code>: thời gian đọc MV vs thời gian <code>REFRESH</code>.</li>
 </ul>
-<h3>Số lần chạy</h3>
-<p>Mỗi tổ hợp (experiment, variant, dataset): 5 lần khởi động + 30 lần đo, chạy tuần tự, không chạy song song với thí nghiệm của topic khác. Báo cáo p50 và p95. Một lần đo "lạnh" sau <code>docker compose restart postgres mongo</code> chỉ ghi để tham khảo.</p>
 </section>
+
+<section id="phoi-hop">
+<h2>Phối hợp với topic khác</h2>
+<div class="tbl"><table>
+<thead><tr><th>Hướng</th><th>Nội dung</th><th>Với ai</th></tr></thead>
+<tbody>
+<tr><td>Cần</td><td>Review <code>Product::findManyByIds</code> (T3 viết trong <code>Product.php</code>); xác nhận <code>Db::mongo()</code> có timeout ngắn khi Mongo tắt</td><td>T1</td></tr>
+<tr><td>Cần</td><td>Không xóa/sửa index <code>idx_orders_*</code>, <code>idx_order_items_*</code>, <code>idx_action_time</code> trên <code>vinfast_bench</code> khi T3 đang đo; báo trước khi đổi baseline</td><td>T2</td></tr>
+<tr><td>Cần</td><td>Checkout giỏ hàng ghi đủ snapshot <code>order_items</code>, <code>total_amount</code>, <code>payment_status</code>; gọi <code>ActivityLog::record('place_order', ...)</code> sau commit</td><td>T4</td></tr>
+<tr><td>Cần</td><td><code>InventoryService::lowStock(int $threshold, int $limit)</code> hoặc đồng ý để T3 thêm vào file</td><td>T5</td></tr>
+<tr><td>Cần</td><td>Lịch dùng chung <code>vinfast_bench</code> (mỗi lần chỉ một size, không đo song song)</td><td>T2, T5</td></tr>
+<tr><td>Cung cấp</td><td><code>Order::getItemsByOrderIds</code>, <code>getByIdForUser</code>; trang <code>/order/detail/{id}</code></td><td>T4</td></tr>
+<tr><td>Cung cấp</td><td><code>ActivityLog::topKeywords</code>, <code>topViewedProducts</code>; danh sách <code>actionType</code> đang dùng</td><td>T2 (gợi ý index), cả nhóm</td></tr>
+<tr><td>Cung cấp</td><td>Collection <code>orders_bench</code> + script dựng</td><td>T2 (bench index Mongo)</td></tr>
+<tr><td>Cung cấp</td><td>Khung bảng 8 loại query-update</td><td>Cả nhóm</td></tr>
+</tbody>
+</table></div>
+<p>File sửa chung: <code>Order.php</code> và <code>OrderController.php</code> (T3 sửa phần đọc, T4 sửa phần ghi). Báo nhau trước khi sửa để tránh conflict.</p>
+</section>
+
 <section id="report">
 <h2>Report và demo</h2>
 <h3>Dàn ý chương Query processing</h3>
 <ol>
-<li><b>Bối cảnh.</b> Vì sao <code>products</code> rời PG làm hỏng các JOIN cũ (Order.php:25-28, DashboardAdminController.php:125, 157, 205), cách snapshot trong <code>order_items</code> giải quyết.</li>
-<li><b>Các node trong plan PG.</b> Seq Scan, Index Scan, Index Only Scan, Bitmap Heap Scan, Sort, HashAggregate vs GroupAggregate, Limit, Gather; đọc một plan JSON thật của <code>top10_join</code>.</li>
-<li><b>Cost ước lượng vs thực tế.</b> Cost là đơn vị tương đối, không phải ms; so <code>est_rows</code> với <code>actual_rows</code>, chỗ nào lệch và vì sao (thống kê, điều kiện <code>&lt;&gt;</code>).</li>
-<li><b>Thuật toán join.</b> Hash Join, Merge Join, Nested Loop: dùng plan ép bằng <code>enable_*</code>, giải thích khi nào planner chọn từng loại.</li>
-<li><b>Subquery vs JOIN vs CTE vs MV.</b> PG biến <code>IN (subquery)</code> thành semi join; subquery tương quan chạy lặp; CTE inline từ PG 12 trừ khi <code>MATERIALIZED</code>; MV đọc nhanh nhưng dữ liệu cũ và tốn refresh.</li>
-<li><b>Pipeline Mongo.</b> Các stage <code>$match</code> (dùng index được), <code>$unwind</code>, <code>$group</code>, <code>$sort</code>, <code>$limit</code>; đọc <code>explain("executionStats")</code>; so với PG trên cùng dữ liệu.</li>
-<li><b>Join ở backend vs join trong DB.</b> Snapshot (2 round trip) vs SQL + <code>$in</code> (3) vs N+1; số liệu ms và round trip.</li>
-<li><b>N+1.</b> Code cũ có dạng gần N+1 ở đâu (<code>buildActivities</code> gọi lại 2 query, 11 lần <code>countRows</code>), đã gộp thế nào.</li>
-<li><b>Activity log.</b> Thiết kế document, 2 index, pipeline thống kê từ khóa, vì sao log không được làm hỏng request.</li>
+<li><b>Bối cảnh.</b> Vì sao <code>products</code> rời PG làm hỏng các JOIN cũ, snapshot trong <code>order_items</code> giải quyết thế nào.</li>
+<li><b>Các node trong plan PG.</b> Seq Scan, Index Scan, Bitmap Heap Scan, Sort, HashAggregate vs GroupAggregate, Limit; đọc một plan thật của <code>top10_join</code>.</li>
+<li><b>Cost ước lượng vs thực tế.</b> Cost không phải ms; so <code>est_rows</code> với <code>actual_rows</code>, chỗ nào lệch và vì sao.</li>
+<li><b>Thuật toán join.</b> Hash, Merge, Nested Loop; dùng plan ép bằng <code>enable_*</code>.</li>
+<li><b>Subquery vs JOIN vs CTE vs MV.</b> <code>IN (subquery)</code> thành semi join; subquery tương quan; CTE inline từ PG 12 trừ khi <code>MATERIALIZED</code>; MV đọc nhanh nhưng dữ liệu cũ và tốn refresh.</li>
+<li><b>Window function và LATERAL.</b> <code>COUNT(*) OVER()</code>, top N mỗi nhóm, item đầu tiên của đơn.</li>
+<li><b>Pipeline Mongo.</b> Thứ tự stage, <code>$lookup</code> sau <code>$limit</code>, đọc <code>explain("executionStats")</code>; so với PG trên <code>orders_bench</code>.</li>
+<li><b>Join ở backend vs join trong DB, N+1.</b> Snapshot vs <code>$in</code> vs N+1; <code>modelStats</code> trước/sau; các câu COUNT gộp.</li>
+<li><b>Phân trang.</b> OFFSET vs keyset.</li>
+<li><b>Activity log.</b> Thiết kế document, 3 index, pipeline thống kê.</li>
 <li><b>Bảng 8 loại query-update.</b></li>
-<li><b>Hạn chế.</b> Eventual consistency giữa hai DB (quyết định 13), số đo trên Docker Desktop.</li>
+<li><b>Hạn chế.</b> Nhất quán giữa 2 DB, số đo trên Docker Desktop.</li>
 </ol>
 <h3>Kịch bản demo 10 phút</h3>
 <div class="tbl"><table>
 <thead><tr><th>Phút</th><th>Việc</th><th>Cho thấy</th></tr></thead>
 <tbody>
-<tr><td>0-1</td><td><code>docker compose exec app composer db:reset -- --size=small</code>, mở <code>/admin/dashboard</code></td><td>Dashboard có số liệu thật, khối bán chạy, sắp hết hàng</td></tr>
-<tr><td>1-2</td><td>Chạy 1 câu trong <code>verify_small.sql</code> cạnh biểu đồ</td><td>Số liệu khớp SQL kiểm tra tay</td></tr>
-<tr><td>2-4</td><td>Đăng nhập user, mở <code>/user/orders</code>, <code>/order/detail/{id}</code>; <code>tail</code> log PG</td><td>2 round trip mỗi trang</td></tr>
-<tr><td>4-5</td><td>Đổi tên sản phẩm bằng mongosh, tải lại chi tiết đơn</td><td>Đơn cũ giữ tên snapshot</td></tr>
-<tr><td>5-6</td><td>Tìm vài từ khóa, tải lại dashboard</td><td>Thống kê từ khóa từ <code>userActivityLogs</code>, explain có IXSCAN</td></tr>
-<tr><td>6-8</td><td>Trên dataset 100k (dựng sẵn): <code>EXPLAIN ANALYZE</code> top10 bản JOIN và bản ép <code>enable_hashjoin=off</code></td><td>Node, cost vs thời gian thực, hai thuật toán join</td></tr>
-<tr><td>8-9</td><td>Mở <code>t3_top10.png</code>, <code>t3_order_history.png</code></td><td>Kết quả 6 biến thể và N+1</td></tr>
-<tr><td>9-10</td><td>Tóm tắt 3 kết luận, hỏi đáp</td><td></td></tr>
+<tr><td>0–1</td><td>Mở <code>/admin/dashboard</code> trên DB dev</td><td>Số liệu thật, khối bán chạy, sắp hết hàng, từ khóa</td></tr>
+<tr><td>1–2</td><td>Chạy 1 câu trong <code>bench/t3/verify.sql</code> cạnh biểu đồ</td><td>Số liệu khớp SQL chạy tay</td></tr>
+<tr><td>2–4</td><td>Đăng nhập member, mở <code>/user/orders</code>, <code>/order/detail/{id}</code>; xem log PG</td><td>2 round trip mỗi trang</td></tr>
+<tr><td>4–5</td><td>Đổi tên sản phẩm bằng mongosh, tải lại chi tiết đơn</td><td>Đơn cũ giữ tên snapshot</td></tr>
+<tr><td>5–6</td><td>Tìm vài từ khóa, tải lại dashboard; chạy explain pipeline</td><td>Thống kê từ <code>userActivityLogs</code>, IXSCAN</td></tr>
+<tr><td>6–8</td><td>Trên <code>vinfast_bench</code> 100k: <code>EXPLAIN ANALYZE</code> top10 bản JOIN và bản <code>enable_hashjoin = off</code></td><td>Node, cost vs thời gian thật, 2 thuật toán join</td></tr>
+<tr><td>8–9</td><td>Mở <code>t3_order_history.png</code>, <code>t3_pagination.png</code></td><td>N+1 và OFFSET bằng số</td></tr>
+<tr><td>9–10</td><td>Tóm tắt 3 kết luận, hỏi đáp</td><td></td></tr>
 </tbody>
 </table></div>
 </section>
+
 <section id="dod">
 <h2>Definition of Done</h2>
-<ul class="dod">
-<li>Số liệu dashboard khớp với <code>bench/t3/verify_small.sql</code> trên seed small.</li>
-<li>Không còn SQL trong <code>DashboardAdminController.php</code>; mọi truy vấn nằm trong <code>DashboardService</code> hoặc model.</li>
-<li>Không còn <code>JOIN products</code>, <code>JSON_EXTRACT</code>, <code>DATE_FORMAT</code>, <code>FIELD(</code>, <code>CAST(... AS CHAR)</code> trong file của T3 (<code>grep</code> sạch).</li>
-<li><code>/user/orders</code>, <code>/order</code>, <code>/admin/orders</code> tối đa 2 round trip DB; <code>/order/detail/{id}</code> 1 PG + 1 Mongo.</li>
-<li>Đổi tên hoặc ẩn sản phẩm trên Mongo không làm thay đổi đơn cũ.</li>
-<li>User không xem được đơn của người khác qua URL.</li>
-<li>Tắt Mongo, các trang có ghi log vẫn trả 200.</li>
-<li>Contact và test drive chạy đủ smoke test (gửi, đổi trạng thái, xóa) trên PG; tên xe lái thử hiện đúng.</li>
-<li>Seed small có 50 đơn với snapshot và <code>total_amount</code> nhất quán; seed lặp lại cho cùng kết quả.</li>
-<li>Bảng 8 loại query-update điền đủ 8 dòng.</li>
-<li><code>bench/results/t3_*.csv</code>, plan JSON và biểu đồ đã commit; script vẽ chạy lại ra cùng hình.</li>
-<li>Chương report và demo 10 phút đã chạy thử từ <code>docker compose down -v</code>.</li>
+<p>Tick khi đã tự kiểm tra (ô tick chỉ lưu trên trang đang mở, không đồng bộ).</p>
+<ul class="check">
+<li><label><input type="checkbox"> Đã trả lời câu hỏi đọc hiểu của T3-01, 02, 03, 04, 10 trong <code>bench/t3/README.md</code>.</label></li>
+<li><label><input type="checkbox"> Không còn SQL trong <code>DashboardAdminController.php</code>; mọi truy vấn ở <code>DashboardService</code> hoặc model.</label></li>
+<li><label><input type="checkbox"> Số trên dashboard khớp <code>bench/t3/verify.sql</code>.</label></li>
+<li><label><input type="checkbox"> <code>/user/orders</code>, <code>/order</code>, <code>/admin/orders</code> tối đa 2 câu SQL; <code>/order/detail/{id}</code> 1 PG + 1 Mongo.</label></li>
+<li><label><input type="checkbox"> Trang đơn hiện đủ mọi item, không chỉ item đầu.</label></li>
+<li><label><input type="checkbox"> User không xem được đơn của người khác qua URL.</label></li>
+<li><label><input type="checkbox"> Đổi tên hoặc ẩn sản phẩm trên Mongo không đổi dữ liệu đơn cũ.</label></li>
+<li><label><input type="checkbox"> <code>modelStats</code> không còn tải toàn bộ sản phẩm từ Mongo.</label></li>
+<li><label><input type="checkbox"> Pipeline từ khóa và sản phẩm xem nhiều dùng IXSCAN; từ khóa đã chuẩn hóa chữ hoa/thường.</label></li>
+<li><label><input type="checkbox"> Bảng 8 loại query-update đủ 8 dòng.</label></li>
+<li><label><input type="checkbox"> <code>bench/results/t3_*_&lt;size&gt;.csv</code>, plan JSON và biểu đồ đã commit; script vẽ chạy lại ra cùng hình.</label></li>
+<li><label><input type="checkbox"> Chương report và demo 10 phút đã chạy thử từ <code>docker compose down -v</code>.</label></li>
 </ul>
 </section>
 
+<section id="thuat-ngu">
+<h2>Thuật ngữ</h2>
+<div class="card">
+<dl class="gloss">
+<dt>Planner / optimizer</dt><dd>Phần của DB chọn cách chạy câu truy vấn rẻ nhất theo ước lượng.</dd>
+<dt>Plan</dt><dd>Cây các bước (node) DB sẽ chạy. Xem bằng <code>EXPLAIN</code>.</dd>
+<dt>Cost</dt><dd>Chi phí ước lượng, đơn vị tương đối. Không phải mili giây.</dd>
+<dt>EXPLAIN ANALYZE</dt><dd>Chạy thật câu lệnh và in plan kèm thời gian, số dòng thật.</dd>
+<dt>Seq Scan / Index Scan</dt><dd>Quét cả bảng / đi theo index để tìm dòng.</dd>
+<dt>Nested Loop</dt><dd>Join: mỗi dòng bên ngoài, tìm dòng khớp bên trong.</dd>
+<dt>Hash Join</dt><dd>Join: dựng bảng băm từ một phía, dò bằng phía kia.</dd>
+<dt>Merge Join</dt><dd>Join: hai phía đã sắp xếp theo khóa, trộn lại.</dd>
+<dt>Semi join</dt><dd>Chỉ cần biết "có tồn tại dòng khớp", như <code>IN (subquery)</code>, <code>EXISTS</code>.</dd>
+<dt>CTE</dt><dd>Câu con có tên, viết bằng <code>WITH</code>.</dd>
+<dt>Window function</dt><dd>Hàm tính trên nhóm dòng mà không gộp dòng, viết với <code>OVER (...)</code>.</dd>
+<dt>LATERAL</dt><dd>Subquery được dùng cột của bảng đứng trước nó.</dd>
+<dt>Materialized view (MV)</dt><dd>Kết quả truy vấn lưu sẵn thành bảng; phải <code>REFRESH</code> để cập nhật.</dd>
+<dt>Aggregation pipeline</dt><dd>Chuỗi stage xử lý document trong MongoDB.</dd>
+<dt>Stage</dt><dd>Một bước trong pipeline: <code>$match</code>, <code>$group</code>, <code>$lookup</code>...</dd>
+<dt>IXSCAN / COLLSCAN</dt><dd>Mongo dùng index / quét cả collection.</dd>
+<dt>Snapshot</dt><dd>Bản sao dữ liệu (tên, giá) lưu tại thời điểm đặt hàng.</dd>
+<dt>Round trip</dt><dd>Một lần app gửi lệnh tới DB và chờ kết quả.</dd>
+<dt>N+1</dt><dd>1 câu lấy danh sách + N câu lấy chi tiết từng phần tử.</dd>
+<dt>OFFSET / keyset</dt><dd>Phân trang bằng bỏ qua N dòng / bằng điều kiện "sau dòng cuối trang trước".</dd>
+<dt>p50 / p95</dt><dd>Trung vị / mức mà 95% lần đo nhanh hơn.</dd>
+<dt>Warmup</dt><dd>Các lần chạy khởi động, không tính vào kết quả.</dd>
+</dl>
+</div>
+</section>
 
-<footer>Mở rộng từ mục T3 của <a href="../hybrid-db-plan.html#t3">kế hoạch chung</a>. Số dòng code tham chiếu theo nhánh hiện tại trước khi refactor. Chưa kiểm chứng: danh sách 8 loại query-update, file DDL.</footer>
+<footer>Mở rộng từ mục T3 của <a href="../hybrid-db-plan.html#t3">kế hoạch chung</a>. Tên hàm và đường dẫn theo nhánh <code>develop-hybrid</code> sau Phase 0/0.5. Chưa xác nhận: danh sách 8 loại query-update.</footer>
 </div>
 
 <script>
@@ -1131,6 +1497,8 @@ docker compose exec app php bench/t3/order_history.php --variant=snapshot --user
   try { state = JSON.parse(localStorage.getItem(LKEY) || '{}') || {}; } catch(e) { state = {}; }
   var syncEl = document.getElementById('sync');
   function setSync(t){ syncEl.textContent = t; }
+  // Task đã làm sẵn (data-default="done") hiện là Xong khi chưa ai đổi trạng thái
+  function defaultStatus(t){ return t.getAttribute('data-default') || 'todo'; }
 
   tasks.forEach(function(t){
     var id = t.getAttribute('data-task');
@@ -1155,7 +1523,7 @@ docker compose exec app php bench/t3/order_history.php --variant=snapshot --user
     var c = {todo:0, doing:0, done:0};
     tasks.forEach(function(t){
       var id = t.getAttribute('data-task');
-      var s = (state[id] && state[id].status) || 'todo';
+      var s = (state[id] && state[id].status) || defaultStatus(t);
       c[s]++;
       t.setAttribute('data-status', s);
       var sel = document.getElementById('st-' + id);
@@ -1167,6 +1535,8 @@ docker compose exec app php bench/t3/order_history.php --variant=snapshot --user
         var n = names[st.by] || '';
         var d = st.at ? new Date(st.at) : null;
         who.textContent = (n ? n : 'Ai đó') + (d ? ' · ' + d.toLocaleDateString('vi-VN') : '');
+      } else if (!st && t.getAttribute('data-default') === 'done') {
+        who.textContent = 'Phase 0/0.5';
       } else who.textContent = '';
     });
     var total = tasks.length || 1;

@@ -89,13 +89,25 @@ tr:last-child td{border-bottom:none}
 @media (max-width:560px){.task-head{grid-template-columns:1fr auto}.tid{grid-column:1/2}.task-head h3{grid-column:1/3;grid-row:2}.task-head .meta{grid-column:1/3;grid-row:3}.status-slot{grid-row:1;grid-column:2}}
 footer{margin-top:48px;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{margin:0}
+.tag.done{background:var(--ok-soft);color:var(--ok)}
+.tag.lvl{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.task[data-default="done"] .tid::after{content:" · Đã làm sẵn";color:var(--ok);font-weight:600}
+table.tl td{font-family:var(--f-mono);font-size:12.5px}
+table.tl td:first-child{font-family:var(--f-body);color:var(--muted);white-space:nowrap}
+table.tl td.hl{background:var(--warn-soft)}
+.qa li{margin:6px 0}
+dl.gloss{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:6px 14px;margin:0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--fg)}
+@media (max-width:560px){dl.gloss{grid-template-columns:1fr}dl.gloss dd{margin-bottom:8px}}
 </style>
 
 <div class="wrap">
 <header class="top">
-  <div class="eyebrow">Đồ án DBMS · T5 Concurrency control · Vũ Nguyễn</div>
+  <div class="eyebrow">Đồ án DBMS · T5 Concurrency Control · PostgreSQL 16 + MongoDB 7</div>
   <h1>T5 · Kiểm soát đồng thời: danh sách việc</h1>
-  <p class="lede">Danh sách việc chi tiết của topic T5, mở rộng từ kế hoạch chung (docs/hybrid-db-plan.html): tồn kho với 4 chiến lược khóa, demo 100 request, isolation giỏ hàng, cùng seed generator, khung bench và port module ở tuần 2. Bấm vào từng task để xem các bước; trạng thái được lưu chung cho cả nhóm.</p>
+  <p class="lede">Trang này dành cho người làm topic T5. Đọc phần "Topic này nói về gì", làm phần "Bắt đầu trong 30 phút", rồi làm task theo thứ tự. Bấm vào từng task để xem các bước. Trạng thái task được lưu chung cho cả nhóm.</p>
 </header>
 
 <div class="bar" role="region" aria-label="Tiến độ">
@@ -110,964 +122,1223 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
     </div>
     <span class="sync" id="sync">Đang kết nối…</span>
   </div>
-  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#w2">Tuần 2</a><a href="#w3">Tuần 3</a><a href="#w4">Tuần 4</a><a href="#w5">Tuần 5</a><a href="#w6">Tuần 6</a><a href="#thi-nghiem">Thí nghiệm</a><a href="#report">Báo cáo &amp; demo</a><a href="#dod">Definition of Done</a></nav>
+  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#kien-thuc">Kiến thức</a><a href="#bat-dau">30 phút đầu</a><a href="#san">Đã làm sẵn</a><a href="#w3">Chiến lược khóa</a><a href="#w4">Admin &amp; môi trường</a><a href="#w5">Benchmark</a><a href="#w6">Báo cáo</a><a href="#thi-nghiem">Thí nghiệm</a><a href="#phoi-hop">Phối hợp</a><a href="#thuat-ngu">Thuật ngữ</a><a href="#dod">Definition of Done</a></nav>
 </div>
 
 <section id="tong-quan">
-<h2>Tổng quan</h2>
-<p>T5 đảm bảo tồn kho luôn đúng khi nhiều người mua cùng lúc: cài 4 chiến lược trừ kho trên PostgreSQL, đo dưới tải đồng thời và demo các hiện tượng isolation trên giỏ hàng.</p>
-<div class="callout info"><b>Mục tiêu demo:</b> 100 request mua cùng lúc, kho ban đầu 10 → đúng 10 đơn thành công, tồn kho cuối 0, không bao giờ âm. Đạt 10/10 lần với <code>pessimistic</code>, <code>optimistic</code>, <code>atomic</code>; <code>naive</code> phải lộ lỗi bán vượt hoặc lost update.</div>
+<h2>Topic này nói về gì</h2>
+<p>Cửa hàng còn đúng 10 chiếc áo polo VinFast màu trắng, size M. Đúng 20:00 mở bán, 100 người cùng bấm "Mua". Nếu code chỉ "đọc tồn kho, thấy còn hàng, rồi ghi lại", nhiều người sẽ cùng đọc thấy "còn 10" và cửa hàng bán ra hơn 10 chiếc. T5 tìm hiểu vì sao lỗi này xảy ra và cài 4 cách trừ kho trên PostgreSQL để so sánh. Bạn sẽ đo bằng k6 (công cụ bắn nhiều request cùng lúc) và demo các mức isolation bằng 2 cửa sổ psql.</p>
+<div class="callout info"><b>Mục tiêu demo:</b> 100 request mua cùng lúc, kho ban đầu 10 → đúng 10 đơn thành công, tồn kho cuối 0, không bao giờ âm. Đạt 10/10 lần chạy với <code>pessimistic</code>, <code>optimistic</code>, <code>atomic</code>. Riêng <code>naive</code> phải cho thấy lỗi bán vượt (số đơn &gt; 10).</div>
+
+<h3>Sau topic này bạn trả lời được gì</h3>
+<ul>
+<li>Race condition và lost update là gì? Vẽ được timeline 2 giao dịch gây ra lỗi.</li>
+<li>PostgreSQL dùng MVCC thế nào? Vì sao đọc không chặn ghi, nhưng 2 lệnh ghi cùng dòng thì phải chờ nhau?</li>
+<li>Read Committed, Repeatable Read, Serializable khác nhau ở đâu? Mỗi mức chặn được hiện tượng nào?</li>
+<li>Khi nào dùng khóa bi quan (<code>SELECT … FOR UPDATE</code>), khóa lạc quan (cột <code>version</code> + retry), hay 1 câu <code>UPDATE</code> có điều kiện?</li>
+<li>Deadlock xảy ra thế nào và tránh bằng cách nào?</li>
+<li>Đọc kết quả k6: throughput, p95, số retry, số đơn thành công.</li>
+</ul>
+
 <div class="grid">
 <div class="card">
 <h3>Phạm vi</h3>
 <ul>
-<li><code>InventoryService::decrement</code> + 4 chiến lược, bảng <code>inventory</code></li>
-<li>Admin chỉnh tồn kho (version trong form), cột tồn kho trong bảng sản phẩm, query low-stock cho T3</li>
-<li><code>bench.php</code>, k6, demo isolation giỏ hàng</li>
-<li>Tuần 2: seed generator, khung <code>bench/</code>, port SiteSetting/PageAsset/AboutAward/Faq/FaqTopic</li>
+<li><code>InventoryService::decrement</code> với 4 chiến lược, bảng <code>inventory</code></li>
+<li>Endpoint <code>bench.php</code>, kịch bản k6, ma trận thí nghiệm, CSV</li>
+<li>Demo isolation 2 session trên giỏ hàng</li>
+<li>Admin sửa tồn kho không ghi đè, cột tồn kho, hàm low-stock cho T3</li>
+<li>Tùy chọn: write conflict trên MongoDB</li>
 </ul>
 </div>
 <div class="card">
-<h3>Người phụ trách</h3>
-<p>Vũ Nguyễn</p>
 <h3>Đầu ra cuối cùng</h3>
 <ul>
-<li>Nhánh <code>port/settings-faq-assets</code>, <code>topic5/inventory-contract</code>, <code>topic5/inventory-strategies</code>, <code>bench/t5</code></li>
-<li><code>bench/results/t5_race.csv</code>, <code>t5_isolation.csv</code>, 5 biểu đồ</li>
+<li>Code: <code>app/services/InventoryService.php</code>, <code>bench.php</code>, <code>bench/t5/*</code></li>
+<li>CSV: <code>bench/results/t5_race_&lt;size&gt;.csv</code>, <code>t5_spread_&lt;size&gt;.csv</code>, <code>t5_isolation_&lt;size&gt;.csv</code></li>
+<li>Biểu đồ <code>bench/results/t5/*.png</code></li>
 <li>Chương báo cáo + demo 10 phút</li>
 </ul>
 </div>
 </div>
-<h3 style="margin-top:20px">Giao diện với topic khác</h3>
-<div class="tbl"><table>
-<thead><tr><th>Bên nhận</th><th>T5 giao</th><th>Hạn</th></tr></thead>
+</section>
+
+<section id="kien-thuc">
+<h2>Kiến thức cần nắm trước</h2>
+<p>Đọc phần này trước khi code. Mỗi mục có 1 câu tóm tắt và ví dụ trên bảng <code>inventory</code>. Số bán được của 1 phiên bản = <code>stock - reserved</code>.</p>
+
+<h3>1. Race condition và lost update</h3>
+<p><b>Race condition:</b> kết quả phụ thuộc vào thứ tự chạy của nhiều giao dịch. <b>Lost update:</b> 2 giao dịch cùng đọc 1 giá trị, cùng tính, cùng ghi; lần ghi sau đè mất lần ghi trước.</p>
+<p>Ví dụ: kho còn 10. T1 và T2 mỗi người mua 1 chiếc. Kết quả đúng là 8.</p>
+<div class="tbl"><table class="tl">
+<thead><tr><th>Thời điểm</th><th>T1 (khách A)</th><th>T2 (khách B)</th><th>stock trong DB</th></tr></thead>
 <tbody>
-<tr><td>T4</td><td>Hợp đồng <code>InventoryService::decrement(PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null): void</code> + <code>OutOfStockException</code>, <code>ConcurrentUpdateException</code>. Stub <code>atomic</code> trước, chiến lược thật sau.</td><td>Ngày 1 tuần 3 (merge bước 3); chiến lược thật ở bước 6</td></tr>
-<tr><td>T4 → T5</td><td>Gọi trong transaction READ COMMITTED đang mở, sắp item theo <code>(product_id, variant_id)</code>, retry tối đa 3 lần khi <code>ConcurrentUpdateException</code>.</td><td>Tuần 3</td></tr>
-<tr><td>T3</td><td><code>Inventory::lowStock(int $limit = 10): array</code> (product_id, variant_id, stock, reserved, threshold); T3 tự ghép tên từ Mongo.</td><td>Cuối tuần 4</td></tr>
-<tr><td>T1</td><td><code>Inventory::ensureRow($productId, $variantId)</code> khi admin tạo variant mới.</td><td>Tuần 4</td></tr>
-<tr><td>Cả nhóm</td><td>Seed <code>--size=small|10k|100k</code> (RNG cố định), <code>composer db:reset</code>, khung <code>bench/</code> + CSV chung.</td><td>Cuối tuần 2</td></tr>
+<tr><td>t1</td><td>BEGIN; SELECT stock → 10</td><td></td><td>10</td></tr>
+<tr><td>t2</td><td></td><td>BEGIN; SELECT stock → 10</td><td>10</td></tr>
+<tr><td>t3</td><td>UPDATE SET stock = 9; COMMIT</td><td></td><td>9</td></tr>
+<tr><td>t4</td><td></td><td class="hl">UPDATE SET stock = 9; COMMIT</td><td class="hl">9 (đúng ra là 8)</td></tr>
 </tbody>
 </table></div>
+<p>Bán 2 chiếc nhưng kho chỉ giảm 1. Với 100 người và 10 chiếc, cách này có thể tạo hơn 10 đơn: <b>bán vượt</b>.</p>
+
+<h3>2. MVCC của PostgreSQL</h3>
+<p>MVCC (Multi-Version Concurrency Control): mỗi lệnh <code>UPDATE</code> tạo một phiên bản mới của dòng, không sửa tại chỗ. Mỗi phiên bản có <code>xmin</code> (giao dịch tạo ra) và <code>xmax</code> (giao dịch xóa/thay nó). Mỗi câu lệnh đọc một <b>snapshot</b>: chỉ thấy các giao dịch đã commit trước đó.</p>
+<ul>
+<li>Đọc không chặn ghi, ghi không chặn đọc.</li>
+<li>Hai giao dịch cùng <b>ghi</b> 1 dòng thì người sau phải chờ người trước commit hoặc rollback (khóa dòng).</li>
+<li>Ở Read Committed, sau khi chờ xong, PostgreSQL <b>đánh giá lại điều kiện WHERE trên phiên bản mới nhất</b> của dòng. Đây là nền tảng của chiến lược <code>atomic</code> và <code>optimistic</code>.</li>
+</ul>
+<p>Thử: <code>SELECT xmin, xmax, stock, version FROM inventory WHERE variant_id = '189-TRANG-M';</code> trước và sau 1 lệnh UPDATE. <code>xmin</code> đổi vì đó là phiên bản mới.</p>
+
+<h3>3. Isolation level</h3>
+<p>Isolation level quyết định một giao dịch "thấy" thay đổi của giao dịch khác tới mức nào. PostgreSQL mặc định là <b>Read Committed</b> (xem bằng <code>SHOW default_transaction_isolation;</code>).</p>
+<div class="tbl"><table>
+<thead><tr><th>Hiện tượng</th><th>Read Committed</th><th>Repeatable Read</th><th>Serializable</th></tr></thead>
+<tbody>
+<tr><td>Dirty read (đọc dữ liệu chưa commit)</td><td>Chặn</td><td>Chặn</td><td>Chặn</td></tr>
+<tr><td>Non-repeatable read (đọc 2 lần ra 2 giá trị)</td><td>Có thể xảy ra</td><td>Chặn</td><td>Chặn</td></tr>
+<tr><td>Phantom read (đọc lại thấy thêm dòng mới)</td><td>Có thể xảy ra</td><td>Chặn (PG chặt hơn chuẩn SQL)</td><td>Chặn</td></tr>
+<tr><td>Lost update (đọc-sửa-ghi)</td><td>Có thể xảy ra</td><td>Chặn, báo lỗi 40001</td><td>Chặn, báo lỗi 40001</td></tr>
+<tr><td>Write skew (2 giao dịch ghi 2 dòng khác nhau, cùng phá 1 quy tắc)</td><td>Có thể xảy ra</td><td>Có thể xảy ra</td><td>Chặn, báo lỗi 40001</td></tr>
+</tbody>
+</table></div>
+<p>Read Uncommitted trong PostgreSQL chạy y như Read Committed. Khi gặp lỗi <code>40001</code> (serialization_failure), ứng dụng phải rollback và chạy lại cả giao dịch.</p>
+
+<h3>4. Khóa dòng: FOR UPDATE, NOWAIT, SKIP LOCKED</h3>
+<ul>
+<li><code>SELECT … FOR UPDATE</code>: đọc và khóa dòng tới khi commit/rollback. Giao dịch khác muốn ghi hoặc khóa dòng đó phải chờ. Đây là <b>khóa bi quan</b> (pessimistic).</li>
+<li><code>FOR UPDATE NOWAIT</code>: không chờ; nếu dòng đang bị khóa thì báo lỗi ngay <code>55P03</code> (lock_not_available).</li>
+<li><code>FOR UPDATE SKIP LOCKED</code>: bỏ qua dòng đang bị khóa. Hợp với hàng đợi job, không hợp với trừ kho 1 SKU (sẽ bỏ qua đúng dòng cần trừ).</li>
+<li><code>SET LOCAL lock_timeout = '200ms'</code>: chờ tối đa 200 ms rồi báo <code>55P03</code>.</li>
+<li>Xem ai đang chờ ai: <code>SELECT pid, wait_event_type, state, query FROM pg_stat_activity WHERE datname = 'vinfast';</code></li>
+</ul>
+
+<h3>5. Deadlock</h3>
+<p>T1 khóa dòng A rồi muốn khóa B. T2 khóa B rồi muốn khóa A. Hai bên chờ nhau mãi. PostgreSQL phát hiện sau <code>deadlock_timeout</code> (mặc định 1 giây), hủy 1 giao dịch với lỗi <code>40P01</code>. Cách tránh: mọi giao dịch khóa theo <b>cùng một thứ tự</b>, ví dụ sắp item giỏ hàng theo <code>(product_id, variant_id)</code>.</p>
+
+<h3>6. Optimistic locking với version, retry có backoff</h3>
+<p>Không khóa khi đọc. Đọc <code>stock</code> và <code>version</code>, rồi ghi có điều kiện <code>WHERE version = :version_da_doc</code>. Nếu ai đó đã ghi trước, <code>version</code> đã tăng, UPDATE khớp 0 dòng → đọc lại và thử lại.</p>
+<p><b>Backoff:</b> chờ một chút trước khi thử lại, thời gian chờ tăng dần (1, 2, 4, 8 ms…) và cộng thêm ngẫu nhiên (<i>jitter</i>) để các request không cùng thử lại một lúc. Có giới hạn số lần thử.</p>
+
+<h3>7. Atomic conditional update</h3>
+<p>Một câu lệnh duy nhất vừa kiểm tra vừa trừ:</p>
+<pre><code>UPDATE inventory SET stock = stock - 1, version = version + 1
+ WHERE product_id = '189' AND variant_id = '189-TRANG-M' AND stock - reserved &gt;= 1;
+-- UPDATE 1: trừ thành công.  UPDATE 0: hết hàng.</code></pre>
+<p>Không có khe hở giữa "đọc" và "ghi". Đây là cách code hiện tại đang chạy cho mọi chiến lược. CHECK <code>stock &gt;= 0</code> là chốt chặn cuối: nếu code sai, DB báo lỗi <code>23514</code> thay vì để stock âm.</p>
+
+<h3>8. Write conflict trên MongoDB</h3>
+<p>Mỗi lệnh ghi 1 document trong Mongo là nguyên tử. <code>updateOne({_id, stock: {$gte: 1}}, {$inc: {stock: -1}})</code> là bản Mongo của atomic conditional update. Trong <b>transaction</b> nhiều document, nếu 2 transaction cùng sửa 1 document, transaction sau nhận lỗi <code>WriteConflict</code> (mã 112, nhãn <code>TransientTransactionError</code>) ngay lập tức, không chờ như PostgreSQL. Ứng dụng phải chạy lại transaction. Project chạy Mongo dạng replica set <code>rs0</code> nên dùng được transaction.</p>
+
+<h3>Tài liệu chính thức</h3>
+<ul>
+<li>PostgreSQL MVCC: <a href="https://www.postgresql.org/docs/current/mvcc-intro.html">mvcc-intro.html</a></li>
+<li>Isolation level: <a href="https://www.postgresql.org/docs/current/transaction-iso.html">transaction-iso.html</a></li>
+<li>Khóa tường minh, deadlock: <a href="https://www.postgresql.org/docs/current/explicit-locking.html">explicit-locking.html</a></li>
+<li>FOR UPDATE / NOWAIT / SKIP LOCKED: <a href="https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE">sql-select.html (The Locking Clause)</a></li>
+<li>Mã lỗi SQLSTATE: <a href="https://www.postgresql.org/docs/current/errcodes-appendix.html">errcodes-appendix.html</a></li>
+<li>k6: <a href="https://k6.io/docs/">k6.io/docs</a> (mục Scenarios, Executors, Metrics, handleSummary)</li>
+<li>MongoDB transaction: <a href="https://www.mongodb.com/docs/manual/core/transactions/">docs/manual/core/transactions</a></li>
+</ul>
 </section>
-<section class="milestone" id="w2">
-<h2><span class="wk">Tuần 2</span>Port module, seed generator, khung bench</h2>
-<p>Port trên nhánh <code>port/settings-faq-assets</code> (merge bước 2). Seed và <code>bench/</code> vào <code>foundation/phase0-infra</code> hoặc PR ngay sau.</p>
+
+<section id="bat-dau">
+<h2>Bắt đầu trong 30 phút</h2>
+<p>Làm 3 bước dưới đây trước khi nhận task. Mục tiêu: app chạy được, k6 chạy được, và bạn tự tay tạo ra lost update.</p>
+
+<h3>Bước 1. Chạy app (10 phút)</h3>
+<p>Cần Git và Docker Desktop. Chi tiết ở <code>README.md</code>, mục "Cài đặt và chạy trên máy local".</p>
+<pre><code>git checkout develop-hybrid
+docker compose up -d --build
+# Lần đầu mất vài phút: dựng PostgreSQL, MongoDB, tạo schema, seed dữ liệu</code></pre>
+<p>Mở <a href="http://localhost:8080">http://localhost:8080</a>. Đăng nhập thử bằng tài khoản test trong README (admin hoặc member). Trang admin ở <code>/admin</code>.</p>
+
+<h3>Bước 2. Chạy k6 smoke test (5 phút)</h3>
+<pre><code>docker compose -f docker-compose.yml -f docker-compose.bench.yml --profile bench run --rm k6 run /bench/t5/smoke.js</code></pre>
+<p>Script <code>bench/t5/smoke.js</code> cho 10 người dùng ảo (VU) gọi trang chi tiết sản phẩm trong 10 giây. Kết quả mong đợi: dòng <code>checks</code> là <code>100.00%</code>. Lần chạy thử của nhóm được khoảng 1500 request; số trên máy bạn sẽ khác.</p>
+
+<h3>Bước 3. Tự tạo lost update bằng 2 cửa sổ psql (15 phút)</h3>
+<p>Mở 2 terminal. Ở <b>cả hai</b>, vào psql:</p>
+<pre><code>docker compose exec postgres psql -U vinfast -d vinfast</code></pre>
+<p>Ở cửa sổ A, xem dòng tồn kho của áo polo trắng size M và <b>ghi lại số stock gốc</b> để trả lại sau:</p>
+<pre><code>SELECT product_id, variant_id, stock, reserved, version
+  FROM inventory WHERE product_id = '189' AND variant_id = '189-TRANG-M';
+-- Nếu không ra dòng nào (seed đã đổi), tìm id bằng:
+--   docker compose exec mongo mongosh vinfast --quiet --eval 'db.products.findOne({name:"Áo polo VinFast màu trắng"},{productID:1,"variants.variantId":1})'
+UPDATE inventory SET stock = 10 WHERE product_id = '189' AND variant_id = '189-TRANG-M';</code></pre>
+
+<h4>3a. Lost update (đọc rồi ghi giá trị tuyệt đối)</h4>
+<p>Chạy đúng thứ tự, từng dòng một:</p>
+<div class="tbl"><table class="tl">
+<thead><tr><th>Bước</th><th>Cửa sổ A</th><th>Cửa sổ B</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>BEGIN;<br>SELECT stock FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-M';<br>-- 10</td><td></td></tr>
+<tr><td>2</td><td></td><td>BEGIN;<br>SELECT stock FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-M';<br>-- 10</td></tr>
+<tr><td>3</td><td>UPDATE inventory SET stock = 9 WHERE product_id='189' AND variant_id='189-TRANG-M';<br>COMMIT;</td><td></td></tr>
+<tr><td>4</td><td></td><td>UPDATE inventory SET stock = 9 WHERE product_id='189' AND variant_id='189-TRANG-M';<br>COMMIT;</td></tr>
+<tr><td>5</td><td>SELECT stock …;</td><td class="hl">-- 9. Hai người mua, kho chỉ giảm 1.</td></tr>
+</tbody>
+</table></div>
+
+<h4>3b. Sửa bằng atomic conditional update</h4>
+<p>Đặt lại <code>stock = 10</code>. Chạy:</p>
+<div class="tbl"><table class="tl">
+<thead><tr><th>Bước</th><th>Cửa sổ A</th><th>Cửa sổ B</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>BEGIN;<br>UPDATE inventory SET stock = stock - 1 WHERE product_id='189' AND variant_id='189-TRANG-M' AND stock - reserved &gt;= 1;<br>-- UPDATE 1</td><td></td></tr>
+<tr><td>2</td><td></td><td>BEGIN;<br>(cùng câu UPDATE)<br>-- <b>treo</b>, đang chờ khóa dòng của A</td></tr>
+<tr><td>3</td><td>COMMIT;</td><td>-- B chạy tiếp: UPDATE 1</td></tr>
+<tr><td>4</td><td></td><td>COMMIT;<br>SELECT stock …; -- 8 (đúng)</td></tr>
+</tbody>
+</table></div>
+<p>Trong lúc B đang treo, mở cửa sổ thứ 3 và chạy <code>SELECT pid, wait_event_type, wait_event, state FROM pg_stat_activity WHERE datname = 'vinfast';</code>. Bạn sẽ thấy một phiên có <code>wait_event_type = Lock</code>.</p>
+
+<h4>3c. Repeatable Read chặn lost update</h4>
+<p>Đặt lại <code>stock = 10</code>. Làm lại 3a nhưng đổi <code>BEGIN;</code> thành <code>BEGIN ISOLATION LEVEL REPEATABLE READ;</code> ở cả 2 cửa sổ. Ở bước 4, B nhận lỗi:</p>
+<pre><code>ERROR:  could not serialize access due to concurrent update</code></pre>
+<p>Đó là SQLSTATE <code>40001</code>. B phải <code>ROLLBACK;</code> rồi làm lại từ đầu.</p>
+
+<p><b>Dọn dẹp:</b> trả lại stock gốc đã ghi ở trên: <code>UPDATE inventory SET stock = &lt;số gốc&gt; WHERE product_id = '189' AND variant_id = '189-TRANG-M';</code></p>
+<div class="callout"><b>Lỗi hay gặp:</b> quên <code>COMMIT</code> ở 1 cửa sổ làm cửa sổ kia treo mãi (phiên ở trạng thái <code>idle in transaction</code>). Gõ <code>ROLLBACK;</code> hoặc <code>COMMIT;</code> để nhả khóa. Nếu psql báo <code>current transaction is aborted</code> (25P02): gõ <code>ROLLBACK;</code>.</div>
+</section>
+
+<section class="milestone" id="san">
+<h2><span class="wk">Phase 0/0.5</span>Đã làm sẵn: đọc hiểu</h2>
+<p>Các task này đã có trong code khi dựng hybrid PostgreSQL + MongoDB. Bạn không cần code lại. Hãy đọc file được chỉ ra và tự trả lời câu hỏi. Câu trả lời sẽ dùng trong báo cáo.</p>
 <div class="tasks">
-<article class="task" data-task="t5-01">
+
+<article class="task" data-task="t5-01" data-default="done">
 <div class="task-head">
 <span class="tid">T5-01</span>
 <h3>Port SiteSetting sang PostgreSQL</h3>
 <span class="status-slot"></span>
-<span class="meta">~2h · Phụ thuộc: Phase 0 · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★☆☆ Dễ</span> · đọc ~20 phút · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Bỏ cú pháp MySQL, giữ nguyên chữ ký <code>all/get/set/setMany/imageUrl</code>.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Dòng 21, 39: <code>`key`</code> → <code>"key"</code> (hoặc tên cột theo DDL), đặt vào hằng <code>COL_KEY</code>.</li>
-<li><code>set()</code> dòng 55–58: <code>ON CONFLICT ("key") DO UPDATE SET value = EXCLUDED.value</code> (cần UNIQUE trên key).</li>
-<li><code>setMany()</code> giữ transaction; trên PG một câu lỗi làm hỏng cả transaction (25P02), không nuốt lỗi trong vòng lặp.</li>
-<li>Dòng mặc định (logo, banner_1..3, address, phone, email, tagline) vào <code>003_seed_base.sql</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>app/models/SiteSetting.php</code> dòng 21, 39, 55–58</li><li><code>database/postgres/003_seed_base.sql</code> phần site_settings</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Lưu Settings 2 lần: <code>SELECT count(*) FROM site_settings WHERE "key"='phone'</code> = 1.</li>
-<li><code>/</code>, <code>/about</code>, <code>/contact</code> hiển thị logo, banner, địa chỉ như trước.</li>
+<p><b>Đọc hiểu:</b> <code>app/models/SiteSetting.php</code>, hàm <code>set()</code> dùng <code>INSERT … ON CONFLICT (key) DO UPDATE</code>.</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Nếu viết "SELECT xem key có chưa → chưa có thì INSERT, có rồi thì UPDATE", 2 admin bấm Lưu cùng lúc sẽ gặp lỗi gì? Vì sao <code>ON CONFLICT</code> tránh được?</li>
+<li>Ràng buộc nào trong <code>database/postgres/001_schema.sql</code> làm <code>ON CONFLICT (key)</code> hoạt động?</li>
 </ul>
 </div>
 </article>
-<article class="task" data-task="t5-02">
+
+<article class="task" data-task="t5-02" data-default="done">
 <div class="task-head">
 <span class="tid">T5-02</span>
 <h3>Port PageAsset và AboutAward</h3>
 <span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: Phase 0 · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★☆☆ Dễ</span> · đọc ~20 phút · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Sửa upsert của <code>PageAsset::save</code> và 2 lỗi có sẵn.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>save()</code> dòng 81–86: <code>ON CONFLICT (page_type, asset_key) DO UPDATE SET file_path = EXCLUDED.file_path, file_size = EXCLUDED.file_size, mime_type = EXCLUDED.mime_type, created_at = now()</code>; còn 5 tham số bind thay vì 8. DDL cần UNIQUE như <code>uq_page_asset</code> (schema.sql dòng 192).</li>
-<li>Lỗi có sẵn: <code>deleteByPageType()</code> dòng 113–114 dùng <code>PUBLIC_PATH</code> chưa định nghĩa (PHP 8 ném Error) → <code>UPLOAD_PATH</code> như dòng 96.</li>
-<li>Lỗi có sẵn: <code>getTimelineData()</code> dòng 70 đọc <code>$asset['$file_path']</code> → <code>$asset['file_path']</code> (hàm chưa được gọi).</li>
-<li><code>AboutAward</code> không có cú pháp riêng MySQL; chỉ test <code>all/create/delete</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>app/models/PageAsset.php</code> dòng 70, 81–86, 113–114</li><li><code>database/postgres/003_seed_base.sql</code> asset mặc định about/faq</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Upload cùng <code>asset_key</code> 2 lần: 1 dòng trong <code>page_assets</code>, <code>created_at</code> đổi.</li>
-<li>Thêm/xóa award; <code>/about</code> sắp đúng theo năm giảm dần.</li>
+<p><b>Đọc hiểu:</b> <code>app/models/PageAsset.php</code> (hàm <code>save()</code>, <code>ON CONFLICT (page_type, asset_key) DO UPDATE</code>), <code>app/models/AboutAward.php</code>.</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Upload cùng <code>asset_key</code> 2 lần thì bảng <code>page_assets</code> có mấy dòng? Kiểm tra bằng SQL.</li>
+<li>Nếu bỏ UNIQUE <code>(page_type, asset_key)</code>, 2 upload đồng thời sinh ra gì?</li>
 </ul>
 </div>
 </article>
-<article class="task" data-task="t5-03">
+
+<article class="task" data-task="t5-03" data-default="done">
 <div class="task-head">
 <span class="tid">T5-03</span>
 <h3>Port Faq và FaqTopic (boolean)</h3>
 <span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: Phase 0 · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★☆☆ Dễ</span> · đọc ~15 phút · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Nếu DDL dùng <code>BOOLEAN</code> cho <code>is_active</code>, so sánh <code>= 1</code> và bind số nguyên sẽ lỗi.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>Faq::all()</code> dòng 48–49, <code>FaqTopic::allActive()</code> dòng 23: <code>= 1</code> → <code>= TRUE</code>.</li>
-<li><code>Faq::create()</code> dòng 132, <code>Faq::update()</code> dòng 160: <code>bindValue(':active', $isActive, PDO::PARAM_BOOL)</code>.</li>
-<li><code>FaqTopic::create()</code> dòng 62–68, <code>update()</code> dòng 93–100 truyền mảng vào <code>execute()</code> (bind thành chuỗi): đổi sang <code>bindValue(..., PDO::PARAM_BOOL)</code>.</li>
-<li>pdo_pgsql trả PHP bool; <code>(int)true === 1</code> nên view đọc <code>(int)$row['is_active']</code> vẫn đúng. Nếu DDL giữ SMALLINT thì chỉ test.</li>
-<li>faq_topics + faqs mẫu vào <code>003_seed_base.sql</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>app/models/Faq.php</code> dòng 48–49, 132, 160</li><li><code>app/models/FaqTopic.php</code> dòng 23, 62–68, 93–100</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>/faq</code> chỉ hiện FAQ active thuộc topic active.</li>
-<li>Tạo FAQ bỏ tick active → <code>SELECT is_active FROM faqs ORDER BY id DESC LIMIT 1</code> = <code>f</code>.</li>
+<p><b>Đọc hiểu:</b> <code>app/models/Faq.php</code>, <code>app/models/FaqTopic.php</code>: cột <code>is_active BOOLEAN</code>, <code>bindValue(..., PDO::PARAM_BOOL)</code>, <code>is_active::int</code> khi đọc.</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Vì sao khi đọc lại ép <code>is_active::int</code>? View cũ đang mong giá trị kiểu gì?</li>
+<li>MySQL dùng <code>= 1</code> cho cột boolean; PostgreSQL thì sao?</li>
 </ul>
 </div>
 </article>
-<article class="task" data-task="t5-04">
+
+<article class="task" data-task="t5-04" data-default="done">
 <div class="task-head">
 <span class="tid">T5-04</span>
 <h3>Seed generator: phần PostgreSQL</h3>
 <span class="status-slot"></span>
-<span class="meta">~8h · Phụ thuộc: DDL PG · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span> <span class="tag new">MỚI</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★★☆ Vừa</span> · đọc ~40 phút · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p><code>database/seed/seed.php --size=small|10k|100k</code> sinh dữ liệu giống hệt nhau mỗi lần, dùng cho cả 5 topic.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Tham số <code>--size</code>, <code>--only=pg|mongo</code>, <code>--seed=20261120</code>. Gọi <code>mt_srand($seed, MT_RAND_MT19937)</code> một lần, chỉ dùng <code>mt_rand()</code> (không <code>random_int</code>, <code>uniqid</code>, <code>shuffle</code>).</li>
-<li>Kích thước: small = 20 users / 100 products / 50 orders; 10k = 1k / 10k / 10k; 100k = 10k / 100k / 100k (~300k order_items). Luôn thêm 200 user <code>bench_user_001..200</code> (id 900001–900200).</li>
-<li>Thời gian lấy từ mốc cố định <code>2025-01-01</code> + offset, không dùng <code>now()</code>. Hash mật khẩu 1 lần rồi dùng lại.</li>
-<li>Multi-row INSERT lô 1000 dòng, 1 transaction mỗi bảng; snapshot tên/giá trong <code>order_items</code> lấy từ cùng mảng catalog với phần Mongo.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>database/seed/seed.php</code>, <code>lib/PgSeeder.php</code>, <code>lib/Catalog.php</code> MỚI</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Seed small 2 lần: <code>SELECT md5(string_agg(o::text, ',' ORDER BY id)) FROM orders o</code> giống nhau.</li>
-<li><code>--size=100k</code> xong dưới 10 phút; ghi thời gian vào <code>bench/README.md</code>.</li>
+<p><b>Đọc hiểu:</b> <code>database/seed/README.md</code>, <code>database/seed/seed.php</code>, <code>database/seed/generate.php</code> (hàm <code>generateBenchData</code>, nạp bằng <code>COPY</code>).</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Vì sao seed phải tất định (<code>mt_srand(20261121)</code>) khi so sánh benchmark giữa các lần chạy?</li>
+<li>Ở size <code>10k</code>, bảng <code>inventory</code> có bao nhiêu dòng? (xem bảng trong README)</li>
+<li>Lệnh nào seed lại dữ liệu size 10k vào DB riêng <code>vinfast_bench</code>?</li>
 </ul>
 </div>
 </article>
-<article class="task" data-task="t5-05">
+
+<article class="task" data-task="t5-05" data-default="done">
 <div class="task-head">
 <span class="tid">T5-05</span>
 <h3>Seed generator: Mongo + dòng inventory</h3>
 <span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: T5-04, validator T1 · <span class="tag mg">MONGO</span> <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★★☆ Vừa</span> · đọc ~30 phút · <span class="tag mg">MONGO</span> <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Sinh <code>categories</code>, <code>products</code> (2–3 variant, quyết định 2) và đúng 1 dòng <code>inventory</code> mỗi variant.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>productID</code> chuỗi số tăng dần, ghi giá trị cuối vào <code>counters</code> (quyết định 1). <code>variantId</code> = <code>{productID}-STD|-PLUS|-LR</code>; seed small chỉ <code>-STD</code>.</li>
-<li><code>insertMany</code> lô 1000 sau khi <code>001_collections.js</code> tạo validator.</li>
-<li>Inventory: stock 0–50, reserved 0, version 0; ~5% SKU có stock ≤ 5 cho low-stock.</li>
-<li>SKU riêng cho T5: <code>bench-hot</code> / <code>bench-hot-STD</code> và <code>bench-s001..s100</code> (variant <code>-STD</code>).</li>
-<li><code>check_links.php</code>: mọi <code>(product_id, variant_id)</code> trong inventory và order_items có bên Mongo.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>database/seed/lib/MongoSeeder.php</code>, <code>database/seed/check_links.php</code> MỚI</li></ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>SELECT count(*) FROM inventory</code> = tổng số variant bên Mongo.</li>
-<li><code>php database/seed/check_links.php</code> in <code>0 missing</code>.</li>
+<p><b>Đọc hiểu:</b> <code>database/seed/seed.php</code> (phần catalog phụ kiện), <code>database/seed/accessories.php</code>, phần inventory trong <code>generate.php</code>. Mỗi variant trong Mongo có đúng 1 dòng <code>inventory</code> trong PostgreSQL.</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Seed cơ bản có 60 sản phẩm trong Mongo (16 xe + 44 phụ kiện) và 92 dòng <code>inventory</code>. Kiểm tra bằng <code>SELECT count(*) FROM inventory;</code> và <code>db.products.countDocuments()</code>.</li>
+<li><code>variantId</code> được đặt tên theo quy tắc nào? (ví dụ áo polo trắng <code>189-TRANG-M</code>; mũ bảo hiểm VinFast <code>206-DEN-NHAM-L</code>: 4 màu × size L/XL)</li>
+<li>Cột <code>reserved</code> được tính từ đâu? Vì sao số bán được là <code>stock - reserved</code>?</li>
+<li>Không có SKU riêng cho benchmark. T5 sẽ dùng SKU thật nào làm "SKU nóng"? (gợi ý: <code>189-TRANG-M</code>, xem T5-17)</li>
 </ul>
 </div>
 </article>
-<article class="task" data-task="t5-06">
+
+<article class="task" data-task="t5-06" data-default="done">
 <div class="task-head">
 <span class="tid">T5-06</span>
-<h3>cli.php reset|seed và composer db:reset</h3>
+<h3>Lệnh reset và seed lại dữ liệu</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T5-04, docker-compose Phase 0 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★☆☆ Dễ</span> · đọc ~15 phút · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
 </div>
 <div class="task-body">
-<p>Một lệnh xóa sạch và dựng lại cả 2 DB, dùng trước mỗi lần đo và demo.</p>
-<h4>Các bước</h4>
-<ol>
-<li><code>reset</code>: <code>DROP SCHEMA public CASCADE; CREATE SCHEMA public;</code>, chạy <code>database/postgres/*.sql</code> theo tên; Mongo <code>dropDatabase()</code> rồi chạy <code>database/mongo/*.js</code> qua <code>mongosh</code>.</li>
-<li><code>seed --size=…</code> gọi <code>seed.php</code>. Từ chối chạy khi <code>APP_ENV=production</code>.</li>
-<li><code>composer.json</code>: <code>"db:reset": "php cli.php reset &amp;&amp; php cli.php seed"</code>, <code>"db:seed"</code>.</li>
-<li>Exit khác 0 và in tên file khi một file SQL lỗi (<code>psql -v ON_ERROR_STOP=1</code>).</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>cli.php</code> MỚI; <code>composer.json</code> thêm scripts</li></ul>
-<h4>Kiểm tra</h4>
-<ul><li><code>docker compose exec app composer db:reset -- --size=small</code> exit 0, <code>/</code> mở được.</li></ul>
+<p>Kế hoạch cũ định viết <code>cli.php</code> và <code>composer db:reset</code>. Thực tế đã làm bằng cách khác, không cần file mới.</p>
+<p><b>Đọc hiểu:</b> phần đầu <code>docker-compose.yml</code> và <code>database/seed/README.md</code>.</p>
+<pre><code># Xóa sạch dữ liệu của 2 DB rồi seed lại (xóa cả volume)
+docker compose down -v
+docker compose up -d --build
+
+# Seed lại không xóa volume, kèm dữ liệu benchmark
+docker compose run --rm seed php database/seed/seed.php --force --size=small</code></pre>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Hai cách trên khác nhau ở đâu? Cách nào nhanh hơn?</li>
+<li>Vì sao trước mỗi lần đo phải đưa dữ liệu về cùng một trạng thái?</li>
+</ul>
 </div>
 </article>
-<article class="task" data-task="t5-07">
+
+<article class="task" data-task="t5-07" data-default="done">
 <div class="task-head">
 <span class="tid">T5-07</span>
-<h3>Khung bench/ và quy trình chạy</h3>
+<h3>Khung bench/, service k6, smoke test</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: Phase 0 · <span class="tag new">MỚI</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★☆☆ Dễ</span> · đọc ~20 phút</span>
 </div>
 <div class="task-body">
-<p>Thống nhất thư mục, cách ghi CSV và quy trình đo để 5 topic so sánh được.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Tạo <code>bench/t1</code> … <code>bench/t5</code>, <code>bench/results/</code>, <code>bench/results/raw/</code> (gitignore).</li>
-<li><code>bench/lib/Csv.php</code>: <code>Csv::append($file, $row)</code> tự ghi header; cột chung <code>run_id, ts, git_sha, dataset, topic, experiment</code>. <code>bench/lib/Timer.php</code>: <code>hrtime(true)</code>, p50/p95/p99.</li>
-<li><code>bench/README.md</code>: reset → seed cố định → 5 lần khởi động → 30 lần đo; tắt Xdebug; named volume; ghi CPU/RAM/giới hạn container.</li>
-<li>Đề xuất Phase 0 thêm service <code>k6</code> (image <code>grafana/k6</code>, profile <code>bench</code>, mount <code>./bench:/bench</code>) và mount <code>./bench:/bench:ro</code> vào postgres.</li>
-</ol>
-<h4>File</h4>
-<ul class="files"><li><code>bench/README.md</code>, <code>bench/lib/Csv.php</code>, <code>bench/lib/Timer.php</code> MỚI; <code>.gitignore</code></li></ul>
-<h4>Kiểm tra</h4>
-<ul><li>Gọi <code>Csv::append</code> 2 lần vào file mới: 1 header + 2 dòng.</li></ul>
+<p><b>Đọc hiểu:</b> <code>bench/README.md</code>, <code>docker-compose.bench.yml</code> (postgres <code>max_connections=250</code>, <code>shared_buffers=256MB</code>; service <code>k6</code> image <code>grafana/k6:0.54.0</code>, profile <code>bench</code>, mount <code>./bench</code> vào <code>/bench</code>, <code>BASE_URL=http://app</code>), <code>bench/t5/smoke.js</code>.</p>
+<p>Quy ước tên CSV: <code>bench/results/&lt;topic&gt;_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code>, ví dụ <code>bench/results/t5_race_small.csv</code>.</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Vì sao trong mạng Docker, k6 gọi <code>http://app</code> chứ không phải <code>http://localhost:8080</code>?</li>
+<li>Chạy <code>docker compose exec postgres psql -U vinfast -c "SHOW max_connections"</code>. Ra 200 hay 250? Vì sao lệnh <code>run --rm k6</code> không tự đổi giá trị này? Lệnh nào khởi động lại postgres với cấu hình bench? (gợi ý: <code>docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d postgres</code>)</li>
+</ul>
 </div>
 </article>
-</div>
-</section>
-<section class="milestone" id="w3">
-<h2><span class="wk">Tuần 3</span>Hợp đồng và chiến lược trừ kho</h2>
-<p>Ngày 1: merge <code>topic5/inventory-contract</code> (bước 3) để T4 làm checkout. Cuối tuần: <code>topic5/inventory-strategies</code> (bước 6) sau khi T4 merge <code>checkout-orderservice</code>.</p>
-<div class="tasks">
-<article class="task" data-task="t5-08">
+
+<article class="task" data-task="t5-08" data-default="done">
 <div class="task-head">
 <span class="tid">T5-08</span>
-<h3>Rà soát DDL bảng inventory</h3>
+<h3>DDL bảng inventory</h3>
 <span class="status-slot"></span>
-<span class="meta">~2h · Phụ thuộc: DDL PG · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★☆☆ Dễ</span> · đọc ~20 phút · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
 </div>
 <div class="task-body">
-<p>Đối chiếu bảng <code>inventory</code> trong <code>001_schema.sql</code> với quyết định 3.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Cần có: UNIQUE <code>(product_id, variant_id)</code>, 2 CHECK của quyết định 3, cột <code>version</code>, <code>product_id/variant_id</code> kiểu VARCHAR. Thiếu thì thêm bằng <code>005_inventory.sql</code> (ALTER TABLE).</li>
-<li>Đề xuất cột <code>low_stock_threshold</code> (mặc định 5); không được thì dùng hằng trong code.</li>
-<li>UNIQUE đã tạo index B-tree trên <code>(product_id, variant_id)</code>; báo T2 bỏ index trùng <code>inventory(product_id, variant_id)</code> trong <code>002_indexes.sql</code>.</li>
-</ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>database/postgres/005_inventory.sql</code> MỚI (chỉ khi DDL thiếu)</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>UPDATE inventory SET stock = -1 WHERE id = 1;</code> → <code>ERROR: ... violates check constraint</code> (SQLSTATE 23514).</li>
-<li><code>\d inventory</code> có đủ cột và constraint ở trên.</li>
-</ul>
+<p><b>Đọc hiểu:</b> bảng <code>inventory</code> trong <code>database/postgres/001_schema.sql</code>. Xem trong psql bằng <code>\d inventory</code>.</p>
 <pre><code>CREATE TABLE inventory (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  product_id  VARCHAR(32)  NOT NULL,   -- productID bên Mongo, dạng chuỗi
-  variant_id  VARCHAR(64)  NOT NULL,   -- vd '165-STD'
-  stock       INT NOT NULL DEFAULT 0,
-  reserved    INT NOT NULL DEFAULT 0,
-  version     INT NOT NULL DEFAULT 0,
-  low_stock_threshold INT NOT NULL DEFAULT 5,
+  id          BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  product_id  VARCHAR(32) NOT NULL,
+  variant_id  VARCHAR(64) NOT NULL,
+  stock       INTEGER     NOT NULL DEFAULT 0,
+  reserved    INTEGER     NOT NULL DEFAULT 0,
+  version     INTEGER     NOT NULL DEFAULT 0,       -- optimistic locking (T5)
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT uq_inventory_sku     UNIQUE (product_id, variant_id),
   CONSTRAINT ck_inventory_stock   CHECK (stock &gt;= 0),
   CONSTRAINT ck_inventory_reserved CHECK (reserved BETWEEN 0 AND stock)
 );</code></pre>
+<p>Không có cột <code>low_stock_threshold</code>; ngưỡng low-stock dùng hằng trong code (T5-15).</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>Thử <code>BEGIN; UPDATE inventory SET stock = -1 WHERE id = 1; ROLLBACK;</code>. Lỗi gì, SQLSTATE nào?</li>
+<li>UNIQUE <code>(product_id, variant_id)</code> đã tạo index nào? Có cần index riêng cho câu trừ kho không?</li>
+<li>Trigger nào tự cập nhật <code>updated_at</code>?</li>
+</ul>
 </div>
 </article>
-<article class="task" data-task="t5-09">
+
+<article class="task" data-task="t5-09" data-default="done">
 <div class="task-head">
 <span class="tid">T5-09</span>
-<h3>Hợp đồng InventoryService + stub atomic</h3>
+<h3>Hợp đồng InventoryService::decrement + bản atomic</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T5-08, Exceptions.php của Phase 0 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
+<span class="meta"><span class="tag done">Đã làm sẵn</span> <span class="tag lvl">★★☆ Vừa</span> · đọc ~30 phút · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Giao cho T4 vào ngày 1 tuần 3. Chữ ký hàm giữ đúng như master plan; chỉ có <code>AtomicStrategy</code> chạy thật, 3 chiến lược còn lại ném <code>LogicException('chưa cài')</code>.</p>
-<h4>Các bước</h4>
-<ol>
-<li>Tạo interface <code>InventoryStrategy</code> và <code>InventoryService::decrement</code> dispatch theo tên (tham số, rồi env <code>INVENTORY_STRATEGY</code>, mặc định <code>atomic</code>).</li>
-<li>Assert <code>$pdo-&gt;inTransaction()</code>; không begin/commit trong service.</li>
-<li>Chuyển lỗi PDO thành exception của hợp đồng: <code>40001</code> (serialization), <code>40P01</code> (deadlock), <code>55P03</code> (lock_not_available) → <code>ConcurrentUpdateException</code>; <code>23514</code> (CHECK) → <code>OutOfStockException</code>.</li>
-<li><code>app/models/Inventory.php</code>: <code>find($productId, $variantId)</code>, <code>ensureRow()</code> (<code>INSERT … ON CONFLICT DO NOTHING</code>).</li>
-<li>Mô tả PR ghi cách gọi, 2 exception, quy tắc sắp xếp item cho T4.</li>
-</ol>
-<h4>File</h4>
+<p><b>Đọc hiểu:</b></p>
 <ul class="files">
-<li><code>app/services/InventoryService.php</code> MỚI</li>
-<li><code>app/services/inventory/InventoryStrategy.php</code>, <code>AtomicStrategy.php</code> MỚI</li>
-<li><code>app/models/Inventory.php</code> MỚI</li>
+<li><code>app/services/InventoryService.php</code>: hằng <code>STRATEGIES</code>, hàm <code>decrement()</code>, đoạn <code>TODO(T5)</code></li>
+<li><code>app/core/Db.php</code>: <code>Db::transaction($fn, $isolation)</code>, <code>Db::env()</code></li>
+<li><code>app/core/Exceptions.php</code>: <code>OutOfStockException</code>, <code>ConcurrentUpdateException</code></li>
 </ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>php bench/t5/smoke_contract.php</code>: gọi ngoài transaction → <code>LogicException</code>; stock 1, trừ 1 → stock 0; trừ tiếp → <code>OutOfStockException</code>.</li>
-<li>T4 xác nhận gọi được từ nhánh <code>topic4/checkout-orderservice</code>.</li>
+<pre><code>public static function decrement(PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null): void</code></pre>
+<p>Hiện mọi strategy đều chạy bản atomic. Strategy lấy từ tham số, nếu không có thì từ env <code>INVENTORY_STRATEGY</code> (<code>docker-compose.yml</code> đặt <code>pessimistic</code>).</p>
+<h4>Tự trả lời</h4>
+<ul class="qa">
+<li>SQLSTATE <code>40001</code>, <code>40P01</code>, <code>55P03</code>, <code>23514</code> nghĩa là gì? Mỗi mã thành exception nào?</li>
+<li>Vì sao <code>decrement()</code> không tự gọi <code>BEGIN</code>/<code>COMMIT</code>?</li>
+<li><code>rowCount() === 0</code> sau câu UPDATE có điều kiện nghĩa là gì?</li>
+<li>Hiện chưa có chỗ nào trong app gọi <code>decrement()</code>. Ai sẽ gọi? (xem mục Phối hợp)</li>
 </ul>
-<pre><code>final class InventoryService
-{
-  public static function decrement(
-    PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null
-  ): void {
-    if (!$pdo-&gt;inTransaction()) {
-      throw new LogicException('decrement() phải chạy trong transaction của bên gọi');
-    }
-    if ($qty &lt;= 0) throw new InvalidArgumentException('qty phải &gt; 0');
-
-    $name = $strategy ?? (getenv('INVENTORY_STRATEGY') ?: 'atomic');
-    $impl = match ($name) {
-      'pessimistic' =&gt; new PessimisticStrategy(),
-      'optimistic'  =&gt; new OptimisticStrategy(),
-      'atomic'      =&gt; new AtomicStrategy(),
-      'naive'       =&gt; new NaiveStrategy(),
-      default       =&gt; throw new InvalidArgumentException("strategy không hợp lệ: $name"),
-    };
-
-    try {
-      $impl-&gt;decrement($pdo, $productId, $variantId, $qty);
-    } catch (PDOException $e) {
-      $state = $e-&gt;errorInfo[0] ?? (string)$e-&gt;getCode();
-      if (in_array($state, ['40001', '40P01', '55P03'], true)) {
-        throw new ConcurrentUpdateException("SQLSTATE $state", 0, $e);
-      }
-      if ($state === '23514') {
-        throw new OutOfStockException("$productId/$variantId", 0, $e);
-      }
-      throw $e;
-    }
-  }
-}
-
-interface InventoryStrategy
-{
-  public function decrement(PDO $pdo, string $productId, string $variantId, int $qty): void;
-}
-
-final class AtomicStrategy implements InventoryStrategy
-{
-  public function decrement(PDO $pdo, string $productId, string $variantId, int $qty): void
-  {
-    $st = $pdo-&gt;prepare(
-      'UPDATE inventory
-        SET stock = stock - :q, version = version + 1, updated_at = now()
-        WHERE product_id = :p AND variant_id = :v AND stock - reserved &gt;= :q
-      RETURNING stock'
-    );
-    $st-&gt;execute([':q' =&gt; $qty, ':p' =&gt; $productId, ':v' =&gt; $variantId]);
-    if ($st-&gt;fetchColumn() === false) {
-      throw new OutOfStockException("$productId/$variantId");
-    }
-  }
-}</code></pre>
 </div>
 </article>
+</div>
+</section>
+
+<section class="milestone" id="w3">
+<h2><span class="wk">Bước 1</span>Cài 3 chiến lược còn lại và endpoint đo</h2>
+<p>Giữ nguyên chữ ký <code>decrement()</code>. Code mẫu dưới đây viết thành các hàm <code>private static</code> trong <code>InventoryService</code>, cùng phong cách static của project.</p>
+<div class="tasks">
+
 <article class="task" data-task="t5-10">
 <div class="task-head">
 <span class="tid">T5-10</span>
-<h3>PessimisticStrategy và NaiveStrategy</h3>
+<h3>Chiến lược pessimistic và naive</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T5-09 · <span class="tag pg">PG</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~4h · Phụ thuộc: T5-09 · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Pessimistic khóa dòng bằng <code>SELECT … FOR UPDATE</code> (row lock, giữ tới khi commit, theo 2PL nghiêm ngặt). Naive đọc rồi ghi giá trị tuyệt đối, cố ý để lộ lost update.</p>
+<p><b>Mục tiêu:</b> <code>pessimistic</code> khóa dòng bằng <code>SELECT … FOR UPDATE</code> rồi mới trừ. <code>naive</code> đọc rồi ghi giá trị tuyệt đối, cố ý để lộ lost update.</p>
+<p><b>Vì sao:</b> pessimistic là cách "an toàn, dễ hiểu" nhất: ai đến sau xếp hàng chờ. Naive là nhóm đối chứng: không có nó thì không chứng minh được 3 chiến lược kia sửa được lỗi gì.</p>
 <h4>Các bước</h4>
 <ol>
-<li>Pessimistic: SELECT FOR UPDATE → kiểm tra <code>stock - reserved &gt;= qty</code> → UPDATE. Env tùy chọn <code>INVENTORY_LOCK_TIMEOUT_MS</code> → <code>SET LOCAL lock_timeout</code> (hết giờ: 55P03).</li>
-<li>Naive: SELECT không khóa → kiểm tra → <code>usleep(NAIVE_SLEEP_US)</code> (mặc định 2000) → ghi giá trị tuyệt đối. Chỉ cho phép khi <code>APP_ENV=bench</code>.</li>
-<li>Biến thể cho báo cáo: naive ghi <code>stock = stock - :q</code> thì CHECK <code>stock &gt;= 0</code> chặn (23514) thay vì bán vượt: chốt chặn cuối của quyết định 3.</li>
+<li>Trong <code>decrement()</code>, thêm kiểm tra <code>$pdo-&gt;inTransaction()</code>; nếu không có transaction thì ném <code>LogicException</code>. (Khóa <code>FOR UPDATE</code> ngoài transaction sẽ nhả ngay sau câu lệnh, vô nghĩa.)</li>
+<li>Chuyển câu UPDATE hiện tại sang hàm <code>decrementAtomic()</code>. Dùng <code>match</code> để gọi hàm theo tên strategy. Giữ nguyên khối <code>catch (PDOException)</code> đổi mã lỗi.</li>
+<li>Viết <code>decrementPessimistic()</code> như code mẫu. Env tùy chọn <code>INVENTORY_LOCK_WAIT=nowait</code> để thêm <code>NOWAIT</code> (lỗi <code>55P03</code> → <code>ConcurrentUpdateException</code>).</li>
+<li>Viết <code>decrementNaive()</code>: SELECT không khóa → kiểm tra → <code>usleep(NAIVE_SLEEP_US)</code> (mặc định 2000 µs, để khe hở đủ rộng mà thấy lỗi) → <code>UPDATE … SET stock = :gia_tri_moi</code>.</li>
 </ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/services/inventory/PessimisticStrategy.php</code>, <code>NaiveStrategy.php</code> MỚI</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Hai psql: A <code>BEGIN; SELECT … FOR UPDATE;</code>, B chạy pessimistic qua <code>bench.php</code> → B treo tới khi A <code>COMMIT</code> (thấy trong <code>pg_locks</code> với <code>granted = f</code>).</li>
-<li>k6 thử nhanh 100 request với naive (sau T5-12): số đơn thành công &gt; 10.</li>
-</ul>
-<pre><code>final class PessimisticStrategy implements InventoryStrategy
+<pre><code>public static function decrement(PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null): void
 {
-  public function decrement(PDO $pdo, string $productId, string $variantId, int $qty): void
-  {
-    if ($ms = (int)getenv('INVENTORY_LOCK_TIMEOUT_MS')) {
-      $pdo-&gt;exec("SET LOCAL lock_timeout = '{$ms}ms'");
+    if ($qty &lt;= 0) {
+        throw new InvalidArgumentException('qty phải &gt; 0');
     }
-    $sel = $pdo-&gt;prepare(
-      'SELECT stock, reserved FROM inventory
-        WHERE product_id = :p AND variant_id = :v FOR UPDATE'
-    );
-    $sel-&gt;execute([':p' =&gt; $productId, ':v' =&gt; $variantId]);
-    $row = $sel-&gt;fetch(PDO::FETCH_ASSOC);
-    if (!$row || (int)$row['stock'] - (int)$row['reserved'] &lt; $qty) {
-      throw new OutOfStockException("$productId/$variantId");
+    if (!$pdo-&gt;inTransaction()) {
+        throw new LogicException('decrement() phải chạy trong transaction của bên gọi');
     }
-    $pdo-&gt;prepare(
-      'UPDATE inventory SET stock = stock - :q, version = version + 1, updated_at = now()
-        WHERE product_id = :p AND variant_id = :v'
-    )-&gt;execute([':q' =&gt; $qty, ':p' =&gt; $productId, ':v' =&gt; $variantId]);
-  }
+    $strategy = $strategy ?? Db::env('INVENTORY_STRATEGY', 'atomic');
+    // ... kiểm tra STRATEGIES như cũ ...
+    try {
+        match ($strategy) {
+            'pessimistic' =&gt; self::decrementPessimistic($pdo, $productId, $variantId, $qty),
+            'optimistic'  =&gt; self::decrementOptimistic($pdo, $productId, $variantId, $qty),
+            'atomic'      =&gt; self::decrementAtomic($pdo, $productId, $variantId, $qty),
+            'naive'       =&gt; self::decrementNaive($pdo, $productId, $variantId, $qty),
+        };
+    } catch (PDOException $e) {
+        // giữ nguyên: 23514 -&gt; OutOfStockException; 40001/40P01/55P03 -&gt; ConcurrentUpdateException
+    }
 }
 
-// NaiveStrategy: SELECT stock (không khóa) → kiểm tra → usleep(NAIVE_SLEEP_US)
-//                → UPDATE inventory SET stock = :stockCu - :q WHERE ...   (ghi giá trị tuyệt đối)</code></pre>
+private static function decrementPessimistic(PDO $pdo, string $pid, string $vid, int $qty): void
+{
+    $wait = Db::env('INVENTORY_LOCK_WAIT', 'wait') === 'nowait' ? ' NOWAIT' : '';
+    $sel = $pdo-&gt;prepare('SELECT stock, reserved FROM inventory
+        WHERE product_id = ? AND variant_id = ? FOR UPDATE' . $wait);
+    $sel-&gt;execute([$pid, $vid]);
+    $row = $sel-&gt;fetch();
+    if (!$row || (int)$row['stock'] - (int)$row['reserved'] &lt; $qty) {
+        throw new OutOfStockException("Không đủ hàng cho {$vid} (cần {$qty})");
+    }
+    $pdo-&gt;prepare('UPDATE inventory SET stock = stock - ?, version = version + 1
+        WHERE product_id = ? AND variant_id = ?')-&gt;execute([$qty, $pid, $vid]);
+}
+
+private static function decrementNaive(PDO $pdo, string $pid, string $vid, int $qty): void
+{
+    $sel = $pdo-&gt;prepare('SELECT stock, reserved FROM inventory WHERE product_id = ? AND variant_id = ?');
+    $sel-&gt;execute([$pid, $vid]);
+    $row = $sel-&gt;fetch();
+    if (!$row || (int)$row['stock'] - (int)$row['reserved'] &lt; $qty) {
+        throw new OutOfStockException("Không đủ hàng cho {$vid}");
+    }
+    usleep((int)Db::env('NAIVE_SLEEP_US', '2000'));   // nới rộng khe hở giữa đọc và ghi
+    $pdo-&gt;prepare('UPDATE inventory SET stock = ?, version = version + 1
+        WHERE product_id = ? AND variant_id = ?')
+        -&gt;execute([(int)$row['stock'] - $qty, $pid, $vid]);  // ghi giá trị tuyệt đối: lost update
+}</code></pre>
+<h4>File</h4>
+<ul class="files"><li><code>app/services/InventoryService.php</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Hai psql: A chạy <code>BEGIN; SELECT * FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-M' FOR UPDATE;</code>. Gọi pessimistic qua <code>bench.php</code> (T5-12) → request treo tới khi A <code>COMMIT</code>. Trong lúc treo, <code>SELECT * FROM pg_locks WHERE NOT granted;</code> có 1 dòng.</li>
+<li>Như trên với <code>INVENTORY_LOCK_WAIT=nowait</code> → request trả <code>conflict</code> ngay.</li>
+<li>Sau T5-17: chạy k6 100 request với naive, kho 10 → số đơn <code>ok</code> lớn hơn 10. Stock không âm (naive ghi giá trị tuyệt đối nên CHECK không bắt được lỗi này).</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Gọi <code>decrement()</code> ngoài transaction: khóa FOR UPDATE nhả ngay, pessimistic chạy như naive.</li>
+<li>Quên ép <code>(int)</code> khi so sánh: tùy driver, giá trị có thể là chuỗi.</li>
+<li>Naive không bán vượt khi chạy thử: mức đồng thời quá thấp hoặc <code>NAIVE_SLEEP_US</code> quá nhỏ. Tăng N lên 100, sleep 2000–5000 µs.</li>
+</ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-11">
 <div class="task-head">
 <span class="tid">T5-11</span>
-<h3>OptimisticStrategy (cột version)</h3>
+<h3>Chiến lược optimistic: cột version + retry có backoff</h3>
 <span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: T5-09 · <span class="tag pg">PG</span></span>
+<span class="meta"><span class="tag lvl">★★★ Khó</span> · ~4h · Phụ thuộc: T5-10 · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Đọc không khóa, ghi có điều kiện theo <code>version</code>. Không ghi được → <code>ConcurrentUpdateException</code>, <code>OrderService</code> của T4 retry toàn bộ transaction.</p>
+<p><b>Mục tiêu:</b> đọc không khóa, ghi có điều kiện <code>version = :ver</code>. Ghi hụt thì chờ (backoff) rồi thử lại, tối đa <code>INVENTORY_MAX_RETRIES</code> lần. Hết lượt → <code>ConcurrentUpdateException</code>.</p>
+<p><b>Vì sao:</b> optimistic không giữ khóa lâu, hợp khi ít tranh chấp (nhiều SKU khác nhau). Khi 100 người tranh 1 SKU, nó phải retry nhiều. Thí nghiệm sẽ đo chính điểm này.</p>
 <h4>Các bước</h4>
 <ol>
-<li>SELECT không khóa; thiếu hàng → <code>OutOfStockException</code>. UPDATE có <code>version = :ver</code>; <code>rowCount() === 0</code> → <code>ConcurrentUpdateException</code>, tăng <code>InventoryService::$conflicts</code>.</li>
-<li>Cơ chế (cho báo cáo): dưới READ COMMITTED, UPDATE chờ khóa dòng rồi đánh giá lại WHERE trên bản mới; version đã tăng nên khớp 0 dòng.</li>
-<li>Rủi ro: 100 request trên 1 SKU, retry 3 lần có thể chưa bán hết 10. Đo ở T5-13; nếu xảy ra, đề xuất T4 thêm backoff 1–5 ms và ghi vào báo cáo.</li>
+<li>Thêm <code>public static int $conflicts = 0;</code> để đếm số lần ghi hụt (bench.php trả về số này).</li>
+<li>Viết <code>decrementOptimistic()</code> và <code>backoffUs()</code> như code mẫu.</li>
+<li>Thử lại <b>trong cùng transaction</b> chỉ đúng ở Read Committed: mỗi câu SELECT lấy snapshot mới nên thấy version mới. Ở Repeatable Read/Serializable, snapshot cố định cho cả transaction; đọc lại vẫn ra version cũ. Khi đó ném <code>ConcurrentUpdateException</code> ngay để bên gọi chạy lại cả transaction.</li>
+<li>Ghi cơ chế vào báo cáo: UPDATE thấy dòng đang bị khóa thì chờ; khi bên kia commit, PG đánh giá lại WHERE trên phiên bản mới; version đã tăng nên khớp 0 dòng.</li>
 </ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>app/services/inventory/OptimisticStrategy.php</code> MỚI</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Hai psql: A đọc version = 0; B trừ kho thành công (version = 1); A chạy UPDATE với <code>version = 0</code> → <code>UPDATE 0</code>.</li>
-<li><code>php bench/t5/smoke_contract.php --strategy=optimistic</code> qua hết.</li>
-</ul>
-<pre><code>final class OptimisticStrategy implements InventoryStrategy
+<pre><code>public static int $conflicts = 0;
+
+private static function decrementOptimistic(PDO $pdo, string $pid, string $vid, int $qty): void
 {
-  public function decrement(PDO $pdo, string $productId, string $variantId, int $qty): void
-  {
-    $sel = $pdo-&gt;prepare(
-      'SELECT stock, reserved, version FROM inventory WHERE product_id = :p AND variant_id = :v'
-    );
-    $sel-&gt;execute([':p' =&gt; $productId, ':v' =&gt; $variantId]);
-    $row = $sel-&gt;fetch(PDO::FETCH_ASSOC);
-    if (!$row || (int)$row['stock'] - (int)$row['reserved'] &lt; $qty) {
-      throw new OutOfStockException("$productId/$variantId");
+    $maxRetries = (int)Db::env('INVENTORY_MAX_RETRIES', '5');
+    $sel = $pdo-&gt;prepare('SELECT stock, reserved, version FROM inventory WHERE product_id = ? AND variant_id = ?');
+    $upd = $pdo-&gt;prepare('UPDATE inventory SET stock = stock - ?, version = version + 1
+        WHERE product_id = ? AND variant_id = ? AND version = ?');
+
+    for ($attempt = 0; $attempt &lt;= $maxRetries; $attempt++) {
+        $sel-&gt;execute([$pid, $vid]);
+        $row = $sel-&gt;fetch();
+        $sel-&gt;closeCursor();
+        if (!$row || (int)$row['stock'] - (int)$row['reserved'] &lt; $qty) {
+            throw new OutOfStockException("Không đủ hàng cho {$vid}");
+        }
+        $upd-&gt;execute([$qty, $pid, $vid, (int)$row['version']]);
+        if ($upd-&gt;rowCount() === 1) {
+            return;                                  // ghi thành công
+        }
+        self::$conflicts++;                          // có người ghi trước, version đã đổi
+        usleep(self::backoffUs($attempt));
     }
-    $upd = $pdo-&gt;prepare(
-      'UPDATE inventory
-        SET stock = stock - :q, version = version + 1, updated_at = now()
-        WHERE product_id = :p AND variant_id = :v
-        AND version = :ver AND stock - reserved &gt;= :q'
-    );
-    $upd-&gt;execute([':q' =&gt; $qty, ':p' =&gt; $productId, ':v' =&gt; $variantId, ':ver' =&gt; (int)$row['version']]);
-    if ($upd-&gt;rowCount() === 0) {
-      InventoryService::$conflicts++;
-      throw new ConcurrentUpdateException("version {$row['version']} đã cũ");
-    }
-  }
+    throw new ConcurrentUpdateException("Hết {$maxRetries} lượt retry cho {$vid}");
+}
+
+/** Exponential backoff + full jitter: chờ ngẫu nhiên trong [0, min(50, 2^attempt)] ms. */
+private static function backoffUs(int $attempt): int
+{
+    $capMs = min(50, 2 ** $attempt);
+    return mt_rand(0, $capMs * 1000);
 }</code></pre>
+<h4>File</h4>
+<ul class="files"><li><code>app/services/InventoryService.php</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Hai psql: A đọc <code>version</code> = v. B trừ kho thành công (version = v+1). A chạy <code>UPDATE … WHERE … AND version = v</code> → <code>UPDATE 0</code>.</li>
+<li>k6 N=100, kho 10: đúng 10 đơn, stock cuối 0, tổng retry &gt; 0.</li>
+<li>Đặt <code>INVENTORY_MAX_RETRIES=0</code> và chạy lại: có request trả <code>conflict</code>, số đơn có thể ít hơn 10 dù còn hàng. Ghi nhận xét này vào báo cáo.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Retry vô hạn không backoff: các request cùng thử lại một lúc, CPU tăng, vẫn hụt.</li>
+<li>Retry trong cùng transaction khi bên gọi dùng Repeatable Read: lặp mãi vẫn đọc version cũ.</li>
+<li>Quên <code>version = version + 1</code> ở các chiến lược khác (atomic, pessimistic, admin sửa kho): optimistic không phát hiện được xung đột.</li>
+</ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-12">
 <div class="task-head">
 <span class="tid">T5-12</span>
-<h3>bench.php (chỉ bật khi APP_ENV=bench)</h3>
+<h3>Endpoint bench.php (chỉ bật khi BENCH_ENDPOINT=1)</h3>
 <span class="status-slot"></span>
-<span class="meta">~5h · Phụ thuộc: T5-09, OrderService (T4) · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span> <span class="tag new">MỚI</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~4h · Phụ thuộc: T5-09 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
 </div>
 <div class="task-body">
-<p>Front controller riêng để đo DB, không đo session PHP. Không nạp <code>config/bootstrap.php</code> vì file đó gọi <code>session_start()</code> (dòng 66).</p>
+<p><b>Mục tiêu:</b> 1 URL mà k6 gọi được: tạo 1 đơn và trừ 1 sản phẩm trong cùng transaction, trả JSON.</p>
+<p><b>Vì sao:</b> trang thật cần đăng nhập, CSRF và session. <code>config/bootstrap.php</code> gọi <code>session_start()</code>; PHP khóa file session nên các request cùng session bị xếp hàng. Ta muốn đo tranh chấp ở DB, không đo hàng đợi session.</p>
 <h4>Các bước</h4>
 <ol>
-<li>Đặt ở thư mục gốc; <code>.htaccess</code> có điều kiện <code>!-f</code> nên file thật không bị rewrite.</li>
-<li>Tách autoload của <code>config/bootstrap.php</code> (dòng 48–52 + phần Phase 0) ra <code>config/autoload.php</code> để nạp class không kèm session (phối hợp Phase 0).</li>
-<li>Không session, CSRF, Auth. Nhận POST <code>user_id</code> (chỉ 900001–900200), <code>product_id</code>, <code>variant_id</code>, <code>strategy</code>.</li>
-<li>Ưu tiên gọi <code>OrderService::placeDeposit</code> (T4); trước khi T4 merge dùng transaction tối giản bên dưới.</li>
-<li>Trả JSON <code>result</code> (ok|out_of_stock|conflict|error), <code>order_id</code>, <code>retries</code>, <code>ms</code>; HTTP 200 / 409 / 500.</li>
+<li>Tạo <code>bench.php</code> ở thư mục gốc. <code>.htaccess</code> có điều kiện <code>!-f</code> nên file thật không bị rewrite về <code>index.php</code>.</li>
+<li>Chỉ nạp những gì cần: <code>vendor/autoload.php</code>, <code>app/core/Exceptions.php</code>, <code>app/core/Db.php</code>, <code>app/services/InventoryService.php</code>. Không nạp bootstrap.</li>
+<li>Thêm vào <code>docker-compose.bench.yml</code>: <code>app: environment: BENCH_ENDPOINT: "1"</code>. Khởi động lại bằng <code>docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d</code>.</li>
+<li>Đơn bench ghi <code>user_id = 2</code> (tài khoản member có sẵn) và <code>note = {"bench":"t5"}</code> để reset/verify lọc được.</li>
+<li>Trừ kho <b>sau cùng</b> trong transaction: khóa dòng giữ tới commit, trừ càng muộn thì khóa giữ càng ngắn.</li>
+<li>Bắt <code>ConcurrentUpdateException</code>, retry cả transaction tối đa 3 lần có backoff (giống hợp đồng T4).</li>
 </ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>bench.php</code> MỚI</li>
-<li><code>config/autoload.php</code> MỚI, <code>config/bootstrap.php</code> require file này</li>
-<li><code>.env.example</code>: APP_ENV=bench, NAIVE_SLEEP_US, INVENTORY_LOCK_TIMEOUT_MS</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li><code>APP_ENV=dev</code>: <code>curl -i -X POST localhost:8080/bench.php</code> → 404.</li>
-<li><code>APP_ENV=bench</code>: <code>curl -s -d "user_id=900001&amp;product_id=bench-hot&amp;variant_id=bench-hot-STD&amp;strategy=atomic" localhost:8080/bench.php</code> → <code>"result":"ok"</code>, stock giảm 1.</li>
-<li>Response header không có <code>Set-Cookie</code>.</li>
-</ul>
 <pre><code>&lt;?php
+// bench.php — endpoint đo tải T5. Chỉ bật khi BENCH_ENDPOINT=1 (docker-compose.bench.yml).
 declare(strict_types=1);
-if (getenv('APP_ENV') !== 'bench') { http_response_code(404); exit; }
+if (getenv('BENCH_ENDPOINT') !== '1') { http_response_code(404); exit; }
 
-define('ROOT', __DIR__);
-require ROOT . '/vendor/autoload.php';
-require ROOT . '/config/autoload.php';         // chỉ autoload app/core, models, services (không session)
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/app/core/Exceptions.php';
+require __DIR__ . '/app/core/Db.php';
+require __DIR__ . '/app/services/InventoryService.php';
 header('Content-Type: application/json');
 
-$uid = (int)($_POST['user_id'] ?? 0);
-[$pid, $vid] = [(string)($_POST['product_id'] ?? ''), (string)($_POST['variant_id'] ?? '')];
-if ($uid &lt; 900001 || $uid &gt; 900200 || $pid === '') { http_response_code(400); exit; }
-$pdo = Db::pg(); $t0 = hrtime(true); $retries = 0;
-while (true) {
-  try {
-    $pdo-&gt;beginTransaction();                      // READ COMMITTED
-    $id = /* INSERT orders (type 'deposit') RETURNING id; INSERT order_items  -- DDL */;
-    InventoryService::decrement($pdo, $pid, $vid, 1, $_POST['strategy'] ?? null);
-    $pdo-&gt;commit();
-    respond(200, 'ok', $id, $retries, $t0);
-  } catch (ConcurrentUpdateException $e) {
-    $pdo-&gt;rollBack();
-    if (++$retries &gt; 3) respond(409, 'conflict', null, $retries, $t0);
-  } catch (OutOfStockException $e) {
-    $pdo-&gt;rollBack(); respond(409, 'out_of_stock', null, $retries, $t0);
-  } catch (Throwable $e) {
-    if ($pdo-&gt;inTransaction()) $pdo-&gt;rollBack();
-    respond(500, 'error', null, $retries, $t0);
-  }
+function respond(int $code, array $body): never
+{
+    http_response_code($code);
+    echo json_encode($body);
+    exit;
 }
-// respond(): http_response_code + echo json_encode([result, order_id, retries, ms]) + exit</code></pre>
+
+$pid = (string)($_POST['product_id'] ?? '');
+$vid = (string)($_POST['variant_id'] ?? '');
+$strategy = ($_POST['strategy'] ?? '') !== '' ? (string)$_POST['strategy'] : null;
+if ($pid === '' || $vid === '') respond(400, ['result' =&gt; 'error']);
+
+$t0 = hrtime(true);
+$retries = 0;
+$ms = fn() =&gt; round((hrtime(true) - $t0) / 1e6, 2);
+while (true) {
+    try {
+        $orderId = Db::transaction(function (PDO $pdo) use ($pid, $vid, $strategy): int {
+            $o = $pdo-&gt;prepare("INSERT INTO orders (user_id, type, status, payment_status, note)
+                VALUES (2, 'purchase', 'pending', 'unpaid', '{\"bench\":\"t5\"}') RETURNING id");
+            $o-&gt;execute();
+            $id = (int)$o-&gt;fetchColumn();
+            $pdo-&gt;prepare("INSERT INTO order_items (order_id, product_id, variant_id,
+                product_name_snapshot, variant_name_snapshot, unit_price, quantity)
+                VALUES (?, ?, ?, 'bench', 'bench', 0, 1)")-&gt;execute([$id, $pid, $vid]);
+            InventoryService::decrement($pdo, $pid, $vid, 1, $strategy);   // trừ kho sau cùng
+            return $id;
+        });
+        respond(200, ['result' =&gt; 'ok', 'order_id' =&gt; $orderId, 'retries' =&gt; $retries,
+            'conflicts' =&gt; InventoryService::$conflicts, 'ms' =&gt; $ms()]);
+    } catch (OutOfStockException $e) {
+        respond(409, ['result' =&gt; 'out_of_stock', 'retries' =&gt; $retries, 'ms' =&gt; $ms()]);
+    } catch (ConcurrentUpdateException $e) {
+        if (++$retries &gt; 3) respond(409, ['result' =&gt; 'conflict', 'retries' =&gt; $retries, 'ms' =&gt; $ms()]);
+        usleep(mt_rand(0, 1000 * 2 ** $retries));
+    } catch (Throwable $e) {
+        error_log('bench.php: ' . $e-&gt;getMessage());
+        respond(500, ['result' =&gt; 'error', 'ms' =&gt; $ms()]);
+    }
+}</code></pre>
+<h4>File</h4>
+<ul class="files"><li><code>bench.php</code> MỚI</li><li><code>docker-compose.bench.yml</code> thêm env <code>BENCH_ENDPOINT</code> cho <code>app</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Không có <code>BENCH_ENDPOINT</code>: <code>curl -i -X POST http://localhost:8080/bench.php</code> → 404.</li>
+<li>Có <code>BENCH_ENDPOINT=1</code>: <code>curl -s -d "product_id=189&amp;variant_id=189-TRANG-M&amp;strategy=atomic" http://localhost:8080/bench.php</code> → <code>{"result":"ok",…}</code>, stock giảm 1.</li>
+<li>Response không có header <code>Set-Cookie</code> (không có session).</li>
+<li>Dọn sau khi thử: <code>DELETE FROM orders WHERE note-&gt;&gt;'bench' = 't5';</code> và trả lại stock.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Để endpoint bật trong cấu hình thường: ai cũng tạo đơn được. Chỉ bật qua <code>docker-compose.bench.yml</code>.</li>
+<li>Nạp <code>config/bootstrap.php</code> cho nhanh: session quay lại, kết quả đo sai.</li>
+<li>Lỗi <code>violates check constraint "ck_orders_total"</code>: <code>total_amount</code> phải bằng <code>subtotal_amount - discount_amount</code> (để cả 3 bằng 0).</li>
+</ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-13">
 <div class="task-head">
 <span class="tid">T5-13</span>
-<h3>Ghép với OrderService và chạy race thử</h3>
+<h3>Ghép với OrderService của T4 và demo deadlock</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T5-10, T5-11, T5-12, T4 checkout · <span class="tag pg">PG</span></span>
+<span class="meta"><span class="tag lvl">★★★ Khó</span> · ~4h · Phụ thuộc: T5-10, T5-11, OrderService (T4) · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Thay stub bằng chiến lược thật trên <code>topic5/inventory-strategies</code>, kiểm tra checkout của T4, chạy race thử.</p>
+<p><b>Mục tiêu:</b> checkout giỏ hàng của T4 chạy đúng với cả 4 strategy; tạo được deadlock có chủ đích và chứng minh sắp xếp item tránh được nó.</p>
+<p><b>Vì sao:</b> giỏ nhiều món = 1 transaction khóa nhiều dòng. Đây là chỗ deadlock thật sự xảy ra.</p>
 <h4>Các bước</h4>
 <ol>
-<li>Rebase lên <code>develop-hybrid</code> sau khi <code>topic4/checkout-orderservice</code> merge; xác nhận <code>OrderService::place</code> sắp item, retry 3 lần, rollback khi hết hàng.</li>
-<li>Deadlock có chủ đích: 2 giỏ chứa SKU A, B ngược thứ tự, pessimistic, tạm bỏ sắp xếp → 40P01 thành <code>ConcurrentUpdateException</code>; bật lại sắp xếp → hết deadlock.</li>
-<li>k6 nháp (T5-17) 100 VU × mỗi chiến lược 1 lần; smoke test checkout + đặt cọc với từng <code>INVENTORY_STRATEGY</code>.</li>
+<li>Khi T4 merge <code>OrderService</code>, kéo code mới về. Kiểm tra: gọi <code>decrement()</code> trong transaction, sắp item theo <code>(product_id, variant_id)</code>, retry tối đa 3 lần khi <code>ConcurrentUpdateException</code>, rollback khi <code>OutOfStockException</code>. Nếu T4 chưa xong, làm tiếp bằng <code>bench.php</code>.</li>
+<li>Deadlock bằng tay, 2 psql, strategy pessimistic:
+<pre><code>-- A: BEGIN; SELECT * FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-M' FOR UPDATE;
+-- B: BEGIN; SELECT * FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-L' FOR UPDATE;
+-- A: SELECT * FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-L' FOR UPDATE;      -- A chờ
+-- B: SELECT * FROM inventory WHERE product_id='189' AND variant_id='189-TRANG-M' FOR UPDATE;  -- sau ~1s:
+--    ERROR:  deadlock detected  (SQLSTATE 40P01)</code></pre></li>
+<li>Lặp lại khi cả A và B khóa theo cùng thứ tự (TRANG-M trước, TRANG-L sau): B chỉ chờ, không deadlock.</li>
+<li>Smoke test checkout trên web với từng <code>INVENTORY_STRATEGY</code> (đổi trong <code>docker-compose.yml</code> hoặc file <code>.env</code>, rồi <code>docker compose up -d app</code>).</li>
 </ol>
 <h4>File</h4>
-<ul class="files">
-<li>Không file mới; có thể sửa nhỏ <code>app/services/InventoryService.php</code></li>
-</ul>
-<h4>Kiểm tra</h4>
+<ul class="files"><li>Không file mới; có thể sửa nhỏ <code>app/services/InventoryService.php</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
-<li>pessimistic, optimistic, atomic: 10 đơn, stock 0 (chạy <code>verify.sql</code>).</li>
-<li><code>SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()</code> không tăng khi có sắp xếp item.</li>
-<li>Checkout giỏ 2 sản phẩm thành công với cả 3 chiến lược thật.</li>
+<li><code>SELECT deadlocks FROM pg_stat_database WHERE datname = current_database();</code> tăng 1 sau bước 2, không tăng sau bước 3.</li>
+<li>Checkout giỏ 2 sản phẩm thành công với pessimistic, optimistic, atomic.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Sắp item ở PHP theo kiểu số thay vì chuỗi: <code>"10"</code> và <code>"9"</code> đổi thứ tự. Dùng <code>strcmp</code> giống thứ tự của PostgreSQL… hoặc cho DB khóa luôn bằng 1 câu <code>SELECT … ORDER BY product_id, variant_id FOR UPDATE</code>.</li>
 </ul>
 </div>
 </article>
 </div>
 </section>
+
 <section class="milestone" id="w4">
-<h2><span class="wk">Tuần 4</span>Admin tồn kho, low-stock, chuẩn bị môi trường đo</h2>
-<p>Merge đề xuất: nhánh <code>topic5/inventory-admin</code> sau bước 7 và trước bước 10 (dashboard của T3 cần <code>Inventory::lowStock</code>).</p>
+<h2><span class="wk">Bước 2</span>Admin tồn kho, low-stock, môi trường đo</h2>
 <div class="tasks">
+
 <article class="task" data-task="t5-14">
 <div class="task-head">
 <span class="tid">T5-14</span>
-<h3>InventoryAdminController (optimistic qua form)</h3>
+<h3>Chống ghi đè tồn kho khi admin sửa sản phẩm (version trong form)</h3>
 <span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: T5-09, Product::formatProduct (T1) · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag new">MỚI</span></span>
+<span class="meta"><span class="tag lvl">★★★ Khó</span> · ~5h · Phụ thuộc: T5-09, phối hợp T1 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
 </div>
 <div class="task-body">
-<p>Trang <code>/admin/inventory</code> liệt kê tồn kho theo SKU và cho sửa số lượng. Form mang theo <code>version</code>; hai admin sửa cùng lúc thì người lưu sau bị báo xung đột thay vì ghi đè.</p>
+<p><b>Mục tiêu:</b> modal sửa sản phẩm phụ kiện ở <code>/admin/products</code> đã cho sửa stock từng phiên bản. Hiện nó ghi đè giá trị mới bất kể trong lúc đó khách đã mua bao nhiêu. Thêm <code>version</code> vào form để phát hiện xung đột.</p>
+<p><b>Vì sao:</b> đây là lost update thật trong app. Admin mở form thấy stock 40. Trong lúc đó khách mua 3 chiếc (stock 37). Admin sửa thành 50 vì "nhập thêm 10" → DB thành 50, đúng ra là 47.</p>
 <h4>Các bước</h4>
 <ol>
-<li><code>admin.php</code> (dòng 24–26) tự route <code>/admin/inventory</code> và <code>/admin/inventory/update</code>; không sửa router.</li>
-<li><code>index()</code>: <code>Inventory::paginate($page, PER_PAGE, $q)</code>; tên sản phẩm lấy bằng 1 lookup Mongo <code>$in</code> cho cả trang.</li>
-<li>Mỗi dòng 1 form: hidden <code>product_id</code>, <code>variant_id</code>, <code>version</code>, <code>_csrf</code>; input <code>stock</code>.</li>
-<li><code>update()</code>: <code>Auth::verifyCsrf()</code>, kiểm <code>stock &gt;= reserved</code>, gọi <code>Inventory::adjust()</code>; false → flash "Dữ liệu đã bị người khác sửa, vui lòng tải lại". Ghi <code>ActivityLog</code> trong try/catch nếu có. Thêm link sidebar.</li>
+<li>Đọc luồng hiện tại: <code>ProductAdminController::mapVariantsForModal()</code> gửi <code>stock</code>, <code>stock_orig</code>; phần đọc form (khoảng dòng 435–442) chỉ ghi khi <code>stock</code> khác <code>stock_orig</code>; <code>Product::updateWithVariants()</code> gọi <code>InventoryService::ensureRows()</code> ghi <code>stock = GREATEST(?, reserved)</code>.</li>
+<li><code>InventoryService::byProduct()</code> trả thêm <code>version</code>. Modal gửi kèm <code>variants[i][version_orig]</code> (hidden input trong <code>public/js/admin/product-modal.js</code>).</li>
+<li>Thêm hàm mới, không đổi <code>ensureRows</code>:
+<pre><code>/** false = version đã đổi (có người khác ghi trước). */
+public static function setStock(string $productId, string $variantId, int $newStock, int $expectedVersion): bool
+{
+    $st = Db::pg()-&gt;prepare('UPDATE inventory SET stock = ?, version = version + 1
+        WHERE product_id = ? AND variant_id = ? AND version = ? AND reserved &lt;= ?');
+    $st-&gt;execute([$newStock, $productId, $variantId, $expectedVersion, $newStock]);
+    return $st-&gt;rowCount() === 1;
+}</code></pre></li>
+<li>Với phiên bản đã có dòng tồn kho và stock bị sửa: gọi <code>setStock</code>. Trả false → báo lỗi "Tồn kho đã thay đổi, vui lòng tải lại" và không ghi. Phiên bản mới vẫn đi qua <code>ensureRows</code>. Báo T1 vì <code>Product.php</code> thuộc T1.</li>
 </ol>
 <h4>File</h4>
 <ul class="files">
-<li><code>app/controllers/admin/InventoryAdminController.php</code> MỚI</li>
-<li><code>app/views/admin/inventory/index.php</code> MỚI; <code>Inventory.php</code> thêm <code>paginate</code>, <code>adjust</code></li>
+<li><code>app/services/InventoryService.php</code> (<code>byProduct</code> thêm version, <code>setStock</code> mới)</li>
+<li><code>app/controllers/admin/ProductAdminController.php</code>, <code>public/js/admin/product-modal.js</code></li>
+<li><code>app/models/Product.php</code> (<code>updateWithVariants</code>, phối hợp T1)</li>
 </ul>
-<h4>Kiểm tra</h4>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
-<li>Mở cùng 1 SKU ở 2 tab, lưu tab 1 (stock 20) rồi lưu tab 2 (stock 30) → tab 2 báo xung đột, DB giữ 20, version tăng đúng 1.</li>
-<li>Stock nhỏ hơn reserved hoặc thiếu <code>_csrf</code> → bị từ chối.</li>
+<li>Mở modal áo polo ở tab 1. Ở psql trừ 3 chiếc bằng câu atomic. Ở tab 1 đổi stock rồi Lưu → báo xung đột, DB giữ nguyên giá trị psql đã ghi.</li>
+<li>Hai tab cùng sửa 1 phiên bản: tab lưu sau bị báo xung đột, <code>version</code> chỉ tăng 1.</li>
+<li>Stock nhỏ hơn <code>reserved</code> → bị từ chối.</li>
 </ul>
-<pre><code>public static function adjust(string $productId, string $variantId, int $newStock, int $expectedVersion): bool
-{
-  global $pdo;
-  $st = $pdo-&gt;prepare(
-    'UPDATE inventory SET stock = :s, version = version + 1, updated_at = now()
-      WHERE product_id = :p AND variant_id = :v AND version = :ver AND reserved &lt;= :s'
-  );
-  $st-&gt;execute([':s' =&gt; $newStock, ':p' =&gt; $productId, ':v' =&gt; $variantId, ':ver' =&gt; $expectedVersion]);
-  return $st-&gt;rowCount() === 1;   // false = xung đột version
-}</code></pre>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>So sánh bằng <code>stock_orig</code> thay vì <code>version</code>: nếu stock bị trừ rồi cộng lại về đúng số cũ, so stock không phát hiện được (vấn đề ABA). Version luôn tăng nên không bị.</li>
+</ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-15">
 <div class="task-head">
 <span class="tid">T5-15</span>
-<h3>Cột tồn kho trong bảng sản phẩm + query low-stock cho T3</h3>
+<h3>Cột tồn kho trong danh sách sản phẩm + lowStock cho T3</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T5-09 · <span class="tag pg">PG</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~4h · Phụ thuộc: T5-08 · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Admin thấy tổng tồn kho ngay trong danh sách sản phẩm; T3 có hàm low-stock dùng cho dashboard.</p>
+<p><b>Mục tiêu:</b> admin thấy tổng tồn kho ngay trong bảng sản phẩm. T3 có hàm low-stock cho dashboard.</p>
+<p><b>Vì sao:</b> tồn kho ở PostgreSQL, tên sản phẩm ở Mongo. Phải lấy theo lô (1 query cho cả trang), không gọi 1 query cho mỗi sản phẩm (lỗi N+1).</p>
 <h4>Các bước</h4>
 <ol>
-<li><code>Inventory::totalsByProduct(array $productIds): array</code>: 1 câu <code>SELECT product_id, sum(stock) AS stock, bool_or(stock &lt;= low_stock_threshold) AS low FROM inventory WHERE product_id = ANY(:ids::text[]) GROUP BY product_id</code>. Bind mảng dạng literal <code>{"1","2"}</code>.</li>
-<li><code>ProductAdminController::index</code> (dòng 19): gọi hàm trên với id của trang hiện tại, gắn <code>$p['stock_total']</code>, <code>$p['stock_low']</code>.</li>
-<li><code>app/views/admin/products/partials/table.php</code>: thêm <code>&lt;th&gt;Tồn kho&lt;/th&gt;</code> sau cột "Giá" (dòng 8), thêm <code>&lt;td&gt;</code> sau khối giá (sau dòng 62), đổi <code>colspan="5"</code> ở dòng 16 thành 6. Badge đỏ khi <code>stock_low</code>, link sang <code>/admin/inventory?q={id}</code>.</li>
-<li><code>Inventory::lowStock(int $limit = 10): array</code> sắp theo <code>stock - low_stock_threshold</code> tăng dần. Gửi chữ ký cho T3 trong nhóm chat.</li>
+<li>Thêm hằng <code>LOW_STOCK_THRESHOLD = 5</code> vào <code>InventoryService</code> (bảng không có cột ngưỡng).</li>
+<li><code>InventoryService::totalsByProduct(array $productIds): array</code>: 1 câu <code>SELECT product_id, sum(stock - reserved) AS available, bool_or(stock - reserved &lt;= ?) AS low FROM inventory WHERE product_id = ANY (CAST(? AS text[])) GROUP BY product_id</code>. Truyền mảng dạng literal <code>{"1","2"}</code> giống cách <code>removeRowsExcept()</code> đang làm.</li>
+<li><code>ProductAdminController::index()</code>: gọi hàm trên với id của trang hiện tại, gắn <code>stock_total</code>, <code>stock_low</code> vào từng sản phẩm.</li>
+<li><code>app/views/admin/products/partials/table.php</code>: thêm cột "Tồn kho" sau cột "Giá" (khoảng dòng 8), đổi <code>colspan="5"</code> (khoảng dòng 16) thành 6. Badge đỏ khi <code>stock_low</code>.</li>
+<li><code>InventoryService::lowStock(int $limit = 10): array</code> trả <code>product_id, variant_id, stock, reserved</code>, sắp theo <code>stock - reserved</code> tăng dần. Gửi chữ ký cho T3.</li>
 </ol>
+<pre><code>SELECT product_id, variant_id, stock, reserved
+  FROM inventory
+ WHERE stock - reserved &lt;= 5
+ ORDER BY stock - reserved, product_id, variant_id
+ LIMIT 10;</code></pre>
 <h4>File</h4>
 <ul class="files">
-<li><code>app/models/Inventory.php</code> thêm <code>totalsByProduct</code>, <code>lowStock</code></li>
-<li><code>app/controllers/admin/ProductAdminController.php</code> trong <code>index()</code></li>
-<li><code>app/views/admin/products/partials/table.php</code> dòng 8, 16, sau 62</li>
+<li><code>app/services/InventoryService.php</code></li>
+<li><code>app/controllers/admin/ProductAdminController.php</code> (<code>index()</code>)</li>
+<li><code>app/views/admin/products/partials/table.php</code></li>
 </ul>
-<h4>Kiểm tra</h4>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
-<li>Danh sách sản phẩm (seed small) có cột tồn kho; số liệu khớp <code>SELECT product_id, sum(stock) FROM inventory GROUP BY 1</code>.</li>
-<li>Trang danh sách chỉ thêm 1 query PG; <code>lowStock</code> trên seed 100k dưới 200 ms.</li>
+<li>Số trong cột khớp <code>SELECT product_id, sum(stock - reserved) FROM inventory GROUP BY 1</code>.</li>
+<li>Trang danh sách chỉ thêm đúng 1 query PG (đếm bằng log hoặc <code>pg_stat_statements</code> nếu bật).</li>
+<li>Xe (không có phiên bản phụ kiện) hiện "—" thay vì 0.</li>
 </ul>
-<pre><code>SELECT product_id, variant_id, stock, reserved, low_stock_threshold AS threshold
-  FROM inventory
- WHERE stock &lt;= low_stock_threshold
- ORDER BY stock - low_stock_threshold, product_id
- LIMIT :limit;</code></pre>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Hiển thị <code>stock</code> thay vì <code>stock - reserved</code>: admin tưởng còn hàng trong khi hàng đã được giữ cho đơn pending.</li></ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-16">
 <div class="task-head">
 <span class="tid">T5-16</span>
-<h3>Cấu hình Apache/PG cho tải đồng thời</h3>
+<h3>Cấu hình Apache cho tải đồng thời (phần PostgreSQL đã có)</h3>
 <span class="status-slot"></span>
-<span class="meta">~3h · Phụ thuộc: docker-compose + Dockerfile Phase 0 · <span class="tag pg">PG</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~2h · Phụ thuộc: T5-07 · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Đảm bảo 200 request đồng thời thực sự tới được DB, nếu không kết quả đo là giới hạn của Apache.</p>
+<p><b>Mục tiêu:</b> 200 request đồng thời phải thực sự tới được DB. Nếu không, bạn đang đo giới hạn của Apache chứ không phải của khóa.</p>
+<p><b>Vì sao:</b> image <code>php:8.2-apache</code> chạy Apache prefork, mặc định <code>MaxRequestWorkers 150</code> (kiểm tra: <code>docker compose exec app cat /etc/apache2/mods-available/mpm_prefork.conf</code>). Mỗi worker mở tối đa 1 kết nối PG. Phần PostgreSQL (<code>max_connections=250</code>) đã có trong <code>docker-compose.bench.yml</code>.</p>
 <h4>Các bước</h4>
 <ol>
-<li><code>docker/apache/mpm_prefork.conf</code>: <code>StartServers 50</code>, <code>MinSpareServers 50</code>, <code>MaxSpareServers 100</code>, <code>ServerLimit 250</code>, <code>MaxRequestWorkers 250</code>, <code>MaxConnectionsPerChild 0</code>. Dockerfile (hiện chỉ có <code>pdo_mysql</code> ở dòng 3, Phase 0 sẽ thay) thêm 1 dòng <code>COPY</code> vào <code>/etc/apache2/mods-available/mpm_prefork.conf</code>.</li>
-<li>PostgreSQL: master plan đặt <code>max_connections=200</code>. Với 3 kết nối dành cho superuser, chỉ còn 197 cho app, nên mức 200 VU sẽ có lỗi "too many clients". Đề xuất <code>max_connections=250</code> trong <code>docker-compose.bench.yml</code>, hoặc giới hạn mức quét tối đa 190.</li>
-<li><code>docker-compose.bench.yml</code>: <code>APP_ENV=bench</code>, <code>log_lock_waits=on</code>, giới hạn CPU/RAM cố định (ví dụ 2 CPU / 2 GB), service <code>k6</code> nếu Phase 0 chưa có. Ghi giá trị vào README.</li>
+<li>Tạo <code>docker/apache/mpm_prefork.conf</code>: <code>StartServers 50</code>, <code>MinSpareServers 50</code>, <code>MaxSpareServers 100</code>, <code>ServerLimit 240</code>, <code>MaxRequestWorkers 240</code>, <code>MaxConnectionsPerChild 0</code>. Để dưới 250 vì PG giữ vài kết nối cho superuser và bạn còn cần psql.</li>
+<li>Trong <code>docker-compose.bench.yml</code>, service <code>app</code> thêm volume <code>./docker/apache/mpm_prefork.conf:/etc/apache2/mods-available/mpm_prefork.conf:ro</code>. Không cần sửa Dockerfile.</li>
+<li>Khởi động lại: <code>docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d</code>.</li>
+<li>Ghi CPU, RAM của Docker Desktop và các giá trị trên vào <code>bench/README.md</code>.</li>
 </ol>
 <h4>File</h4>
-<ul class="files">
-<li><code>docker/apache/mpm_prefork.conf</code> MỚI</li>
-<li><code>docker-compose.bench.yml</code> MỚI</li>
-<li><code>Dockerfile</code> thêm 1 dòng COPY (phối hợp Phase 0)</li>
-</ul>
-<h4>Kiểm tra</h4>
+<ul class="files"><li><code>docker/apache/mpm_prefork.conf</code> MỚI</li><li><code>docker-compose.bench.yml</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
 <li><code>docker compose exec postgres psql -U vinfast -c "SHOW max_connections"</code> → 250.</li>
-<li>Khi chạy 200 VU: <code>pg_stat_activity</code> gần 200 kết nối, k6 không có lỗi kết nối (chỉ 200/409).</li>
+<li>Khi k6 chạy N=200: <code>SELECT count(*) FROM pg_stat_activity WHERE datname = 'vinfast';</code> lên gần 200. k6 không có lỗi kết nối, chỉ có HTTP 200/409.</li>
 </ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li><code>FATAL: sorry, too many clients already</code>: postgres vẫn chạy cấu hình cũ (200). Chạy lại lệnh <code>up -d</code> với cả 2 file.</li></ul>
 </div>
 </article>
 </div>
 </section>
+
 <section class="milestone" id="w5">
-<h2><span class="wk">Tuần 5</span>Benchmark và demo isolation</h2>
-<p>Cùng máy, cùng dataset, reset DB trước mỗi lần chạy. Chi tiết lệnh ở mục <a href="#thi-nghiem">Thí nghiệm</a>.</p>
+<h2><span class="wk">Bước 3</span>Benchmark và demo isolation</h2>
+<p>Cùng máy, cùng dataset, reset kho trước mỗi lần chạy. Chi tiết ở mục <a href="#thi-nghiem">Thí nghiệm</a>.</p>
 <div class="tasks">
+
 <article class="task" data-task="t5-17">
 <div class="task-head">
 <span class="tid">T5-17</span>
-<h3>k6 checkout_race.js, reset.sql, verify.sql</h3>
+<h3>k6 checkout_race.js, reset.sql, verify.sql, collect.php</h3>
 <span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: T5-12, T5-16 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~6h · Phụ thuộc: T5-12, T5-16 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
 </div>
 <div class="task-body">
-<p>Bộ script cho 1 lần chạy: đặt lại kho → bắn N request cùng lúc → kiểm tra bất biến → ghi 1 dòng CSV.</p>
+<p><b>Mục tiêu:</b> bộ script cho 1 lần chạy: đặt lại kho → bắn N request cùng lúc → kiểm tra bất biến → ghi 1 dòng CSV.</p>
+<p><b>Vì sao:</b> mỗi con số trong báo cáo phải chạy lại được bằng 1 lệnh.</p>
 <h4>Các bước</h4>
 <ol>
-<li><code>reset.sql</code>: xóa order_items/orders của user bench, đặt stock SKU bench về <code>:stock</code>, version 0, <code>SELECT pg_stat_reset()</code>.</li>
-<li><code>checkout_race.js</code>: executor <code>per-vu-iterations</code>, <code>vus = N</code>, 1 iteration mỗi VU, user_id = 900000 + VU. Chế độ <code>hot</code> (1 SKU) và <code>spread</code> (VU % 100 → <code>bench-s001..s100</code>).</li>
-<li><code>verify.sql</code>: in stock cuối, số đơn, bất biến bảo toàn (stock + tổng đã bán = stock ban đầu), deadlocks.</li>
-<li><code>collect.php</code>: đọc summary JSON của k6 + kết quả <code>verify.sql</code> (<code>psql -At -F,</code>) → <code>Csv::append('bench/results/t5_race.csv', …)</code>.</li>
-<li><code>run_matrix.sh</code>: vòng lặp chiến lược × mức đồng thời × chế độ × lần chạy, gọi 3 bước trên.</li>
+<li><b>SKU nóng:</b> áo polo trắng size M (<code>product_id=189</code>, <code>variant_id=189-TRANG-M</code>). Kiểm tra lại id trên máy bạn như ở phần 30 phút đầu.</li>
+<li><b>SKU trải đều (spread):</b> lấy 50 dòng đầu của inventory (seed cơ bản chỉ có 92 dòng) ra file:
+<pre><code>docker compose exec -T postgres psql -U vinfast -d vinfast -At -F, \
+  -c "SELECT product_id, variant_id FROM inventory ORDER BY id LIMIT 50" &gt; bench/t5/spread_skus.csv</code></pre></li>
+<li><code>bench/t5/reset.sql</code>: xóa đơn bench, đặt stock, reset thống kê.</li>
+<li><code>bench/t5/checkout_race.js</code>: executor <code>per-vu-iterations</code>, <code>vus = N</code>, mỗi VU 1 lần → N request gần như cùng lúc.</li>
+<li><code>bench/t5/verify.sql</code>: in stock cuối, số đơn, bất biến bảo toàn (stock cuối + tổng đã bán = stock ban đầu), số deadlock.</li>
+<li><code>bench/t5/collect.php</code> (chạy trong container app): đọc JSON k6 + kết quả verify, ghi thêm 1 dòng vào <code>bench/results/t5_race_&lt;size&gt;.csv</code> (tự ghi header nếu file mới).</li>
+<li>Thêm <code>bench/results/raw/</code> vào <code>.gitignore</code>.</li>
 </ol>
-<h4>File</h4>
-<ul class="files">
-<li><code>bench/t5/checkout_race.js</code>, <code>reset.sql</code>, <code>verify.sql</code>, <code>collect.php</code>, <code>run_matrix.sh</code> MỚI</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>1 lần chạy atomic, N=100: <code>verify.sql</code> in <code>stock = 0</code>, <code>orders_ok = 10</code>, <code>conservation = PASS</code>; CSV có thêm đúng 1 dòng.</li>
-<li>Chạy lại sau reset cho cùng kết quả.</li>
-</ul>
+<pre><code>-- bench/t5/reset.sql   (psql -v pid=189 -v vid=189-TRANG-M -v stock=10)
+DELETE FROM orders WHERE note-&gt;&gt;'bench' = 't5';          -- order_items xóa theo (ON DELETE CASCADE)
+UPDATE inventory SET stock = :stock, reserved = 0, version = 0
+ WHERE product_id = :'pid' AND variant_id = :'vid';
+-- chế độ spread: WHERE id IN (SELECT id FROM inventory ORDER BY id LIMIT 50)
+SELECT pg_stat_reset();                                    -- đưa bộ đếm deadlocks về 0</code></pre>
+<pre><code>-- bench/t5/verify.sql   (psql -v pid=189 -v vid=189-TRANG-M -v initial=10)
+SELECT i.stock AS final_stock,
+       COALESCE(s.orders, 0) AS orders_ok,
+       COALESCE(s.sold, 0)   AS sold_qty,
+       CASE WHEN i.stock + COALESCE(s.sold, 0) = :initial THEN 'PASS' ELSE 'FAIL' END AS conservation,
+       (SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()) AS deadlocks
+  FROM inventory i
+  LEFT JOIN (SELECT oi.product_id, oi.variant_id, count(*) AS orders, sum(oi.quantity) AS sold
+               FROM order_items oi JOIN orders o ON o.id = oi.order_id
+              WHERE o.note-&gt;&gt;'bench' = 't5'
+              GROUP BY 1, 2) s
+    ON s.product_id = i.product_id AND s.variant_id = i.variant_id
+ WHERE i.product_id = :'pid' AND i.variant_id = :'vid';</code></pre>
 <pre><code>// bench/t5/checkout_race.js
 import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 
 const N = Number(__ENV.N || 100);
-const MODE = __ENV.MODE || 'hot';
+const MODE = __ENV.MODE || 'hot';                 // hot | spread
+const STRATEGY = __ENV.STRATEGY || 'atomic';
+const BASE = __ENV.BASE_URL || 'http://app';
+const HOT = { pid: __ENV.PID || '189', vid: __ENV.VID || '189-TRANG-M' };
+const SPREAD = MODE === 'spread'
+  ? open('/bench/t5/spread_skus.csv').trim().split('\n').map((l) =&gt; {
+      const [pid, vid] = l.trim().split(','); return { pid, vid };
+    })
+  : [];
+
 export const options = {
   scenarios: { race: { executor: 'per-vu-iterations', vus: N, iterations: 1, maxDuration: '120s' } },
 };
-const C = Object.fromEntries(['ok', 'out_of_stock', 'conflict', 'error', 'retries'].map(k =&gt; [k, new Counter(k)]));
+const C = {};
+['ok', 'out_of_stock', 'conflict', 'error', 'retries'].forEach((k) =&gt; { C[k] = new Counter('r_' + k); });
 
 export default function () {
-  const pid = MODE === 'hot' ? 'bench-hot' : 'bench-s' + String((__VU % 100) + 1).padStart(3, '0');
-  const res = http.post(`${__ENV.BASE || 'http://app'}/bench.php`, {
-  user_id: String(900000 + __VU), product_id: pid, variant_id: pid + '-STD',
-  qty: '1', strategy: __ENV.STRATEGY,
-  });
-  const body = res.json() || {};
-  C.retries.add(body.retries || 0);
+  const sku = MODE === 'spread' ? SPREAD[(__VU - 1) % SPREAD.length] : HOT;
+  const res = http.post(`${BASE}/bench.php`, { product_id: sku.pid, variant_id: sku.vid, strategy: STRATEGY });
+  let body = {};
+  try { body = res.json(); } catch (e) { /* không phải JSON = lỗi */ }
   (C[body.result] || C.error).add(1);
+  C.retries.add(body.retries || 0);
   check(res, { 'status 200/409': (r) =&gt; r.status === 200 || r.status === 409 });
 }
 
 export function handleSummary(data) {
-  const f = `/bench/results/raw/t5_${__ENV.STRATEGY}_${MODE}_${N}_${__ENV.RUN || 1}.json`;
-  return { [f]: JSON.stringify(data), stdout: '' };
+  const n = (m) =&gt; (data.metrics[m] ? data.metrics[m].values.count : 0);
+  const f = `/bench/results/raw/t5_${STRATEGY}_${MODE}_${N}_${__ENV.RUN || 1}.json`;
+  return {
+    [f]: JSON.stringify(data),
+    stdout: `strategy=${STRATEGY} mode=${MODE} N=${N} ok=${n('r_ok')} out_of_stock=${n('r_out_of_stock')} conflict=${n('r_conflict')} error=${n('r_error')}\n`,
+  };
 }</code></pre>
-<pre><code>-- bench/t5/verify.sql   (psql -v pid=bench-hot -v initial=10 -f verify.sql)
-SELECT i.stock AS final_stock,
-     (SELECT count(*) FROM order_items oi
-     WHERE oi.product_id = i.product_id AND oi.variant_id = i.variant_id) AS orders_ok,
-     CASE WHEN i.stock + coalesce((SELECT sum(quantity) FROM order_items oi
-         WHERE oi.product_id = i.product_id AND oi.variant_id = i.variant_id), 0) = :initial
-      THEN 'PASS' ELSE 'FAIL' END AS conservation,
-     (SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()) AS deadlocks
-  FROM inventory i
- WHERE i.product_id = :'pid' AND i.variant_id = :'pid' || '-STD';</code></pre>
+<h4>File</h4>
+<ul class="files"><li><code>bench/t5/checkout_race.js</code>, <code>reset.sql</code>, <code>verify.sql</code>, <code>collect.php</code>, <code>spread_skus.csv</code> MỚI</li><li><code>.gitignore</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>1 lần chạy atomic, N=100, kho 10: k6 in <code>ok=10</code>; verify in <code>final_stock = 0</code>, <code>orders_ok = 10</code>, <code>conservation = PASS</code>; CSV có thêm đúng 1 dòng.</li>
+<li>Tổng đã bán không vượt stock ban đầu. Không có stock âm.</li>
+<li>Reset rồi chạy lại cho cùng kết quả đúng/sai (số ms có thể khác).</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Quên reset trước mỗi lần chạy: lần 2 thấy <code>ok=0</code> vì hết hàng từ lần trước.</li>
+<li>k6 báo không ghi được file raw: tạo sẵn thư mục <code>bench/results/raw/</code>.</li>
+<li>Windows: chạy lệnh có <code>\</code> xuống dòng trong Git Bash; PowerShell dùng dấu <code>`</code> hoặc viết 1 dòng.</li>
+<li>Counter bằng 0 không xuất hiện trong summary: luôn đọc qua hàm <code>n()</code> có giá trị mặc định.</li>
+</ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-18">
 <div class="task-head">
 <span class="tid">T5-18</span>
 <h3>Chạy ma trận thí nghiệm, CSV và biểu đồ</h3>
 <span class="status-slot"></span>
-<span class="meta">~8h · Phụ thuộc: T5-17 · <span class="tag pg">PG</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~8h (phần lớn là chờ máy chạy) · Phụ thuộc: T5-17 · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Chạy đủ ma trận ở mục <a href="#thi-nghiem">Thí nghiệm</a>, commit CSV và 5 biểu đồ vào <code>bench/results/</code>.</p>
+<p><b>Mục tiêu:</b> chạy đủ 3 thí nghiệm A, B, C ở mục <a href="#thi-nghiem">Thí nghiệm</a>, commit CSV và biểu đồ.</p>
+<p><b>Vì sao:</b> 1 lần chạy có thể ăn may. Lặp nhiều lần mới nói được "luôn đúng" và tính được trung bình, độ lệch.</p>
 <h4>Các bước</h4>
 <ol>
-<li>Chạy demo chính: kho 10, N=100, chế độ hot, 4 chiến lược × 10 lần (40 lần).</li>
-<li>Quét đồng thời N = 10/50/100/200, 4 chiến lược × 5 lần, kho 10 (hot) và kho 10 mỗi SKU (spread).</li>
-<li>Có <code>conservation = FAIL</code> với chiến lược khác naive: dừng, lưu log PG, điều tra.</li>
-<li><code>bench/t5/plot.py</code> (pandas + matplotlib) → <code>bench/results/t5/*.png</code>: số đơn theo chiến lược (đường = 10), throughput và p95 theo mức đồng thời, retry của optimistic, hot vs spread. Mỗi chiến lược 1 màu cố định.</li>
+<li>Viết <code>bench/t5/run_matrix.sh</code>: vòng lặp chiến lược × N × chế độ × lần chạy; mỗi vòng gọi reset → k6 → verify → collect (code mẫu ở mục Thí nghiệm).</li>
+<li>Chạy A (40 lần), B (80 lần), C (80 lần). Ghi cấu hình máy vào <code>bench/README.md</code>.</li>
+<li>Nếu có <code>conservation = FAIL</code> ở chiến lược không phải naive: dừng, xem log (<code>docker compose logs app postgres</code>), sửa code rồi chạy lại.</li>
+<li>Vẽ 5 biểu đồ vào <code>bench/results/t5/*.png</code> (Python pandas + matplotlib trên máy bạn, hoặc Excel/Google Sheets): số đơn thành công theo chiến lược (kẻ vạch ở 10), throughput theo N, p95 theo N, tổng retry của optimistic theo N, hot vs spread. Mỗi chiến lược giữ 1 màu cố định trên mọi biểu đồ.</li>
 </ol>
 <h4>File</h4>
 <ul class="files">
-<li><code>bench/results/t5_race.csv</code>, <code>bench/t5/plot.py</code> MỚI, <code>bench/results/t5/*.png</code></li>
+<li><code>bench/t5/run_matrix.sh</code> MỚI, <code>bench/t5/plot.py</code> MỚI (nếu dùng Python)</li>
+<li><code>bench/results/t5_race_&lt;size&gt;.csv</code>, <code>bench/results/t5_spread_&lt;size&gt;.csv</code>, <code>bench/results/t5/*.png</code></li>
 </ul>
-<h4>Kiểm tra</h4>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
-<li>CSV có 40 dòng cho demo chính + 160 dòng quét (4 mức × 4 chiến lược × 5 lần × 2 chế độ).</li>
-<li>Pessimistic/optimistic/atomic, demo chính: 30/30 dòng <code>ok=10, final_stock=0</code>.</li>
-<li><code>python bench/t5/plot.py</code> tạo đủ 5 PNG.</li>
+<li><code>t5_race_&lt;size&gt;.csv</code>: 40 dòng của A + 80 dòng của B. <code>t5_spread_&lt;size&gt;.csv</code>: 80 dòng của C.</li>
+<li>Pessimistic, optimistic, atomic ở A: 30/30 dòng có <code>ok = 10</code>, <code>final_stock = 0</code>, <code>conservation = PASS</code>.</li>
+<li>Naive: có dòng <code>ok &gt; 10</code> và <code>conservation = FAIL</code>. Ghi lại đúng số thực đo được, không làm tròn cho đẹp.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Mở trình duyệt, IDE nặng hoặc chạy seed trong lúc đo: số ms dao động mạnh. Đóng bớt và ghi chú lại.</li>
+<li>Tính throughput từ <code>http_reqs.rate</code> của k6 khi chỉ có 1 iteration mỗi VU: con số nhỏ và nhiễu. Ghi thêm tổng thời gian kịch bản để giải thích.</li>
 </ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-19">
 <div class="task-head">
 <span class="tid">T5-19</span>
-<h3>Demo isolation giỏ hàng (2 session)</h3>
+<h3>Demo isolation trên giỏ hàng (2 session)</h3>
 <span class="status-slot"></span>
-<span class="meta">~6h · Phụ thuộc: bảng cart_items (T4) · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~6h · Phụ thuộc: phần 30 phút đầu · <span class="tag pg">PG</span></span>
 </div>
 <div class="task-body">
-<p>Cho thấy lost update trên <code>cart_items.quantity</code> và 3 cách sửa; demo non-repeatable read vì PostgreSQL không có dirty read.</p>
+<p><b>Mục tiêu:</b> tái hiện 7 kịch bản ở mục <a href="#thi-nghiem">Thí nghiệm</a> (phần 2) bằng tay, và tự động bằng 1 script PHP.</p>
+<p><b>Vì sao:</b> bảng isolation trong giáo trình chỉ thuyết phục khi bạn thấy lỗi tận mắt trên dữ liệu thật.</p>
 <h4>Các bước</h4>
 <ol>
-<li>File <code>bench/t5/isolation/NN_*.sql</code> theo bảng ở mục Thí nghiệm, bước đánh số <code>-- [1]</code>… để chạy tay trong 2 terminal psql.</li>
-<li><code>run.php</code>: 2 kết nối PDO chạy đúng thứ tự bước, so với kỳ vọng, ghi <code>t5_isolation.csv</code>; kịch bản RR bắt 40001, rollback, chạy lại B.</li>
-<li>READ UNCOMMITTED: A không thấy giá trị chưa commit của B; dẫn tài liệu PG.</li>
+<li>Chuẩn bị 1 dòng giỏ hàng cho tài khoản member (user id 2) và nhớ <code>id</code> trả về:
+<pre><code>INSERT INTO carts (user_id) VALUES (2) ON CONFLICT (user_id) DO NOTHING;
+INSERT INTO cart_items (cart_id, product_id, variant_id, quantity, unit_price)
+SELECT id, '189', '189-TRANG-M', 1, 450000 FROM carts WHERE user_id = 2
+ON CONFLICT (cart_id, product_id, variant_id) DO UPDATE SET quantity = 1
+RETURNING id;</code></pre></li>
+<li>Viết <code>bench/t5/isolation/NN_ten.sql</code> cho từng kịch bản, đánh số bước <code>-- [1] A:</code>, <code>-- [2] B:</code> để chạy tay trong 2 psql.</li>
+<li><code>bench/t5/isolation/run.php</code>: mở 2 kết nối PDO riêng (<code>new PDO(...)</code>, không dùng <code>Db::pg()</code> vì đó là 1 kết nối dùng chung), chạy đúng thứ tự bước, so sánh với kỳ vọng, ghi <code>bench/results/t5_isolation_&lt;size&gt;.csv</code>.</li>
+<li>Kịch bản 02 và 03 làm B bị chặn, PHP 1 luồng sẽ treo. Chỉ tự động hóa 01, 04, 05, 06, 07; còn 02, 03 demo bằng tay và chụp màn hình.</li>
 </ol>
 <h4>File</h4>
-<ul class="files">
-<li><code>bench/t5/isolation/*.sql</code>, <code>run.php</code> MỚI; <code>bench/results/t5_isolation.csv</code></li>
-</ul>
-<h4>Kiểm tra</h4>
+<ul class="files"><li><code>bench/t5/isolation/*.sql</code>, <code>bench/t5/isolation/run.php</code> MỚI</li><li><code>bench/results/t5_isolation_&lt;size&gt;.csv</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
-<li><code>docker compose exec app php bench/t5/isolation/run.php</code> in 6 dòng; kịch bản 01 có <code>observed=2, expected=3</code>, các kịch bản sửa có <code>observed=3</code>.</li>
-<li>Kịch bản 04: ít nhất 1 lỗi 40001, cuối vẫn = 3.</li>
+<li><code>docker compose exec app php bench/t5/isolation/run.php</code> in 5 dòng. Kịch bản 01: <code>observed=2, expected=3</code>. Kịch bản 04: ít nhất 1 lỗi 40001, retry xong <code>observed=3</code>. Kịch bản 07: Repeatable Read để lọt write skew, Serializable báo 40001.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul>
+<li>Dùng chung 1 kết nối PDO cho A và B: thực chất chỉ có 1 transaction, không thấy gì.</li>
+<li>PDO mặc định autocommit: phải gọi <code>beginTransaction()</code> rồi <code>exec("SET TRANSACTION ISOLATION LEVEL …")</code> trước câu đầu tiên.</li>
 </ul>
 </div>
 </article>
 </div>
 </section>
+
 <section class="milestone" id="w6">
-<h2><span class="wk">Tuần 6</span>Báo cáo, demo, script reset</h2>
+<h2><span class="wk">Bước 4</span>Báo cáo, demo, phần mở rộng</h2>
 <div class="tasks">
+
 <article class="task" data-task="t5-20">
 <div class="task-head">
 <span class="tid">T5-20</span>
-<h3>Viết chương báo cáo Concurrency control</h3>
+<h3>Viết chương báo cáo Concurrency Control</h3>
 <span class="status-slot"></span>
-<span class="meta">~8h · Phụ thuộc: T5-18, T5-19</span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~8h · Phụ thuộc: T5-18, T5-19</span>
 </div>
 <div class="task-body">
-<p>Viết theo dàn ý ở mục <a href="#report">Báo cáo và demo</a>; mọi số liệu lấy từ CSV đã commit.</p>
+<p><b>Mục tiêu:</b> viết chương theo dàn ý ở mục <a href="#thi-nghiem">Thí nghiệm</a> (phần 3). Mọi số liệu lấy từ CSV đã commit.</p>
 <h4>Các bước</h4>
 <ol>
-<li>Viết 6 phần theo dàn ý; mỗi khẳng định về cơ chế PG dẫn nguồn tài liệu chính thức (chương "Concurrency Control" và "Explicit Locking").</li>
-<li>Chèn 5 biểu đồ, bảng tổng hợp (trung bình ± độ lệch chuẩn qua 10 lần) và bảng hiện tượng isolation.</li>
-<li>Phần hạn chế: 1 máy, Apache prefork, chưa có luồng <code>reserved</code>, retry 3 lần.</li>
+<li>Viết 6 phần theo dàn ý. Mỗi khẳng định về cơ chế PostgreSQL dẫn nguồn tài liệu chính thức.</li>
+<li>Chèn 5 biểu đồ, bảng tổng hợp (trung bình ± độ lệch chuẩn) và bảng isolation với kết quả 7 kịch bản.</li>
+<li>Phần hạn chế: 1 máy, Apache prefork, chưa có luồng <code>reserved</code> đầy đủ, số lần retry cố định.</li>
 <li>Nhờ 1 thành viên khác đọc chéo.</li>
 </ol>
-<h4>File</h4>
-<ul class="files">
-<li>Chương T5 trong file báo cáo chung của nhóm</li>
-</ul>
-<h4>Kiểm tra</h4>
-<ul>
-<li>Mọi con số trong chương truy được về 1 dòng hoặc 1 nhóm dòng trong <code>t5_race.csv</code> / <code>t5_isolation.csv</code>.</li>
-</ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul><li>Mỗi con số trong chương truy được về 1 dòng hoặc 1 nhóm dòng trong <code>bench/results/t5_*.csv</code>.</li></ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Kết luận "optimistic nhanh hơn" chung chung. Phải nói rõ trong điều kiện nào (hot hay spread, N bao nhiêu).</li></ul>
 </div>
 </article>
+
 <article class="task" data-task="t5-21">
 <div class="task-head">
 <span class="tid">T5-21</span>
 <h3>Script demo và tập dượt</h3>
 <span class="status-slot"></span>
-<span class="meta">~4h · Phụ thuộc: T5-06, T5-17, T5-19</span>
+<span class="meta"><span class="tag lvl">★☆☆ Dễ</span> · ~4h · Phụ thuộc: T5-17, T5-19</span>
 </div>
 <div class="task-body">
-<p>Một script dựng lại trạng thái demo trong dưới 2 phút; tập dượt đủ 10 phút ít nhất 2 lần.</p>
+<p><b>Mục tiêu:</b> 1 script dựng lại trạng thái demo trong dưới 2 phút; tập đủ 10 phút ít nhất 2 lần.</p>
 <h4>Các bước</h4>
 <ol>
-<li><code>bench/t5/demo.sh</code>: <code>composer db:reset -- --size=small</code> → bật override bench → in trạng thái kho SKU <code>bench-hot</code>.</li>
-<li><code>demo.sh race &lt;strategy&gt;</code>: reset kho 10 → k6 N=100 → verify, in gọn 4 con số.</li>
-<li>Chuẩn bị sẵn 2 tab terminal psql cho demo isolation; có bản ghi màn hình dự phòng nếu máy demo lỗi.</li>
-<li>Tập dượt theo kịch bản 10 phút, ghi thời gian từng phần.</li>
+<li><code>bench/t5/demo.sh</code>: bật cấu hình bench (<code>up -d</code> với 2 file compose), in trạng thái dòng tồn kho SKU nóng.</li>
+<li><code>bash bench/t5/demo.sh race &lt;strategy&gt;</code>: reset kho 10 → k6 N=100 → verify, in gọn 4 số: ok, final_stock, conservation, retries.</li>
+<li>Chuẩn bị sẵn 2 tab psql cho demo isolation. Quay màn hình dự phòng nếu máy demo lỗi.</li>
+<li>Tập theo kịch bản 10 phút, ghi thời gian từng phần.</li>
 </ol>
 <h4>File</h4>
-<ul class="files">
-<li><code>bench/t5/demo.sh</code> MỚI</li>
-</ul>
-<h4>Kiểm tra</h4>
+<ul class="files"><li><code>bench/t5/demo.sh</code> MỚI (giữ đuôi dòng LF, như các script container khác)</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
 <ul>
-<li>Trên máy sạch: <code>docker compose up -d --build</code> rồi <code>bash bench/t5/demo.sh</code> chạy được không cần sửa tay.</li>
+<li>Trên máy sạch: clone → <code>docker compose up -d --build</code> → <code>bash bench/t5/demo.sh race atomic</code> chạy được, không sửa tay.</li>
 <li>Lần tập thứ 2 xong trong 10 phút.</li>
 </ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Script có đuôi dòng CRLF (sửa trên Windows): bash báo <code>$'\r': command not found</code>. Đổi về LF trong editor.</li></ul>
+</div>
+</article>
+
+<article class="task" data-task="t5-22">
+<div class="task-head">
+<span class="tid">T5-22</span>
+<h3>Tùy chọn: write conflict và conditional update trên MongoDB</h3>
+<span class="status-slot"></span>
+<span class="meta"><span class="tag lvl">★★☆ Vừa</span> · ~3h · Phụ thuộc: phần Kiến thức mục 8 · <span class="tag mg">MONGO</span> <span class="tag new">MỚI</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> so sánh cách MongoDB xử lý tranh chấp với PostgreSQL, để viết phần "mở rộng" của báo cáo.</p>
+<p><b>Vì sao:</b> project dùng cả 2 DB. PostgreSQL bắt giao dịch sau <b>chờ</b> khóa; MongoDB trong transaction thì báo <b>WriteConflict</b> ngay và bắt bạn chạy lại.</p>
+<h4>Các bước</h4>
+<ol>
+<li>Dùng collection tạm, không đụng <code>products</code>. Mở 2 cửa sổ <code>docker compose exec mongo mongosh vinfast</code>:
+<pre><code>// Chuẩn bị (1 lần)
+db.t5_stock.deleteMany({}); db.t5_stock.insertOne({ _id: '189-TRANG-M', stock: 10 })
+
+// Conditional update, không cần transaction: nguyên tử trên 1 document
+db.t5_stock.updateOne({ _id: '189-TRANG-M', stock: { $gte: 1 } }, { $inc: { stock: -1 } })
+// modifiedCount: 1 = trừ được; 0 = hết hàng
+
+// Write conflict: làm ở cả 2 cửa sổ, A trước B
+const s = db.getMongo().startSession(); s.startTransaction();
+s.getDatabase('vinfast').t5_stock.updateOne({ _id: '189-TRANG-M' }, { $inc: { stock: -1 } })
+// B nhận lỗi WriteConflict (code 112, errorLabels: TransientTransactionError)
+s.commitTransaction()   // ở A;  B: s.abortTransaction()</code></pre></li>
+<li>Thử thêm: B ghi <b>ngoài</b> transaction trong lúc A chưa commit. Quan sát B chờ A xong rồi mới chạy.</li>
+<li>(Tùy chọn) Script PHP <code>bench/t5/mongo_conflict.php</code> dùng <code>MongoDB\with_transaction()</code> (thư viện tự retry lỗi tạm thời), đếm số lần retry.</li>
+</ol>
+<h4>File</h4>
+<ul class="files"><li><code>bench/t5/mongo_conflict.php</code> MỚI (tùy chọn)</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4>
+<ul>
+<li>Conditional update gọi 12 lần trên stock 10: 10 lần <code>modifiedCount: 1</code>, 2 lần <code>0</code>; stock cuối 0.</li>
+<li>Chụp được lỗi WriteConflict cho báo cáo. Xóa collection tạm: <code>db.t5_stock.drop()</code>.</li>
+</ul>
+<h4>Lỗi hay gặp</h4>
+<ul><li>Chạy transaction trên Mongo không phải replica set: lỗi "Transaction numbers are only allowed on a replica set member". Project đã chạy <code>rs0</code>, nên lỗi này nghĩa là bạn đang nối nhầm instance.</li></ul>
 </div>
 </article>
 </div>
 </section>
+
 <section id="thi-nghiem">
 <h2>Thí nghiệm</h2>
 <h3>1. Race trừ kho</h3>
 <div class="tbl"><table>
-<thead><tr><th>Thí nghiệm</th><th>Biến thay đổi</th><th>Cố định</th><th>Số lần</th></tr></thead>
+<thead><tr><th>Thí nghiệm</th><th>Biến thay đổi</th><th>Cố định</th><th>Số lần</th><th>CSV</th></tr></thead>
 <tbody>
-<tr><td>A. Demo chính</td><td>4 chiến lược</td><td>kho 10, N=100, 1 SKU nóng</td><td>10 lần mỗi chiến lược</td></tr>
-<tr><td>B. Quét đồng thời</td><td>N = 10 / 50 / 100 / 200</td><td>kho 10, hot</td><td>5 lần mỗi ô</td></tr>
-<tr><td>C. Hot vs spread</td><td>1 SKU vs 100 SKU (<code>bench-s001..s100</code>, kho 10 mỗi SKU)</td><td>N = 10 / 50 / 100 / 200</td><td>5 lần mỗi ô</td></tr>
+<tr><td>A. Demo chính</td><td>4 chiến lược</td><td>kho 10, N=100, 1 SKU nóng</td><td>10 lần mỗi chiến lược (40)</td><td><code>t5_race_&lt;size&gt;.csv</code></td></tr>
+<tr><td>B. Quét đồng thời</td><td>N = 10 / 50 / 100 / 200</td><td>kho 10, hot</td><td>5 lần mỗi ô (80)</td><td><code>t5_race_&lt;size&gt;.csv</code></td></tr>
+<tr><td>C. Hot vs spread</td><td>1 SKU vs 50 SKU (kho 10 mỗi SKU)</td><td>N = 10 / 50 / 100 / 200</td><td>5 lần mỗi ô (80)</td><td><code>t5_spread_&lt;size&gt;.csv</code></td></tr>
 </tbody>
 </table></div>
-<p>Đo mỗi lần: số đơn thành công, out_of_stock, conflict (hết retry), lỗi khác, tồn kho cuối, có bán vượt hay không, throughput (request/giây), p50/p95 (ms), tổng retry, số deadlock (<code>pg_stat_database.deadlocks</code> sau reset).</p>
+<p><code>&lt;size&gt;</code> là size dữ liệu đã seed (<code>small</code>, <code>10k</code>, <code>100k</code>). Tranh chấp 1 dòng gần như không phụ thuộc kích thước bảng, nên <code>small</code> là đủ cho A và B; nếu còn thời gian, chạy lại B ở <code>10k</code> để so.</p>
+<p>Đo mỗi lần: số đơn thành công, out_of_stock, conflict (hết retry), lỗi khác, tồn kho cuối, có bán vượt không, throughput, p50/p95 (ms), tổng retry, số deadlock.</p>
+
 <h4>Lệnh cho 1 lần chạy</h4>
-<pre><code># 0. Bật môi trường bench (APP_ENV=bench, max_connections=250, giới hạn CPU/RAM)
-docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d --build
-docker compose exec app composer db:reset -- --size=small
+<pre><code># 0. Bật cấu hình bench (max_connections=250, BENCH_ENDPOINT=1, Apache 240 worker)
+docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d
+docker compose run --rm seed php database/seed/seed.php --force --size=small
+mkdir -p bench/results/raw
 
 # 1. Reset kho trước MỖI lần chạy
-docker compose exec -T postgres psql -U vinfast -d vinfast -v stock=10 -f /bench/t5/reset.sql
+docker compose exec -T postgres psql -U vinfast -d vinfast \
+  -v pid=189 -v vid=189-TRANG-M -v stock=10 &lt; bench/t5/reset.sql
 
-# 2. Bắn 100 request cùng lúc (service k6 dùng image grafana/k6, profile bench)
-docker compose --profile bench run --rm k6 run /bench/t5/checkout_race.js \
-  -e STRATEGY=pessimistic -e N=100 -e MODE=hot -e RUN=1 -e BASE=http://app
+# 2. Bắn 100 request cùng lúc
+docker compose -f docker-compose.yml -f docker-compose.bench.yml --profile bench run --rm \
+  -e STRATEGY=pessimistic -e N=100 -e MODE=hot -e RUN=1 k6 run /bench/t5/checkout_race.js
 
 # 3. Kiểm tra bất biến
-docker compose exec -T postgres psql -U vinfast -d vinfast -v pid=bench-hot -v initial=10 -f /bench/t5/verify.sql
+docker compose exec -T postgres psql -U vinfast -d vinfast -At -F, \
+  -v pid=189 -v vid=189-TRANG-M -v initial=10 &lt; bench/t5/verify.sql
 
 # 4. Ghi CSV
 docker compose exec app php bench/t5/collect.php \
-  bench/results/raw/t5_pessimistic_hot_100_1.json pessimistic hot 100 1
+  --raw=bench/results/raw/t5_pessimistic_hot_100_1.json --verify="0,10,10,PASS,0" \
+  --experiment=A_demo --strategy=pessimistic --mode=hot --n=100 --run=1 --size=small</code></pre>
+<pre><code># bench/t5/run_matrix.sh (rút gọn)
+DC="docker compose -f docker-compose.yml -f docker-compose.bench.yml"
+for s in pessimistic optimistic atomic naive; do
+  for run in $(seq 1 10); do
+    $DC exec -T postgres psql -U vinfast -d vinfast -q -v pid=189 -v vid=189-TRANG-M -v stock=10 &lt; bench/t5/reset.sql
+    $DC --profile bench run --rm -e STRATEGY=$s -e N=100 -e MODE=hot -e RUN=$run k6 run -q /bench/t5/checkout_race.js
+    V=$($DC exec -T postgres psql -U vinfast -d vinfast -At -F, -v pid=189 -v vid=189-TRANG-M -v initial=10 &lt; bench/t5/verify.sql)
+    $DC exec -T app php bench/t5/collect.php --raw=bench/results/raw/t5_${s}_hot_100_${run}.json \
+      --verify="$V" --experiment=A_demo --strategy=$s --mode=hot --n=100 --run=$run --size=small
+  done
+done</code></pre>
 
-# Toàn bộ ma trận
-bash bench/t5/run_matrix.sh   # STRATEGIES="pessimistic optimistic atomic naive" NS="10 50 100 200" RUNS=10</code></pre>
-<h4>Định dạng <code>bench/results/t5_race.csv</code></h4>
+<h4>Cột của <code>t5_race_&lt;size&gt;.csv</code> và <code>t5_spread_&lt;size&gt;.csv</code></h4>
 <div class="tbl"><table>
 <thead><tr><th>Cột</th><th>Ý nghĩa</th></tr></thead>
 <tbody>
-<tr><td><code>run_id, ts, git_sha, dataset</code></td><td>Cột chung của <code>bench/lib/Csv.php</code></td></tr>
+<tr><td><code>ts, git_sha, size</code></td><td>Thời điểm chạy, commit đang dùng (<code>git rev-parse --short HEAD</code>), size dữ liệu</td></tr>
 <tr><td><code>experiment</code></td><td><code>A_demo</code> | <code>B_sweep</code> | <code>C_spread</code></td></tr>
 <tr><td><code>strategy, mode, concurrency, initial_stock, run_no</code></td><td>Tham số lần chạy</td></tr>
-<tr><td><code>requests, ok, out_of_stock, conflict, errors</code></td><td>Từ counter của k6</td></tr>
-<tr><td><code>final_stock, sold_qty, oversold, conservation</code></td><td>Từ <code>verify.sql</code>; <code>oversold = max(0, ok - initial_stock)</code> (chế độ hot)</td></tr>
+<tr><td><code>requests, ok, out_of_stock, conflict, errors</code></td><td>Từ counter <code>r_*</code> của k6</td></tr>
+<tr><td><code>final_stock, sold_qty, oversold, conservation</code></td><td>Từ <code>verify.sql</code>; <code>oversold = max(0, sold_qty - initial_stock)</code></td></tr>
 <tr><td><code>retries, deadlocks</code></td><td>Tổng retry trong response; deadlocks từ <code>pg_stat_database</code></td></tr>
-<tr><td><code>duration_s, throughput_rps, p50_ms, p95_ms, max_ms</code></td><td>Từ <code>http_req_duration</code> và thời gian scenario</td></tr>
+<tr><td><code>duration_s, throughput_rps, p50_ms, p95_ms, max_ms</code></td><td>Từ <code>http_req_duration</code>, <code>http_reqs</code> và <code>state.testRunDurationMs</code> trong JSON k6</td></tr>
 </tbody>
 </table></div>
-<p>Biểu đồ: xem T5-18.</p>
-<h4>Cấu hình máy chủ khi đo</h4>
-<p>Apache prefork <code>MaxRequestWorkers 250</code>; PG <code>max_connections=250</code> (master plan ghi 200, không đủ cho N=200, xem T5-16). <code>bench.php</code> không session (session PHP xếp hàng request cùng user), mỗi VU 1 <code>user_id</code>. Không Xdebug, named volume, cùng giới hạn CPU/RAM.</p>
+
 <h3>2. Isolation trên giỏ hàng</h3>
-<p>Chuẩn bị: 1 dòng <code>cart_items</code> có <code>id = 1</code>, <code>quantity = 1</code>. Hai người cùng bấm "+1" trên cùng 1 giỏ (ví dụ 2 tab). Kỳ vọng cuối: 3.</p>
+<p>Chuẩn bị: 1 dòng <code>cart_items</code> có <code>quantity = 1</code> (xem T5-19). Hai tab cùng bấm "+1". Kỳ vọng cuối: 3.</p>
 <div class="tbl"><table>
 <thead><tr><th>#</th><th>Kịch bản</th><th>Isolation</th><th>Kết quả mong đợi</th></tr></thead>
 <tbody>
-<tr><td>01</td><td>Đọc-sửa-ghi: <code>SELECT quantity</code> rồi <code>UPDATE … SET quantity = :q_moi</code></td><td>READ COMMITTED</td><td>Lost update: cuối = 2</td></tr>
-<tr><td>02</td><td><code>UPDATE … SET quantity = quantity + 1</code></td><td>READ COMMITTED</td><td>= 3; B chờ khóa dòng rồi cộng trên giá trị mới</td></tr>
-<tr><td>03</td><td><code>SELECT … FOR UPDATE</code> rồi đọc-sửa-ghi</td><td>READ COMMITTED</td><td>= 3; B bị chặn ở SELECT tới khi A commit</td></tr>
-<tr><td>04</td><td>Đọc-sửa-ghi</td><td>REPEATABLE READ</td><td>B nhận <code>ERROR 40001 could not serialize access due to concurrent update</code>; retry → 3</td></tr>
+<tr><td>01</td><td>Đọc-sửa-ghi: <code>SELECT quantity</code> rồi <code>UPDATE … SET quantity = :q_moi</code></td><td>Read Committed</td><td>Lost update: cuối = 2</td></tr>
+<tr><td>02</td><td><code>UPDATE … SET quantity = quantity + 1</code></td><td>Read Committed</td><td>= 3; B chờ khóa dòng rồi cộng trên giá trị mới</td></tr>
+<tr><td>03</td><td><code>SELECT … FOR UPDATE</code> rồi đọc-sửa-ghi</td><td>Read Committed</td><td>= 3; B bị chặn ở SELECT tới khi A commit</td></tr>
+<tr><td>04</td><td>Đọc-sửa-ghi</td><td>Repeatable Read</td><td>B nhận lỗi 40001; retry → 3</td></tr>
 <tr><td>05</td><td>Non-repeatable read: A đọc 2 lần, B cập nhật + commit ở giữa</td><td>RC vs RR</td><td>RC: 2 lần đọc khác nhau; RR: giống nhau</td></tr>
-<tr><td>06</td><td>Dirty read: B sửa chưa commit, A đọc</td><td>READ UNCOMMITTED</td><td>A không thấy giá trị chưa commit (PG chạy như READ COMMITTED)</td></tr>
+<tr><td>06</td><td>Dirty read: B sửa chưa commit, A đọc</td><td>Read Uncommitted</td><td>A không thấy giá trị chưa commit</td></tr>
+<tr><td>07</td><td>Write skew: quy tắc "luôn còn ít nhất 1 áo polo trắng (size M hoặc L) để trưng bày". A và B cùng thấy tổng 2, A trừ size M, B trừ size L</td><td>RR vs Serializable</td><td>RR: cả 2 commit, tổng còn 0 (vi phạm). Serializable: 1 bên nhận 40001</td></tr>
 </tbody>
 </table></div>
-<pre><code>-- 01_lost_update: chạy song song 2 terminal psql (A, B), theo thứ tự bước
--- [1] A: BEGIN ISOLATION LEVEL READ COMMITTED; SELECT quantity FROM cart_items WHERE id = 1;  -- 1
--- [2] B: BEGIN ISOLATION LEVEL READ COMMITTED; SELECT quantity FROM cart_items WHERE id = 1;  -- 1
--- [3] A: UPDATE cart_items SET quantity = 2 WHERE id = 1; COMMIT;
--- [4] B: UPDATE cart_items SET quantity = 2 WHERE id = 1; COMMIT;
--- [5]    SELECT quantity FROM cart_items WHERE id = 1;   -- 2 (mất 1 lần +1)
--- 04: như trên với REPEATABLE READ; bước [4] của B:
---     ERROR: could not serialize access due to concurrent update (40001) → ROLLBACK, chạy lại → 3
--- 05: [1] A: BEGIN; SELECT quantity … -- 1   [2] B: UPDATE … SET quantity = 5 (autocommit)
---     [3] A: SELECT quantity … -- 5 ở RC (non-repeatable read), vẫn 1 ở RR</code></pre>
-<p>Kịch bản 02 và 03 làm B bị chặn, nên trong <code>run.php</code> chạy B bằng tiến trình riêng (<code>proc_open</code>) rồi đợi. Khi demo tay thì dùng 2 terminal psql.</p>
-<p><code>t5_isolation.csv</code>: <code>run_id, ts, scenario, isolation, expected, observed, errors_40001, retries, pass</code>.</p>
-</section>
-<section id="report">
-<h2>Báo cáo và demo</h2>
-<h3>Dàn ý chương Concurrency control</h3>
+<pre><code>-- 07_write_skew: đặt stock 2 dòng 189-TRANG-M và 189-TRANG-L = 1 trước khi chạy
+-- [1] A: BEGIN ISOLATION LEVEL SERIALIZABLE;
+--        SELECT sum(stock) FROM inventory WHERE product_id='189' AND variant_id IN ('189-TRANG-M','189-TRANG-L');  -- 2
+-- [2] B: (như A) -- 2
+-- [3] A: UPDATE inventory SET stock = stock - 1 WHERE product_id='189' AND variant_id='189-TRANG-M'; COMMIT;
+-- [4] B: UPDATE inventory SET stock = stock - 1 WHERE product_id='189' AND variant_id='189-TRANG-L'; COMMIT;
+--        Serializable: ERROR could not serialize access ... (40001).  Repeatable Read: thành công, tổng = 0</code></pre>
+<p>Cột của <code>t5_isolation_&lt;size&gt;.csv</code>: <code>ts, scenario, isolation, expected, observed, errors_40001, retries, pass</code>.</p>
+
+<h3>3. Dàn ý chương báo cáo</h3>
 <ol>
-<li><b>Race condition.</b> Đọc-kiểm tra-ghi không nguyên tử gây bán vượt, lost update; mở đầu bằng kết quả naive (thí nghiệm A).</li>
-<li><b>Khóa trong PG.</b> Strict 2PL; khóa dòng <code>FOR UPDATE</code>, UPDATE tự lấy khóa dòng; phát hiện deadlock (40P01) và tránh bằng thứ tự khóa cố định.</li>
-<li><b>MVCC.</b> <code>xmin/xmax</code>, đọc không chặn ghi; snapshot theo câu lệnh (RC) và theo transaction (RR); UPDATE dưới RC đánh giá lại WHERE sau khi chờ khóa (nền của atomic và optimistic).</li>
-<li><b>So sánh 4 chiến lược.</b> Tính đúng, throughput, p95, retry, deadlock, độ phức tạp. Optimistic hợp khi ít tranh chấp, kém khi 1 SKU nóng; pessimistic xếp hàng nhưng không retry; atomic gọn nhất. Vai trò CHECK <code>stock &gt;= 0</code>.</li>
-<li><b>Isolation level và hiện tượng bất thường.</b> Bảng dưới + kết quả 6 kịch bản giỏ hàng.</li>
-<li><b>Hạn chế, mở rộng.</b> Luồng <code>reserved</code>, SERIALIZABLE (SSI) cho write skew, so sánh <code>findOneAndUpdate</code> có điều kiện trên Mongo.</li>
+<li><b>Race condition.</b> Đọc-kiểm tra-ghi không nguyên tử gây bán vượt, lost update. Mở đầu bằng kết quả naive (thí nghiệm A).</li>
+<li><b>Khóa trong PostgreSQL.</b> Khóa dòng <code>FOR UPDATE</code>; UPDATE tự lấy khóa dòng; giữ khóa tới commit; deadlock (40P01) và cách tránh bằng thứ tự khóa cố định.</li>
+<li><b>MVCC.</b> <code>xmin/xmax</code>; đọc không chặn ghi; snapshot theo câu lệnh (RC) và theo transaction (RR); UPDATE ở RC đánh giá lại WHERE sau khi chờ khóa.</li>
+<li><b>So sánh 4 chiến lược.</b> Tính đúng, throughput, p95, retry, deadlock, độ phức tạp code. Vai trò CHECK <code>stock &gt;= 0</code>.</li>
+<li><b>Isolation level và hiện tượng bất thường.</b> Bảng ở phần Kiến thức + kết quả 7 kịch bản.</li>
+<li><b>Hạn chế, mở rộng.</b> Luồng <code>reserved</code>, Serializable cho write skew, so sánh với MongoDB (T5-22).</li>
 </ol>
-<div class="tbl"><table>
-<thead><tr><th>Hiện tượng</th><th>READ COMMITTED</th><th>REPEATABLE READ</th><th>SERIALIZABLE</th></tr></thead>
-<tbody>
-<tr><td>Dirty read</td><td>Không</td><td>Không</td><td>Không</td></tr>
-<tr><td>Non-repeatable read</td><td>Có</td><td>Không</td><td>Không</td></tr>
-<tr><td>Phantom read</td><td>Có</td><td>Không (PG chặt hơn chuẩn SQL)</td><td>Không</td></tr>
-<tr><td>Lost update (đọc-sửa-ghi)</td><td>Có</td><td>Không, báo 40001</td><td>Không, báo 40001</td></tr>
-<tr><td>Write skew</td><td>Có</td><td>Có</td><td>Không, báo 40001</td></tr>
-</tbody>
-</table></div>
-<p>READ UNCOMMITTED trong PostgreSQL hoạt động như READ COMMITTED, nên cột này không có trong bảng.</p>
-<h3>Kịch bản demo 10 phút</h3>
+
+<h3>4. Kịch bản demo 10 phút</h3>
 <div class="tbl"><table>
 <thead><tr><th>Phút</th><th>Nội dung</th><th>Lệnh / màn hình</th></tr></thead>
 <tbody>
-<tr><td>0–1</td><td>Bài toán: kho 10, 100 người mua cùng lúc</td><td><code>SELECT * FROM inventory WHERE product_id='bench-hot'</code></td></tr>
-<tr><td>1–3</td><td>Naive: bán vượt hoặc lost update</td><td><code>bash bench/t5/demo.sh race naive</code> → ok &gt; 10, conservation FAIL</td></tr>
+<tr><td>0–1</td><td>Bài toán: 10 áo polo trắng size M, 100 người mua cùng lúc</td><td><code>SELECT * FROM inventory WHERE variant_id = '189-TRANG-M'</code></td></tr>
+<tr><td>1–3</td><td>Naive: bán vượt</td><td><code>bash bench/t5/demo.sh race naive</code> → ok &gt; 10, conservation FAIL</td></tr>
 <tr><td>3–5</td><td>Pessimistic và atomic: đúng 10, kho 0</td><td><code>demo.sh race pessimistic</code>, <code>demo.sh race atomic</code></td></tr>
 <tr><td>5–6</td><td>Optimistic: đúng 10, chỉ ra số retry</td><td><code>demo.sh race optimistic</code></td></tr>
-<tr><td>6–7</td><td>Biểu đồ throughput/p95 theo mức đồng thời, hot vs spread</td><td><code>bench/results/t5/*.png</code></td></tr>
-<tr><td>7–9</td><td>Isolation giỏ hàng: lost update (01) rồi REPEATABLE READ báo 40001 (04)</td><td>2 terminal psql</td></tr>
-<tr><td>9–10</td><td>Admin sửa tồn kho ở 2 tab → tab sau báo xung đột; tóm tắt</td><td><code>/admin/inventory</code></td></tr>
+<tr><td>6–7</td><td>Biểu đồ throughput/p95 theo N, hot vs spread</td><td><code>bench/results/t5/*.png</code></td></tr>
+<tr><td>7–9</td><td>Isolation: lost update (01), Repeatable Read báo 40001 (04)</td><td>2 tab psql</td></tr>
+<tr><td>9–10</td><td>Admin sửa tồn kho bị báo xung đột; tóm tắt</td><td><code>/admin/products</code></td></tr>
 </tbody>
 </table></div>
 </section>
+
+<section id="phoi-hop">
+<h2>Phối hợp với topic khác</h2>
+<div class="callout"><b>Không đổi chữ ký hàm</b> <code>InventoryService::decrement(PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null): void</code>. T4 đã code theo chữ ký này. Muốn thêm tùy chọn, dùng biến môi trường (<code>INVENTORY_STRATEGY</code>, <code>INVENTORY_MAX_RETRIES</code>, <code>INVENTORY_LOCK_WAIT</code>, <code>NAIVE_SLEEP_US</code>).</div>
+<div class="tbl"><table>
+<thead><tr><th>Bên</th><th>Thỏa thuận</th></tr></thead>
+<tbody>
+<tr><td>T4 → T5</td><td><code>OrderService</code> gọi <code>decrement()</code> <b>bên trong</b> transaction của nó (Read Committed), sắp item theo <code>(product_id, variant_id)</code> trước khi trừ, retry cả transaction tối đa 3 lần khi gặp <code>ConcurrentUpdateException</code>, rollback và báo "hết hàng" khi gặp <code>OutOfStockException</code>.</td></tr>
+<tr><td>T5 → T4</td><td><code>decrement()</code> không tự BEGIN/COMMIT, chỉ ném 2 exception trên (cộng <code>InvalidArgumentException</code>/<code>LogicException</code> khi gọi sai). Báo T4 trước khi merge chiến lược thật để T4 chạy lại test checkout.</td></tr>
+<tr><td>T3</td><td><code>InventoryService::lowStock(int $limit = 10): array</code> trả <code>product_id, variant_id, stock, reserved</code>; T3 tự ghép tên sản phẩm từ Mongo.</td></tr>
+<tr><td>T1</td><td>Sửa <code>Product::updateWithVariants()</code> cho T5-14 (gọi <code>setStock</code> có version). Tạo variant mới vẫn dùng <code>InventoryService::ensureRows()</code> như hiện tại.</td></tr>
+<tr><td>T2</td><td>UNIQUE <code>(product_id, variant_id)</code> đã là index B-tree cho câu trừ kho; không tạo index trùng.</td></tr>
+<tr><td>Cả nhóm</td><td>Dùng chung <code>docker-compose.bench.yml</code>. Thêm env/volume vào đó thì báo nhóm. CSV theo quy ước <code>bench/results/&lt;topic&gt;_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code>.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="thuat-ngu">
+<h2>Thuật ngữ</h2>
+<div class="card">
+<dl class="gloss">
+<dt>Transaction</dt><dd>Nhóm câu lệnh chạy "tất cả hoặc không gì cả", kết thúc bằng COMMIT hoặc ROLLBACK.</dd>
+<dt>Race condition</dt><dd>Kết quả sai hay đúng tùy vào thứ tự chạy của các giao dịch đồng thời.</dd>
+<dt>Lost update</dt><dd>Lần ghi sau đè mất lần ghi trước vì cả hai cùng dựa trên giá trị cũ.</dd>
+<dt>Bán vượt (oversell)</dt><dd>Số đơn thành công lớn hơn số hàng có trong kho.</dd>
+<dt>MVCC</dt><dd>Lưu nhiều phiên bản của 1 dòng để người đọc không phải chờ người ghi.</dd>
+<dt>Snapshot</dt><dd>"Ảnh chụp" dữ liệu đã commit mà 1 câu lệnh (RC) hoặc 1 transaction (RR) nhìn thấy.</dd>
+<dt>Isolation level</dt><dd>Mức cách ly giữa các transaction: Read Committed, Repeatable Read, Serializable.</dd>
+<dt>Row lock</dt><dd>Khóa trên 1 dòng; UPDATE/DELETE/SELECT FOR UPDATE lấy khóa này, giữ tới khi kết thúc transaction.</dd>
+<dt>Pessimistic locking</dt><dd>Khóa trước rồi mới làm; ai đến sau phải chờ.</dd>
+<dt>Optimistic locking</dt><dd>Không khóa khi đọc; khi ghi kiểm tra version, sai thì thử lại.</dd>
+<dt>Atomic conditional update</dt><dd>1 câu UPDATE vừa kiểm tra điều kiện vừa ghi, không có khe hở.</dd>
+<dt>Deadlock</dt><dd>Hai giao dịch chờ khóa của nhau; PG hủy 1 bên với lỗi 40P01.</dd>
+<dt>Backoff, jitter</dt><dd>Chờ tăng dần trước khi thử lại, cộng thêm thời gian ngẫu nhiên để tránh thử lại đồng loạt.</dd>
+<dt>Write skew</dt><dd>Hai giao dịch đọc cùng dữ liệu, ghi vào 2 dòng khác nhau, cùng nhau phá vỡ 1 quy tắc.</dd>
+<dt>SQLSTATE</dt><dd>Mã lỗi 5 ký tự chuẩn SQL: 40001 serialization_failure, 40P01 deadlock_detected, 55P03 lock_not_available, 23514 check_violation.</dd>
+<dt>VU (k6)</dt><dd>Virtual user: 1 "người dùng ảo" chạy script song song với các VU khác.</dd>
+<dt>Throughput</dt><dd>Số request xử lý được mỗi giây.</dd>
+<dt>p50 / p95</dt><dd>50% / 95% request có thời gian phản hồi nhỏ hơn hoặc bằng giá trị này.</dd>
+<dt>WriteConflict</dt><dd>Lỗi MongoDB khi 2 transaction cùng sửa 1 document; cần chạy lại transaction.</dd>
+</dl>
+</div>
+</section>
+
 <section id="dod">
 <h2>Definition of Done</h2>
 <ul class="dod">
-<li>SiteSetting, PageAsset, AboutAward, Faq, FaqTopic chạy trên PG; smoke test FAQ, Page content, Settings, <code>/faq</code>, <code>/about</code> đạt.</li>
-<li><code>composer db:reset -- --size=small|10k|100k</code> chạy được; 2 lần seed cùng size cho checksum giống nhau.</li>
-<li>Khung <code>bench/</code> và <code>bench/README.md</code> đã merge, các topic khác dùng chung <code>Csv.php</code>.</li>
-<li>Hợp đồng <code>InventoryService::decrement</code> merge ngày 1 tuần 3; chữ ký đúng master plan.</li>
-<li>Pessimistic, optimistic, atomic: đúng 10 đơn, tồn kho cuối 0, không âm, 10/10 lần chạy.</li>
-<li>Naive cho thấy bán vượt / lost update trong CSV; biến thể có CHECK bị chặn với lỗi 23514.</li>
-<li>Mọi deadlock (40P01) và lỗi 40001/55P03 được chuyển thành <code>ConcurrentUpdateException</code> và retry; không có lỗi 500 trong lần đo.</li>
-<li>Admin tồn kho từ chối lưu đè khi version đã cũ; cột tồn kho hiện trong danh sách sản phẩm.</li>
-<li><code>Inventory::lowStock</code> đã giao cho T3 và dashboard dùng được.</li>
-<li><code>bench/results/t5_race.csv</code>, <code>t5_isolation.csv</code> và 5 biểu đồ đã commit.</li>
-<li>Chương báo cáo xong, đã đọc chéo; demo 10 phút tập ít nhất 2 lần, <code>demo.sh</code> chạy trên máy sạch.</li>
+<li>Đã làm phần "Bắt đầu trong 30 phút" và tự trả lời câu hỏi của các task "Đã làm sẵn".</li>
+<li><code>decrement()</code> cài đủ 4 chiến lược, chữ ký không đổi, bắt buộc chạy trong transaction.</li>
+<li>Pessimistic, optimistic, atomic: đúng 10 đơn, tồn kho cuối 0, không âm, 10/10 lần chạy (có trong CSV).</li>
+<li>Naive cho thấy bán vượt (<code>ok &gt; 10</code>, <code>conservation = FAIL</code>) trong CSV.</li>
+<li>Mọi lỗi 40001, 40P01, 55P03 thành <code>ConcurrentUpdateException</code> và được retry; không có HTTP 500 trong các lần đo.</li>
+<li><code>bench.php</code> chỉ bật qua <code>docker-compose.bench.yml</code>; trả 404 ở cấu hình thường.</li>
+<li>Admin sửa tồn kho bằng version, không ghi đè; cột tồn kho hiện trong danh sách sản phẩm; <code>lowStock</code> đã giao T3.</li>
+<li><code>bench/results/t5_race_&lt;size&gt;.csv</code>, <code>t5_spread_&lt;size&gt;.csv</code>, <code>t5_isolation_&lt;size&gt;.csv</code> và 5 biểu đồ đã commit; mọi số trong báo cáo truy được về CSV.</li>
+<li>Chương báo cáo xong, đã đọc chéo; demo 10 phút tập ít nhất 2 lần; <code>demo.sh</code> chạy trên máy sạch.</li>
 </ul>
 </section>
 
-
-<footer>Nguồn: docs/hybrid-db-plan.html (quyết định 1–14, hợp đồng T4 ↔ T5, bảng port, thứ tự merge) và code hiện tại của repo. Số dòng tham chiếu theo commit 781921a. Mục có nhãn DDL cần đối chiếu lại khi có file schema tối nay.</footer>
+<footer>Nguồn: docs/hybrid-db-plan.html (hợp đồng T4 ↔ T5) và code hiện tại của repo (sau Phase 0/0.5: PostgreSQL 16 + MongoDB 7 chạy trong Docker). Số dòng trong file là gần đúng, tìm theo tên hàm nếu lệch. Id sản phẩm 189 lấy từ seed cơ bản hiện tại; kiểm tra lại trên máy bạn.</footer>
 </div>
 
 <script>
@@ -1105,7 +1376,7 @@ bash bench/t5/run_matrix.sh   # STRATEGIES="pessimistic optimistic atomic naive"
     var c = {todo:0, doing:0, done:0};
     tasks.forEach(function(t){
       var id = t.getAttribute('data-task');
-      var s = (state[id] && state[id].status) || 'todo';
+      var s = (state[id] && state[id].status) || t.getAttribute('data-default') || 'todo';
       c[s]++;
       t.setAttribute('data-status', s);
       var sel = document.getElementById('st-' + id);
