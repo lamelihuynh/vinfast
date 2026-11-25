@@ -19,7 +19,6 @@ x-db-env: &db-env
   MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0
   MONGO_DB: vinfast
   APP_ENV: local
-  INVENTORY_STRATEGY: pessimistic
 
 services:
   postgres:

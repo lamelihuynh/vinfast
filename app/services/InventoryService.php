@@ -1,42 +1,22 @@
 <?php
 
-/**
- * app/services/InventoryService.php — Tồn kho (PostgreSQL: inventory)
- * Chủ file: T5 (Concurrency). Phase 0.5 chỉ dựng phần đọc + tạo dòng.
- *
- * Mỗi (product_id, variant_id) có 1 dòng. Số bán được = stock - reserved.
- *
- * Hợp đồng T4 <-> T5: decrement() — T4 gọi trong transaction của OrderService; T5 thay phần thân
- * bằng 4 chiến lược (pessimistic | optimistic | atomic | naive), chọn qua tham số hoặc env INVENTORY_STRATEGY.
- */
+/** Tồn kho PostgreSQL: số lượng có thể bán là stock - reserved. */
 class InventoryService
 {
-    public const STRATEGIES = ['pessimistic', 'optimistic', 'atomic', 'naive'];
-
-    /**
-     * Trừ $qty khỏi tồn kho của 1 phiên bản. Gọi BÊN TRONG transaction PG của người gọi ($pdo).
-     *
-     * @throws OutOfStockException       không đủ hàng (stock - reserved < qty) hoặc vi phạm CHECK 23514
-     * @throws ConcurrentUpdateException hết lượt retry / xung đột (40001, 40P01, 55P03)
-     *
-     * TODO(T5): hiện mọi strategy đều chạy bản 'atomic' (1 câu UPDATE có điều kiện) để T4 làm luồng
-     * checkout ngay được. T5 hiện thực pessimistic (SELECT ... FOR UPDATE), optimistic (cột version +
-     * retry có backoff), naive (đọc rồi ghi, để minh họa lost update) và giữ nguyên chữ ký hàm.
-     */
+    /** Luôn dùng atomic trong transaction của T4. $strategy chỉ giữ để tương thích chữ ký cũ. */
     public static function decrement(PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null): void
     {
         if ($qty <= 0) {
             throw new InvalidArgumentException('qty phải > 0');
         }
-        $strategy = $strategy ?? Db::env('INVENTORY_STRATEGY', 'atomic');
-        if (!in_array($strategy, self::STRATEGIES, true)) {
-            throw new InvalidArgumentException("Strategy không hợp lệ: {$strategy}");
+        if (!$pdo->inTransaction()) {
+            throw new LogicException('decrement() phải chạy trong transaction tạo đơn.');
         }
 
         try {
             $stmt = $pdo->prepare('UPDATE inventory SET stock = stock - :qty, version = version + 1
-                WHERE product_id = :pid AND variant_id = :vid AND stock - reserved >= :qty');
-            $stmt->execute([':qty' => $qty, ':pid' => $productId, ':vid' => $variantId]);
+                WHERE product_id = :pid AND variant_id = :vid AND stock - reserved >= :required');
+            $stmt->execute([':qty' => $qty, ':required' => $qty, ':pid' => $productId, ':vid' => $variantId]);
         } catch (PDOException $e) {
             $state = (string)($e->errorInfo[0] ?? $e->getCode());
             if ($state === '23514') {
@@ -53,26 +33,24 @@ class InventoryService
         }
     }
 
-    /**
-     * Tạo dòng tồn kho cho các variant (nếu chưa có) và đặt stock.
-     * stock không bao giờ đặt thấp hơn reserved (CHECK reserved BETWEEN 0 AND stock).
-     *
-     * @param array<string,int|null> $stockByVariant variantId => stock (null = giữ nguyên, dòng mới = 0)
-     */
+    /** Chỉ cho phép đặt lại tồn kho nếu Admin đang sửa đúng phiên bản đã đọc. */
+    public static function setStock(string $productId, string $variantId, int $newStock, int $expectedVersion): bool
+    {
+        $stmt = Db::pg()->prepare('UPDATE inventory SET stock = ?, version = version + 1
+            WHERE product_id = ? AND variant_id = ? AND version = ? AND reserved <= ?');
+        $stmt->execute([$newStock, $productId, $variantId, $expectedVersion, $newStock]);
+        return $stmt->rowCount() === 1;
+    }
+
+    /** Tạo các dòng tồn kho mới; không cập nhật SKU đã tồn tại bằng số tồn thiếu version. */
     public static function ensureRows(string $productId, array $stockByVariant): void
     {
-        $pdo = Db::pg();
-        $insert = $pdo->prepare('INSERT INTO inventory (product_id, variant_id, stock) VALUES (?, ?, ?)
+        $insert = Db::pg()->prepare('INSERT INTO inventory (product_id, variant_id, stock) VALUES (?, ?, ?)
             ON CONFLICT (product_id, variant_id) DO NOTHING');
-        $update = $pdo->prepare('UPDATE inventory SET stock = GREATEST(?, reserved), version = version + 1
-            WHERE product_id = ? AND variant_id = ? AND stock <> GREATEST(?, reserved)');
-
         foreach ($stockByVariant as $variantId => $stock) {
-            $variantId = (string)$variantId;
-            $insert->execute([$productId, $variantId, max(0, (int)$stock)]);
-            if ($stock !== null) {
-                $stock = max(0, (int)$stock);
-                $update->execute([$stock, $productId, $variantId, $stock]);
+            $insert->execute([$productId, (string)$variantId, max(0, (int)$stock)]);
+            if ($insert->rowCount() !== 1) {
+                throw new ConcurrentUpdateException("SKU đã tồn tại: {$variantId}");
             }
         }
     }
@@ -90,14 +68,15 @@ class InventoryService
         Db::pg()->prepare($sql)->execute($params);
     }
 
-    /** @return array<string,array{stock:int,reserved:int,available:int}> variantId => số liệu */
+    /** @return array<string,array{stock:int,reserved:int,available:int,version:int}> variantId => số liệu */
     public static function byProduct(string $productId): array
     {
-        $stmt = Db::pg()->prepare('SELECT variant_id, stock, reserved FROM inventory WHERE product_id = ?');
+        $stmt = Db::pg()->prepare('SELECT variant_id, stock, reserved, version FROM inventory WHERE product_id = ?');
         $stmt->execute([$productId]);
         $out = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $out[(string)$row['variant_id']] = [
+                'version' => (int)$row['version'],
                 'stock' => (int)$row['stock'],
                 'reserved' => (int)$row['reserved'],
                 'available' => (int)$row['stock'] - (int)$row['reserved'],

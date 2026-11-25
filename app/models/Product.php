@@ -775,24 +775,40 @@ class Product
             return false;
         }
 
-        $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
-            'categoryID' => (int)$data['category_id'],
-            'name' => (string)$data['name'],
-            'slug' => (string)$data['slug'],
-            'description' => $data['description'] ?? null,
-            'basePrice' => self::basePriceOf($variants),
-            'images' => array_values((array)($data['images'] ?? [])),
-            'isActive' => !empty($data['is_active']),
-            'attributes' => (object)(array)($data['attributes'] ?? []),
-            'variants' => $variants,
-            'updatedAt' => self::now(),
-        ]]);
-        if ($result->getMatchedCount() === 0) {
-            return false;
-        }
-
-        InventoryService::ensureRows((string)$id, $stock);
-        InventoryService::removeRowsExcept((string)$id, array_keys($stock));
-        return true;
+        return Db::transaction(static function (PDO $pdo) use ($id, $data, $stock, $variants) {
+            $rows = array_column($data['variants'], null, 'variant_id');
+            $new = [];
+            foreach ($stock as $vid => $qty) {
+                if (!isset($rows[$vid])) { // ID sinh từ tên cho phiên bản mới.
+                    $new[$vid] = $qty;
+                    continue;
+                }
+                if ($qty === null) {
+                    continue; // Không sửa tồn: không ghi và không kiểm tra version cũ.
+                }
+                $version = $rows[$vid]['version_orig'] ?? null;
+                if (!is_int($version) || $version < 0 || !InventoryService::setStock((string)$id, $vid, $qty, $version)) {
+                    throw new ConcurrentUpdateException("Tồn kho không còn khớp: {$vid}");
+                }
+            }
+            if ($new) {
+                InventoryService::ensureRows((string)$id, $new);
+            }
+            InventoryService::removeRowsExcept((string)$id, array_keys($stock));
+            $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
+                'categoryID' => (int)$data['category_id'],
+                'name' => (string)$data['name'],
+                'slug' => (string)$data['slug'],
+                'description' => $data['description'] ?? null,
+                'basePrice' => self::basePriceOf($variants),
+                'images' => array_values((array)($data['images'] ?? [])),
+                'isActive' => !empty($data['is_active']),
+                'attributes' => (object)(array)($data['attributes'] ?? []),
+                'variants' => $variants,
+                'updatedAt' => self::now(),
+            ]]);
+            if (!$result->getMatchedCount()) throw new ConcurrentUpdateException((string)$id);
+            return true;
+        });
     }
 }

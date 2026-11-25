@@ -240,6 +240,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var html = '<td>' +
       '<input type="hidden" name="' + prefix + '[variant_id]" class="variant-id" value="' + escapeHtml(v.variant_id || '') + '">' +
       '<input type="hidden" name="' + prefix + '[stock_orig]" class="variant-stock-orig" value="' + escapeHtml(v.stock_orig == null ? '' : v.stock_orig) + '">' +
+      '<input type="hidden" name="' + prefix + '[version_orig]" class="variant-version-orig" value="' + escapeHtml(v.version_orig == null ? '' : v.version_orig) + '">' +
       '<input type="hidden" name="' + prefix + '[reserved]" class="variant-reserved" value="' + reserved + '">' +
       '<input type="text" class="form-control form-control-sm variant-name" name="' + prefix + '[name]" maxlength="120" required value="' + escapeHtml(v.name || '') + '">' +
       (v.variant_id ? '<small class="text-muted">' + escapeHtml(v.variant_id) + '</small>' : '<small class="text-muted">Mới</small>') +
@@ -260,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    html += '<td><input type="number" min="0" step="1000" class="form-control form-control-sm variant-price" name="' + prefix + '[price]" required value="' + escapeHtml(v.price === undefined || v.price === null ? '' : v.price) + '"></td>' +
+    html += '<td><input type="number" min="0" step="1" class="form-control form-control-sm variant-price" name="' + prefix + '[price]" required value="' + escapeHtml(v.price === undefined || v.price === null ? '' : v.price) + '"></td>' +
       '<td><input type="number" min="0" step="1" class="form-control form-control-sm variant-stock" name="' + prefix + '[stock]" placeholder="' + (v.variant_id ? 'Giữ nguyên' : '0') + '" value="' + escapeHtml(hasStock ? v.stock : '') + '">' +
       (v.variant_id ? '<small class="text-muted d-block">Tồn: ' + escapeHtml(v.stock_orig === '' || v.stock_orig == null ? '—' : v.stock_orig) + ' · Đang giữ: ' + reserved + '</small>' : '') +
       '</td>' +
@@ -300,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       return {
         variant_id: tr.querySelector('.variant-id').value,
+        version_orig: tr.querySelector('.variant-version-orig').value,
         stock_orig: tr.querySelector('.variant-stock-orig').value,
         reserved: tr.querySelector('.variant-reserved').value,
         name: tr.getAttribute('data-name-touched') === '1' ? tr.querySelector('.variant-name').value : '',
