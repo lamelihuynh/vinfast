@@ -176,12 +176,23 @@ class Product
     // Filters
     // ------------------------------------------------------------------
 
+    private static function isTextSearch(array $filters): bool
+    {
+        return trim((string)($filters['search'] ?? '')) !== ''
+            && Db::env('SEARCH_MODE', 'regex') === 'text';
+    }
+
     private static function buildCatalogFilters(array $filters = []): array
     {
         $query = ['isActive' => true];
 
-        if (!empty($filters['search'])) {
-            $query['name'] = self::regex((string)$filters['search']);
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            if (self::isTextSearch($filters)) {
+                $query['$text'] = ['$search' => $search];
+            } else {
+                $query['name'] = self::regex($search);
+            }
         }
 
         if (!empty($filters['category_id'])) {
@@ -211,6 +222,18 @@ class Product
             }
         }
 
+        // T2-12: lọc thuộc tính động đã được controller whitelist theo category
+        if (!empty($filters['attrs']) && is_array($filters['attrs'])) {
+            foreach ($filters['attrs'] as $attrKey => $attrVal) {
+                if (!is_string($attrKey) || preg_match('/^[a-zA-Z][a-zA-Z0-9_]*$/', $attrKey) !== 1) {
+                    continue;
+                }
+                if (is_bool($attrVal) || is_int($attrVal) || is_float($attrVal) || (is_string($attrVal) && $attrVal !== '')) {
+                    $query['attributes.' . $attrKey] = $attrVal;
+                }
+            }
+        }
+
         return $query;
     }
 
@@ -223,7 +246,27 @@ class Product
         if ($sort === 'price_desc') {
             return ['basePrice' => -1, 'productID' => 1];
         }
+        if (self::isTextSearch($filters)) {
+            return ['score' => ['$meta' => 'textScore'], 'createdAt' => -1, 'productID' => 1];
+        }
         return ['createdAt' => -1, 'productID' => 1];
+    }
+
+    private static function catalogFindOptions(array $filters, ?int $page = null, ?int $perPage = null): array
+    {
+        $options = [
+            'sort' => self::catalogSort($filters),
+        ];
+        if (self::isTextSearch($filters) && ($filters['sort'] ?? 'default') === 'default') {
+            $options['projection'] = ['score' => ['$meta' => 'textScore']];
+        }
+        if ($page !== null && $perPage !== null) {
+            $page = max(1, $page);
+            $perPage = max(1, $perPage);
+            $options['skip'] = ($page - 1) * $perPage;
+            $options['limit'] = $perPage;
+        }
+        return $options;
     }
 
     private static function buildAdminFilters(array $filters = []): array
@@ -285,6 +328,38 @@ class Product
         return self::formatProduct(self::collection()->findOne(['productID' => (string)(int)$id]));
     }
 
+    /**
+     * Lấy nhiều sản phẩm bằng 1 query $in (dùng cho trang wishlist, tránh N+1).
+     * @return array<string, array> Map theo product_id
+     */
+    public static function getByIds(array $ids, bool $includeInactive = true): array
+    {
+        $uniqueIds = [];
+        foreach ($ids as $id) {
+            $str = trim((string)$id);
+            if ($str !== '' && !in_array($str, $uniqueIds, true)) {
+                $uniqueIds[] = $str;
+            }
+        }
+        if (empty($uniqueIds)) {
+            return [];
+        }
+
+        $filter = ['productID' => ['$in' => $uniqueIds]];
+        if (!$includeInactive) {
+            $filter['isActive'] = true;
+        }
+
+        $byId = [];
+        foreach (self::collection()->find($filter) as $doc) {
+            $formatted = self::formatProduct($doc);
+            if ($formatted !== null) {
+                $byId[$formatted['product_id']] = $formatted;
+            }
+        }
+        return $byId;
+    }
+
     /** @param string|null $kind 'vehicle' | 'accessory' | null (tất cả) */
     public static function getAll($page = 1, $perPage = 10, ?string $kind = null)
     {
@@ -315,20 +390,18 @@ class Product
 
     public static function filterPaginated(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        $page = max(1, $page);
-        $perPage = max(1, $perPage);
-        return self::formatMany(self::collection()->find(self::buildCatalogFilters($filters), [
-            'sort' => self::catalogSort($filters),
-            'skip' => ($page - 1) * $perPage,
-            'limit' => $perPage,
-        ]));
+        return self::formatMany(self::collection()->find(
+            self::buildCatalogFilters($filters),
+            self::catalogFindOptions($filters, $page, $perPage)
+        ));
     }
 
     public static function filterAll(array $filters = []): array
     {
-        return self::formatMany(self::collection()->find(self::buildCatalogFilters($filters), [
-            'sort' => self::catalogSort($filters),
-        ]));
+        return self::formatMany(self::collection()->find(
+            self::buildCatalogFilters($filters),
+            self::catalogFindOptions($filters)
+        ));
     }
 
     public static function countFiltered(array $filters = []): int

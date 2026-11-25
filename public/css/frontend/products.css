@@ -80,9 +80,16 @@
   font-size: 0.9rem;
 }
 
-/* Product detail JS state styles */
+/* Product detail & card wishlist JS state styles */
+.vf-wishlist-btn.is-active,
 .vf-pd-wishlist.is-active {
   color: #ef4444;
+}
+
+.vf-wishlist-btn:disabled,
+.vf-pd-wishlist:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .vf-pd-thumb.is-active {

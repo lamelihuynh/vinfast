@@ -7,12 +7,16 @@ $price = $price ?? 'all';
 $range = $range ?? 'all';
 $products = $products ?? [];
 $categories = $categories ?? [];
+$filterableAttrs = is_array($filterableAttrs ?? null) ? $filterableAttrs : [];
+$selectedAttrs = is_array($selectedAttrs ?? null) ? $selectedAttrs : [];
+$wishlistIds = is_array($wishlistIds ?? null) ? $wishlistIds : [];
 $total = (int)($total ?? count($products));
 
 $activeFilters = 0;
 if ($cat > 0) $activeFilters++;
 if ($price !== 'all') $activeFilters++;
 if ($range !== 'all') $activeFilters++;
+$activeFilters += count($selectedAttrs);
 
 function selectedValue(string $value, string $current): string
 {
