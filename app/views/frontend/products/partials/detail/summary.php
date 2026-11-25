@@ -7,6 +7,8 @@ $colorName = isset($colorName) ? (string)$colorName : '';
 $selectedColorSurcharge = isset($selectedColorSurcharge) ? (int)$selectedColorSurcharge : 0;
 $defaultColor = isset($defaultColor) && is_array($defaultColor) ? $defaultColor : [];
 $productId = isset($productId) ? (int)$productId : 0;
+$productIdStr = (string)(($product['product_id'] ?? '') !== '' ? $product['product_id'] : $productId);
+$isWishlisted = !empty($isWishlisted);
 
 // Redirect to login if not authenticated, otherwise go to checkout
 $checkoutUrl = Auth::check()
@@ -15,7 +17,7 @@ $checkoutUrl = Auth::check()
 ?>
 <div class="min-w-0">
 	<div class="mb-2 flex items-start justify-between gap-3">
-		<div>
+		<div class="min-w-0 flex-1">
 			<?php
 			$catText = (string)($categoryText ?? '');
 			$pName = (string)($productName ?? '');
@@ -28,6 +30,19 @@ $checkoutUrl = Auth::check()
 			<p class="mb-1 text-[11px] font-semibold uppercase tracking-[1px] text-amber-600 reveal-on-scroll"><?= htmlspecialchars(strtoupper($catText)) ?></p>
 			<h1 class="m-0 text-2xl font-bold leading-tight text-slate-900 lg:text-[28px] reveal-on-scroll reveal-delay-1 letter-reveal" title="<?= htmlspecialchars($pName) ?>" style="max-width:100%;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($displayH1) ?></h1>
 		</div>
+		<?php if ($productId > 0): ?>
+			<button
+				type="button"
+				id="vfPdWishlistBtn"
+				class="vf-pd-wishlist inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition hover:border-red-200 hover:text-red-500<?= $isWishlisted ? ' is-active' : '' ?>"
+				data-wishlist-product="<?= htmlspecialchars($productIdStr) ?>"
+				data-wishlist-variant=""
+				data-wishlist-url="<?= BASE_URL ?>wishlist/toggle"
+				aria-pressed="<?= $isWishlisted ? 'true' : 'false' ?>"
+				aria-label="<?= $isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích' ?>">
+				<i data-heart-icon class="<?= $isWishlisted ? 'fa-solid' : 'fa-regular' ?> fa-heart text-base"></i>
+			</button>
+		<?php endif; ?>
 	</div>
 
 

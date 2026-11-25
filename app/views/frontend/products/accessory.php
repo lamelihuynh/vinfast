@@ -66,7 +66,12 @@ foreach ($variants as $v) {
     }
 }
 $money = static fn(float $n): string => number_format($n, 0, ',', '.') . ' VND';
+$isWishlisted = !empty($isWishlisted);
+$productsCssVersion = AssetHelper::getVersion('public/css/frontend/products.css');
+$productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 ?>
+
+<link rel="stylesheet" href="<?= BASE_URL ?>public/css/frontend/products.css?v=<?= htmlspecialchars($productsCssVersion) ?>">
 
 <section class="bg-slate-50 min-h-screen py-6">
   <div class="max-w-6xl mx-auto px-4">
@@ -84,8 +89,23 @@ $money = static fn(float $n): string => number_format($n, 0, ',', '.') . ' VND';
       </div>
 
       <div>
-        <p class="text-[11px] font-bold tracking-wider text-vfGold uppercase"><?= htmlspecialchars((string)($product['category_label'] ?? '')) ?></p>
-        <h1 class="text-2xl font-bold text-slate-900 mt-1"><?= htmlspecialchars((string)$product['name']) ?></h1>
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-[11px] font-bold tracking-wider text-vfGold uppercase"><?= htmlspecialchars((string)($product['category_label'] ?? '')) ?></p>
+            <h1 class="text-2xl font-bold text-slate-900 mt-1"><?= htmlspecialchars((string)$product['name']) ?></h1>
+          </div>
+          <button
+            type="button"
+            id="vfPdWishlistBtn"
+            class="vf-pd-wishlist inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition hover:border-red-200 hover:text-red-500<?= $isWishlisted ? ' is-active' : '' ?>"
+            data-wishlist-product="<?= htmlspecialchars((string)$product['product_id']) ?>"
+            data-wishlist-variant=""
+            data-wishlist-url="<?= BASE_URL ?>wishlist/toggle"
+            aria-pressed="<?= $isWishlisted ? 'true' : 'false' ?>"
+            aria-label="<?= $isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích' ?>">
+            <i data-heart-icon class="<?= $isWishlisted ? 'fa-solid' : 'fa-regular' ?> fa-heart text-base"></i>
+          </button>
+        </div>
         <p id="accPrice" class="text-vfNavy text-2xl font-extrabold mt-3"><?= $money((float)($defaultVariant['price'] ?? $product['price'] ?? 0)) ?></p>
 
         <form id="accForm" method="post" action="<?= BASE_URL ?>cart/add" class="mt-5 space-y-4">
@@ -216,3 +236,4 @@ $money = static fn(float $n): string => number_format($n, 0, ',', '.') . ' VND';
   render();
 })();
 </script>
+<script src="<?= BASE_URL ?>public/js/frontend/products.js?v=<?= htmlspecialchars($productsJsVersion) ?>"></script>
