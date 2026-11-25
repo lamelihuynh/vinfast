@@ -54,7 +54,7 @@
                         <span class="badge bg-secondary text-white" data-detail="paymentStatusBadge">--</span>
                     </div>
                     <div class="col-md-6">
-                        <div class="small text-muted">Tiền cọc</div>
+                        <div class="small text-muted">Số tiền</div>
                         <div class="fw-semibold" data-detail="depositAmount">--</div>
                     </div>
                 </div>

@@ -26,24 +26,20 @@ class ContactAdminController
         }
 
         if ($section === 'test-drives') {
-            $total = TestDrive::countAll($status);
-            $counts = [
-                'all' => TestDrive::countAll(),
-                'pending' => TestDrive::countAll('pending'),
-                'confirmed' => TestDrive::countAll('confirmed'),
-                'done' => TestDrive::countAll('done'),
-                'cancelled' => TestDrive::countAll('cancelled'),
-            ];
+            // The tab counts already hold the pagination total, so no extra COUNT query.
+            $counts = TestDrive::countByStatus();
+            if (!array_key_exists($status, $counts)) {
+                $status = '';
+            }
+            $total = $counts[$status !== '' ? $status : 'all'];
             $pg = new Pagination($total, $page, 7);
             $items = TestDrive::getPaginated($pg->current, $pg->perPage, $status);
         } else {
-            $total = Contact::countAll($status);
-            $counts = [
-                'all' => Contact::countAll(),
-                'unread' => Contact::countAll('unread'),
-                'read' => Contact::countAll('read'),
-                'replied' => Contact::countAll('replied'),
-            ];
+            $counts = Contact::countByStatus();
+            if (!array_key_exists($status, $counts)) {
+                $status = '';
+            }
+            $total = $counts[$status !== '' ? $status : 'all'];
             $pg = new Pagination($total, $page, 7);
             $items = Contact::getPaginated($pg->current, $pg->perPage, $status);
         }

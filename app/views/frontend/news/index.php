@@ -21,23 +21,11 @@
 ?>
 <!-- TODO: Implement News Listing -->
 <?php
-global $pdo; // shared PostgreSQL connection from config/database.php
-
 $newsArray = [];
 $tagsArray = [];
 
 try {
-    $stmtNews = $pdo->query("
-        SELECT n.id, n.title, n.slug, n.catalog,
-               to_char(n.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
-               n.body, MIN(i.img_link) AS img_link
-        FROM news n
-        LEFT JOIN news_img_info i ON n.id = i.news_id
-        WHERE n.news_state NOT LIKE '%Ẩn%'
-        GROUP BY n.id
-        ORDER BY n.created_at DESC, n.id DESC
-    ");
-    $rawNews = $stmtNews->fetchAll(PDO::FETCH_ASSOC);
+    $rawNews = News::listVisible();
 
     $baseDir = ROOT . '/public/images/news/';
 
@@ -81,8 +69,7 @@ try {
         ];
     }
 
-    $stmtTags = $pdo->query("SELECT DISTINCT tags FROM news_tags LIMIT 15");
-    $tagsArray = $stmtTags->fetchAll(PDO::FETCH_COLUMN);
+    $tagsArray = News::tagCloud(15);
 
 } catch (Throwable $e) {
     error_log("Lỗi Database: " . $e->getMessage());

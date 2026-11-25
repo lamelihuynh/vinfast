@@ -193,6 +193,32 @@ class News
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public static function listVisible(): array
+    {
+        $stmt = Db::pg()->query(
+            "SELECT n.id, n.title, n.slug, n.catalog,
+                    to_char(n.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                    n.body, MIN(i.img_link) AS img_link
+               FROM news n
+          LEFT JOIN news_img_info i ON n.id = i.news_id
+              WHERE n.news_state = 'Hiển thị'
+           GROUP BY n.id
+           ORDER BY n.created_at DESC, n.id DESC"
+        );
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public static function tagCloud(int $limit = 15): array
+    {
+        $limit = max(1, $limit);
+        $stmt = Db::pg()->prepare('SELECT DISTINCT tags FROM news_tags ORDER BY tags ASC LIMIT :limit');
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    }
+
     public static function getById(int $id): ?array
     {
         global $pdo;

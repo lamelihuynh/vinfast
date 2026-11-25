@@ -19,7 +19,9 @@ $fmtVnd = static function (float $v) {
             $customerPhone = htmlspecialchars((string)($o['phone'] ?? ''));
             $rawProvince = (string)($o['province'] ?? '');
             $rawShowroom = (string)($o['showroom'] ?? '');
-            $amount = (float)($o['depositAmount'] ?? $o['deposit_amount'] ?? 0);
+            $amount = (float)($o['totalAmount'] ?? $o['depositAmount'] ?? $o['deposit_amount'] ?? 0);
+            $amountLabel = ($o['type'] ?? 'deposit') === 'purchase' ? 'Tổng tiền' : 'Tiền cọc';
+            $detailUrl = BASE_URL . 'order/detail/' . (int)($o['orderDbId'] ?? 0);
 
             // prepare truncated display values (multibyte-safe)
             if (function_exists('mb_strlen')) {
@@ -57,6 +59,12 @@ $fmtVnd = static function (float $v) {
             } elseif ($paymentStatus === 'unpaid') {
                 $statusClass = 'bg-yellow-100 text-yellow-800';
                 $statusLabel = 'Chưa thanh toán';
+            } elseif ($paymentStatus === 'failed') {
+                $statusClass = 'bg-red-100 text-red-800';
+                $statusLabel = 'Thanh toán thất bại';
+            } elseif ($paymentStatus === 'refunded') {
+                $statusClass = 'bg-purple-100 text-purple-800';
+                $statusLabel = 'Đã hoàn tiền';
             }
         ?>
             <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
@@ -81,11 +89,12 @@ $fmtVnd = static function (float $v) {
                     <div class="md:text-right">
                         <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Sản phẩm</div>
                         <div class="mt-1 text-sm font-semibold text-slate-900" title="<?= $nameTitle ?>" style="max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= $name ?></div>
-                        <div class="mt-2 text-xs text-slate-500">Tiền cọc</div>
+                        <div class="mt-2 text-xs text-slate-500"><?= $amountLabel ?></div>
                         <div class="text-sm font-semibold text-slate-900"><?= $amount > 0 ? $fmtVnd($amount) : 'Chưa cập nhật' ?></div>
                         <div class="mt-2">
                             <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= $statusClass ?>"><?= htmlspecialchars($statusLabel) ?></span>
                         </div>
+                        <a href="<?= htmlspecialchars($detailUrl) ?>" class="mt-2 inline-block text-xs text-[#1a6fe0]">Xem chi tiết</a>
                     </div>
                 </div>
             </div>

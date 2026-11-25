@@ -32,16 +32,10 @@ class OrderAdminController
             'date_to' => $dateTo,
         ];
 
-        $total = Order::countAdminList($filters);
-        $pg = new Pagination($total, $page, self::PER_PAGE);
+        // The summary already counts every order matching the filter, so it doubles as the total.
+        $summary = Order::countAdminPaymentSummary($filters);
+        $pg = new Pagination($summary['all'], $page, self::PER_PAGE);
         $orders = Order::getAdminList($filters, $pg->current, $pg->perPage);
-
-        $summary = Order::countAdminPaymentSummary([
-            'q' => $q,
-            'status' => $status,
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-        ]);
 
         $query = [];
         if ($q !== '') {
@@ -100,6 +94,7 @@ class OrderAdminController
         SEO::set('Order Detail #' . (int)$order['id']);
         View::render('admin/orders/detail', [
             'order' => $order,
+            'items' => Order::getItemsByOrderIds([$id])[$id] ?? [],
             'note' => $note,
             'allowedNextStatuses' => Order::allowedNextStatuses((string)($order['status'] ?? 'pending')),
         ], 'admin');
@@ -125,7 +120,8 @@ class OrderAdminController
         }
 
         $currentStatus = trim((string)($order['status'] ?? 'pending'));
-        $paymentStatus = Order::getPaymentStatusFromNote($order['note'] ?? null);
+        // The column is authoritative; generated orders have no payment_status in their note.
+        $paymentStatus = (string)($order['payment_status'] ?? '') ?: Order::getPaymentStatusFromNote($order['note'] ?? null);
         if (!in_array($nextStatus, Order::validStatuses(), true)) {
             $_SESSION['errors'] = ['Trạng thái cập nhật không hợp lệ.'];
             $this->redirectAfterUpdate($redirect, $id);

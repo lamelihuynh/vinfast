@@ -48,6 +48,14 @@ $price = $price ?? 'all';
 $range = $range ?? 'all';
 $sort = $sort ?? 'default';
 $q = $q ?? '';
+$filterableAttrs = is_array($filterableAttrs ?? null) ? $filterableAttrs : [];
+$selectedAttrs = is_array($selectedAttrs ?? null) ? $selectedAttrs : [];
+$attrLabelsByKey = [];
+foreach ($filterableAttrs as $def) {
+    if (!empty($def['key'])) {
+        $attrLabelsByKey[(string)$def['key']] = (string)($def['label'] ?? $def['key']);
+    }
+}
 ?>
 
 <aside id="productsSidebar" class="products-sidebar bg-white border border-slate-100 rounded-lg flex-shrink-0 fixed lg:static z-50 lg:z-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 self-start">
@@ -84,6 +92,13 @@ $q = $q ?? '';
             <?php if ($range !== 'all'): ?>
               <span class="inline-flex items-center gap-1 bg-vfNavy/10 text-vfNavy px-2 py-1 rounded-md text-[10px]"><?= htmlspecialchars($rangeOptions[$range] ?? 'Phạm vi') ?></span>
             <?php endif; ?>
+            <?php foreach ($selectedAttrs as $sKey => $sVal): ?>
+              <?php
+              $pillLabel = $attrLabelsByKey[$sKey] ?? $sKey;
+              $pillVal = $sVal === '1' ? 'Có' : ($sVal === '0' ? 'Không' : $sVal);
+              ?>
+              <span class="inline-flex items-center gap-1 bg-vfNavy/10 text-vfNavy px-2 py-1 rounded-md text-[10px]"><?= htmlspecialchars($pillLabel . ': ' . $pillVal) ?></span>
+            <?php endforeach; ?>
                <a
               href="<?= BASE_URL ?>products"
               class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-slate-700 transition"
@@ -155,6 +170,65 @@ $q = $q ?? '';
             <input type="radio" name="range" value="<?= $value ?>" <?= $range === $value ? 'checked' : '' ?> class="accent-vfNavy w-[14px] h-[14px]">
             <span class="text-slate-600 text-[12px]"><?= $label ?></span>
           </label>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($cat > 0 && !empty($filterableAttrs)): ?>
+    <div>
+      <button type="button" data-filter-toggle data-target="filterAttrsBody" class="w-full flex items-center justify-between py-1.5 px-1">
+        <span class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">THUỘC TÍNH</span>
+        <i data-filter-icon class="fa-solid fa-chevron-down text-[11px] text-slate-400"></i>
+      </button>
+      <div id="filterAttrsBody" class="mt-1 space-y-3">
+        <?php foreach ($filterableAttrs as $def): ?>
+          <?php
+          $attrKey = (string)($def['key'] ?? '');
+          $attrLabel = (string)($def['label'] ?? $attrKey);
+          $attrUnit = trim((string)($def['unit'] ?? ''));
+          $attrType = (string)($def['type'] ?? 'string');
+          $currentVal = (string)($selectedAttrs[$attrKey] ?? '');
+          $options = array_map('strval', (array)($def['options'] ?? []));
+          ?>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+              <?= htmlspecialchars($attrLabel) ?><?= $attrUnit !== '' ? ' (' . htmlspecialchars($attrUnit) . ')' : '' ?>
+            </label>
+            <?php if ($attrType === 'enum' || $attrType === 'list'): ?>
+              <select name="attr[<?= htmlspecialchars($attrKey) ?>]" class="js-attr-filter w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-[12px] text-slate-700 bg-white outline-none focus:border-vfNavy">
+                <option value="">Tất cả</option>
+                <?php foreach ($options as $opt): ?>
+                  <option value="<?= htmlspecialchars($opt) ?>" <?= $currentVal === $opt ? 'selected' : '' ?>><?= htmlspecialchars($opt) ?></option>
+                <?php endforeach; ?>
+              </select>
+            <?php elseif ($attrType === 'boolean'): ?>
+              <div class="flex flex-wrap gap-3 text-[12px] text-slate-600">
+                <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="attr[<?= htmlspecialchars($attrKey) ?>]" value="" <?= $currentVal === '' ? 'checked' : '' ?> class="js-attr-filter accent-vfNavy w-[14px] h-[14px]">
+                  <span>Tất cả</span>
+                </label>
+                <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="attr[<?= htmlspecialchars($attrKey) ?>]" value="1" <?= $currentVal === '1' ? 'checked' : '' ?> class="js-attr-filter accent-vfNavy w-[14px] h-[14px]">
+                  <span>Có</span>
+                </label>
+                <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="attr[<?= htmlspecialchars($attrKey) ?>]" value="0" <?= $currentVal === '0' ? 'checked' : '' ?> class="js-attr-filter accent-vfNavy w-[14px] h-[14px]">
+                  <span>Không</span>
+                </label>
+              </div>
+            <?php elseif ($attrType === 'number'): ?>
+              <div class="flex gap-1.5">
+                <input type="number" step="any" name="attr[<?= htmlspecialchars($attrKey) ?>]" value="<?= htmlspecialchars($currentVal) ?>" placeholder="Nhập giá trị..." class="js-attr-filter-input w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-[12px] outline-none focus:border-vfNavy">
+                <button type="submit" class="px-2.5 py-1.5 rounded-md bg-vfNavy text-white text-[11px] font-semibold hover:bg-vfNavy/90">Lọc</button>
+              </div>
+            <?php else: ?>
+              <div class="flex gap-1.5">
+                <input type="text" name="attr[<?= htmlspecialchars($attrKey) ?>]" value="<?= htmlspecialchars($currentVal) ?>" placeholder="Nhập..." class="js-attr-filter-input w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-[12px] outline-none focus:border-vfNavy">
+                <button type="submit" class="px-2.5 py-1.5 rounded-md bg-vfNavy text-white text-[11px] font-semibold hover:bg-vfNavy/90">Lọc</button>
+              </div>
+            <?php endif; ?>
+          </div>
         <?php endforeach; ?>
       </div>
     </div>

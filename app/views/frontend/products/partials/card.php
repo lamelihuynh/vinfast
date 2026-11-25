@@ -4,7 +4,12 @@ $images = is_array($p['images'] ?? null) ? $p['images'] : [];
 $imgUrl = ProductViewHelper::thumbUrl($p);
 
 $specs = is_array($p['specs'] ?? null) ? $p['specs'] : [];
-$rangeText = extractRangeText($specs);
+$rangeText = function_exists('extractRangeText')
+  ? extractRangeText($specs)
+  : (isset($specs['range']) && $specs['range'] !== '' ? (string)$specs['range'] : 'N/A');
+$wishlistIds = is_array($wishlistIds ?? null) ? $wishlistIds : [];
+$productIdStr = trim((string)($p['product_id'] ?? $p['id'] ?? ''));
+$isWishlisted = $productIdStr !== '' && in_array($productIdStr, $wishlistIds, true);
 
 $categoryText = (string)($p['category_name'] ?? ($specs['category'] ?? 'VinFast'));
 if ($categoryText === '') {
@@ -56,6 +61,18 @@ if ($isAccessory) {
   <div class="flip-card-inner">
     <!-- FRONT -->
     <div class="flip-card-face card-front bg-white rounded-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+      <?php if ($productIdStr !== ''): ?>
+        <button
+          type="button"
+          class="vf-wishlist-btn absolute top-3 left-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm border border-slate-200/80 hover:text-red-500 transition<?= $isWishlisted ? ' is-active' : '' ?>"
+          data-wishlist-product="<?= htmlspecialchars($productIdStr) ?>"
+          data-wishlist-variant=""
+          data-wishlist-url="<?= BASE_URL ?>wishlist/toggle"
+          aria-pressed="<?= $isWishlisted ? 'true' : 'false' ?>"
+          aria-label="<?= $isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích' ?>">
+          <i data-heart-icon class="<?= $isWishlisted ? 'fa-solid' : 'fa-regular' ?> fa-heart text-sm"></i>
+        </button>
+      <?php endif; ?>
       <a href="<?= BASE_URL ?>products/detail/<?= (int)($p['id'] ?? 0) ?>" class="block h-full">
         <div class="relative h-44 bg-slate-50 flex items-center justify-center p-2">
           <span class="absolute top-3 right-3 bg-white/80 backdrop-blur-sm text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 text-[9px] font-semibold">
@@ -108,6 +125,18 @@ if ($isAccessory) {
 
       <div class="flex gap-2">
         <a href="<?= BASE_URL ?>products/detail/<?= (int)($p['id'] ?? 0) ?>" class="flex-1 flex items-center justify-center gap-1 bg-[#1464F4] text-white rounded-lg py-2 hover:bg-[#0d4ec9] transition text-[11px] font-bold">Xem chi tiết</a>
+        <?php if ($productIdStr !== ''): ?>
+          <button
+            type="button"
+            class="vf-wishlist-btn inline-flex items-center justify-center rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-white/80 hover:bg-white/20 transition<?= $isWishlisted ? ' is-active' : '' ?>"
+            data-wishlist-product="<?= htmlspecialchars($productIdStr) ?>"
+            data-wishlist-variant=""
+            data-wishlist-url="<?= BASE_URL ?>wishlist/toggle"
+            aria-pressed="<?= $isWishlisted ? 'true' : 'false' ?>"
+            aria-label="<?= $isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích' ?>">
+            <i data-heart-icon class="<?= $isWishlisted ? 'fa-solid' : 'fa-regular' ?> fa-heart text-sm"></i>
+          </button>
+        <?php endif; ?>
       </div>
     </div>
   </div>
