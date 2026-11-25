@@ -6,6 +6,7 @@
  * Title  : Order Detail
  */
 $order = is_array($order ?? null) ? $order : [];
+$items = is_array($items ?? null) ? $items : [];
 $note = is_array($note ?? null) ? $note : [];
 $allowedNextStatuses = is_array($allowedNextStatuses ?? null) ? $allowedNextStatuses : [];
 
@@ -31,8 +32,13 @@ $badgeByStatus = static function (string $value) use ($statusMap): string {
 
 $typeMap = [
     'deposit' => 'Đặt cọc',
+    'purchase' => 'Mua hàng',
     'test_drive' => 'Lái thử',
 ];
+
+$fmtVnd = static function (float $value): string {
+    return number_format($value, 0, ',', '.') . ' VND';
+};
 
 $depositAmount = (float)($note['deposit_amount'] ?? 0);
 $customerName = trim((string)($note['full_name'] ?? ($order['user_name'] ?? '')));
@@ -69,9 +75,8 @@ $payMethodMap = [
                         <div class="small text-muted"><?= htmlspecialchars($email !== '' ? $email : '--') ?></div>
                     </div>
                     <div class="col-md-6">
-                        <div class="small text-muted">Sản phẩm</div>
-                        <div class="fw-semibold"><?= htmlspecialchars((string)($order['product_name'] ?? '')) ?></div>
-                        <div class="small text-muted"><?= number_format((float)($order['price'] ?? 0), 0, ',', '.') ?> VND</div>
+                        <div class="small text-muted">Tổng tiền</div>
+                        <div class="fw-semibold"><?= htmlspecialchars($fmtVnd((float)($order['total_amount'] ?? 0))) ?></div>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Loại đơn</div>
@@ -81,6 +86,66 @@ $payMethodMap = [
                         <div class="small text-muted">Ngày tạo</div>
                         <div><?= htmlspecialchars($createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '--') ?></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body p-0">
+                <h6 class="mb-0 p-3">Sản phẩm (<?= count($items) ?>)</h6>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Phiên bản / màu</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-end">SL</th>
+                                <th class="text-end">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($items)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">Đơn không có sản phẩm.</td>
+                                </tr>
+                            <?php endif; ?>
+                            <?php foreach ($items as $item): ?>
+                                <?php
+                                $meta = implode(' · ', array_filter([
+                                    trim((string)($item['variant_name_snapshot'] ?? '')),
+                                    trim((string)($item['color_name_snapshot'] ?? '')),
+                                ], static fn(string $v): bool => $v !== ''));
+                                ?>
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold"><?= htmlspecialchars((string)($item['product_name_snapshot'] ?? '')) ?></div>
+                                        <div class="small text-muted">ID <?= htmlspecialchars((string)($item['product_id'] ?? '')) ?></div>
+                                    </td>
+                                    <td class="small"><?= htmlspecialchars($meta !== '' ? $meta : '--') ?></td>
+                                    <td class="text-end text-nowrap"><?= htmlspecialchars($fmtVnd((float)($item['unit_price'] ?? 0))) ?></td>
+                                    <td class="text-end"><?= (int)($item['quantity'] ?? 0) ?></td>
+                                    <td class="text-end text-nowrap fw-semibold"><?= htmlspecialchars($fmtVnd((float)($item['subtotal'] ?? 0))) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">Tạm tính</td>
+                                <td class="text-end text-nowrap"><?= htmlspecialchars($fmtVnd((float)($order['subtotal_amount'] ?? 0))) ?></td>
+                            </tr>
+                            <?php if ((float)($order['discount_amount'] ?? 0) > 0): ?>
+                                <tr>
+                                    <td colspan="4" class="text-end text-muted">Giảm giá</td>
+                                    <td class="text-end text-nowrap">−<?= htmlspecialchars($fmtVnd((float)$order['discount_amount'])) ?></td>
+                                </tr>
+                            <?php endif; ?>
+                            <tr>
+                                <td colspan="4" class="text-end fw-semibold">Tổng cộng</td>
+                                <td class="text-end text-nowrap fw-bold"><?= htmlspecialchars($fmtVnd((float)($order['total_amount'] ?? 0))) ?></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>

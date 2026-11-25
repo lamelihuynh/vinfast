@@ -63,6 +63,30 @@ class Contact
         return (int)$pdo->query($sql)->fetchColumn();
     }
 
+    /**
+     * Counts for every status tab in one query instead of one COUNT per tab.
+     * FILTER rather than GROUP BY so empty statuses still come back as 0.
+     * @return array{all:int, unread:int, read:int, replied:int}
+     */
+    public static function countByStatus(): array
+    {
+        global $pdo;
+        $row = $pdo->query(
+            "SELECT COUNT(*)                                   AS \"all\",
+                    COUNT(*) FILTER (WHERE status = 'unread')  AS unread,
+                    COUNT(*) FILTER (WHERE status = 'read')    AS \"read\",
+                    COUNT(*) FILTER (WHERE status = 'replied') AS replied
+             FROM contacts"
+        )->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return array_map('intval', [
+            'all' => $row['all'] ?? 0,
+            'unread' => $row['unread'] ?? 0,
+            'read' => $row['read'] ?? 0,
+            'replied' => $row['replied'] ?? 0,
+        ]);
+    }
+
     public static function setStatus(int $id, string $status): bool
     {
         global $pdo;
