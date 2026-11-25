@@ -99,6 +99,31 @@ class TestDrive {
         return (int)$pdo->query($sql)->fetchColumn();
     }
 
+    /**
+     * Counts for every status tab in one query (see Contact::countByStatus).
+     * @return array{all:int, pending:int, confirmed:int, done:int, cancelled:int}
+     */
+    public static function countByStatus(): array
+    {
+        global $pdo;
+        $row = $pdo->query(
+            "SELECT COUNT(*)                                     AS \"all\",
+                    COUNT(*) FILTER (WHERE status = 'pending')   AS pending,
+                    COUNT(*) FILTER (WHERE status = 'confirmed') AS confirmed,
+                    COUNT(*) FILTER (WHERE status = 'done')      AS done,
+                    COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled
+             FROM test_drives"
+        )->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return array_map('intval', [
+            'all' => $row['all'] ?? 0,
+            'pending' => $row['pending'] ?? 0,
+            'confirmed' => $row['confirmed'] ?? 0,
+            'done' => $row['done'] ?? 0,
+            'cancelled' => $row['cancelled'] ?? 0,
+        ]);
+    }
+
     public static function setStatus(int $id, string $status): bool
     {
         global $pdo;

@@ -323,6 +323,26 @@ class Product
         return self::formatProduct(self::collection()->findOne(['productID' => (string)(int)$id, 'isActive' => true]));
     }
 
+    /**
+     * Many products in one $in round trip, keyed by productID (string), including inactive
+     * ones so old orders still resolve. Missing ids are simply absent from the result.
+     */
+    public static function findManyByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('strval', $ids), static fn(string $id): bool => $id !== '')));
+        if ($ids === []) {
+            return [];
+        }
+
+        $out = [];
+        foreach (self::collection()->find(['productID' => ['$in' => $ids]]) as $doc) {
+            $product = self::formatProduct($doc);
+            $out[$product['product_id']] = $product;
+        }
+
+        return $out;
+    }
+
     public static function getByIdAdmin($id)
     {
         return self::formatProduct(self::collection()->findOne(['productID' => (string)(int)$id]));
