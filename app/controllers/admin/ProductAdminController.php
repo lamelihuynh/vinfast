@@ -171,6 +171,7 @@ class ProductAdminController
                 'is_active' => !empty($v['isActive']) ? 1 : 0,
                 'attributes' => is_array($v['attributes'] ?? null) ? $v['attributes'] : [],
                 'stock' => $inv !== null ? (string)$inv['stock'] : '',
+                'version_orig' => $inv['version'] ?? '',
                 'stock_orig' => $inv !== null ? (string)$inv['stock'] : '',
                 'reserved' => (int)($inv['reserved'] ?? 0),
             ];
@@ -351,6 +352,7 @@ class ProductAdminController
                 'is_active' => $v['is_active'],
                 'attributes' => $v['attributes'],
                 'stock' => $v['stock_input'],
+                'version_orig' => $v['version_orig'],
                 'stock_orig' => $v['stock_orig'],
                 'reserved' => $v['reserved'],
             ], $variants),
@@ -375,11 +377,18 @@ class ProductAdminController
                 'is_active' => $v['is_active'],
                 'attributes' => $v['attributes'],
                 'stock' => $v['stock'],
+                'version_orig' => $v['version_orig'],
             ], $variants),
         ];
 
         if ($isEdit) {
-            $ok = Product::updateWithVariants($id, $data);
+            try {
+                $ok = Product::updateWithVariants($id, $data);
+            } catch (ConcurrentUpdateException $e) {
+                $_SESSION['errors'] = ['Tồn kho đã thay đổi bởi thao tác khác, vui lòng tải lại trang và thử lại.'];
+                header('Location: ' . ADMIN_URL . 'products');
+                exit;
+            }
             if ($ok) {
                 $oldImages = is_array($existing['images'] ?? null) ? $existing['images'] : [];
                 foreach (array_diff($oldImages, $allImages) as $img) {
@@ -458,6 +467,7 @@ class ProductAdminController
                 'stock' => $stock,
                 'stock_input' => $stockRaw,
                 'stock_orig' => $stockOrig,
+                'version_orig' => filter_var($row['version_orig'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]),
                 'reserved' => max(0, (int)($row['reserved'] ?? 0)),
             ];
         }
