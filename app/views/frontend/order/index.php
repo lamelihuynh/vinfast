@@ -44,7 +44,9 @@ $paymentMap = [
                     $showroom = htmlspecialchars((string)($o['showroom'] ?? ''));
                     $paymentStatusRaw = (string)($o['paymentStatus'] ?? 'pending_verify');
                     $paymentUi = $paymentMap[$paymentStatusRaw] ?? $paymentMap['pending_verify'];
-                    $amount = (float)($o['depositAmount'] ?? 0);
+                    $amount = (float)($o['totalAmount'] ?? $o['depositAmount'] ?? 0);
+                    $amountLabel = ($o['type'] ?? 'deposit') === 'purchase' ? 'Tổng tiền' : 'Tiền cọc';
+                    $detailUrl = BASE_URL . 'order/detail/' . (int)($o['orderDbId'] ?? 0);
                     ?>
                     <div class="rounded-lg border border-slate-100 bg-white px-4 py-3">
                         <div class="flex items-start justify-between gap-4">
@@ -61,7 +63,7 @@ $paymentMap = [
                             </div>
 
                             <div class="text-right">
-                                <div class="text-xs text-slate-500">Tiền cọc</div>
+                                <div class="text-xs text-slate-500"><?= $amountLabel ?></div>
                                 <div class="text-sm font-semibold text-slate-900"><?= $amount > 0 ? $fmtVnd($amount) : 'Chưa cập nhật' ?></div>
                                 <span class="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold <?= htmlspecialchars($paymentUi['class']) ?>">
                                     <?= htmlspecialchars($paymentUi['label']) ?>
@@ -69,11 +71,12 @@ $paymentMap = [
                             </div>
                         </div>
                         <div class="mt-3 flex items-center justify-end">
-                            <a href="<?= BASE_URL ?>order/confirmation" class="text-xs text-[#1a6fe0] inline-block">Xem chi tiết</a>
+                            <a href="<?= htmlspecialchars($detailUrl) ?>" class="text-xs text-[#1a6fe0] inline-block">Xem chi tiết</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
             </div>
+            <?php include ROOT . '/app/views/frontend/partials/pagination.php'; ?>
         <?php endif; ?>
     </div>
 </section>

@@ -14,7 +14,7 @@ class SettingsAdminController
     {
         SEO::set('Site settings');
         $settings = SiteSetting::all();
-        $products = Product::getAll(1, 100);
+        $products = Product::getAll(1, 100, 'vehicle');
 
         View::render('admin/settings/index', [
             'settings' => $settings,

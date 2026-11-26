@@ -1,164 +1,120 @@
 <?php
 
 /**
- * app/models/Product.php — Vehicle / Product Model
- * Table: products
+ * app/models/Product.php — Vehicle / Product Model (MongoDB: products)
  * Owner: Hai Nam (Member 3)
  * Used by: ProductController (frontend), ProductAdminController (admin)
  *
- * Columns: id, category_id, name, slug, description,
- *          specs(JSON), price, images(JSON), is_active, created_at
+ * Document: { productID:"165", categoryID, name, slug, description, basePrice, images[], isActive,
+ *             attributes{}, variants[{variantId, name, price, isActive, attributes, colors[]}],
+ *             avgRating, totalReviews, totalSold, reviews[], createdAt, updatedAt }
  *
- * Public query API:
+ * formatProduct() là adapter Mongo doc -> mảng cũ (quyết định 8), nên view/controller không phải sửa:
+ *   id, category_id, name, slug, description, specs, price, images, is_active, created_at,
+ *   exterior_colors, category_name (admin) + khóa mới: product_id, kind ('vehicle'|'accessory'), is_accessory,
+ *   category_label, variants, default_variant_id, avg_rating, total_sold
+ *
+ * Phụ kiện (category.kind = 'accessory'): phiên bản thật (size/màu, dung lượng...), mỗi phiên bản 1 dòng
+ * tồn kho bên PG. Tạo/sửa qua createWithVariants() / updateWithVariants().
+ *
+ * Public query API (giữ nguyên):
  *   getById, getByIdAdmin, getAll, getByCategory
  *   filterPaginated, filterAll, countFiltered
  *   getSwitchProducts, extractRangeKm
  *   getAdminList, countAdminList, countAdminDistinctCategories
  *   create, updateById, setActive, deleteById, hasOrders, slugExists
+ *   getExteriorColorsByProductId, syncExteriorColors
+ *   createWithVariants, updateWithVariants (phụ kiện)
+ *
+ * Bộ lọc catalog nhận thêm 'kind' => 'vehicle' | 'accessory'.
  */
 class Product
 {
-    private static ?bool $hasColorTable = null;
-
-    private static function bindNamedParams(PDOStatement $stmt, array $params): void
+    private static function collection(): MongoDB\Collection
     {
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
+        return Db::mongo()->selectCollection('products');
     }
 
-    private static function buildCatalogFilters(array $filters = []): array
+    private static function regex(string $text): MongoDB\BSON\Regex
     {
-        $where = ['is_active = 1'];
-        $params = [];
+        return new MongoDB\BSON\Regex(preg_quote($text, '/'), 'i');
+    }
 
-        if (!empty($filters['search'])) {
-            $where[] = 'name LIKE :search';
-            $params[':search'] = '%' . $filters['search'] . '%';
+    private static function now(): MongoDB\BSON\UTCDateTime
+    {
+        return new MongoDB\BSON\UTCDateTime();
+    }
+
+    private static function defaultVariantId($productId): string
+    {
+        return (string)$productId . '-STD';
+    }
+
+    // ------------------------------------------------------------------
+    // Adapter
+    // ------------------------------------------------------------------
+
+    private static function formatProduct($doc, array $categoryNames = [])
+    {
+        if (!$doc) {
+            return null;
         }
 
-        if (!empty($filters['category_id'])) {
-            $where[] = 'category_id = :cat_id';
-            $params[':cat_id'] = (int)$filters['category_id'];
-        }
+        $attributes = is_array($doc['attributes'] ?? null) ? $doc['attributes'] : [];
+        $variants = is_array($doc['variants'] ?? null) ? $doc['variants'] : [];
+        $createdAt = $doc['createdAt'] ?? null;
+        $createdAtStr = $createdAt instanceof MongoDB\BSON\UTCDateTime
+            ? $createdAt->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s')
+            : '';
 
-        if (!empty($filters['price_min'])) {
-            $where[] = 'price >= :price_min';
-            $params[':price_min'] = (float)$filters['price_min'];
-        }
-
-        if (!empty($filters['price_max'])) {
-            $where[] = 'price <= :price_max';
-            $params[':price_max'] = (float)$filters['price_max'];
-        }
-
-        if (!empty($filters['range']) && $filters['range'] !== 'all') {
-            $rangeExpr = "CAST(REGEXP_SUBSTR(JSON_UNQUOTE(JSON_EXTRACT(specs, '$.range')), '[0-9]+(\\.[0-9]+)?') AS DECIMAL(10,2))";
-
-            if ($filters['range'] === 'lt200') {
-                $where[] = "($rangeExpr > 0 AND $rangeExpr < 200)";
-            } elseif ($filters['range'] === '200-400') {
-                $where[] = "($rangeExpr >= 200 AND $rangeExpr <= 400)";
-            } elseif ($filters['range'] === 'gt400') {
-                $where[] = "$rangeExpr > 400";
+        $colors = [];
+        foreach ($variants as $variant) {
+            if (!empty($variant['colors'])) {
+                $colors = $variant['colors'];
+                break;
             }
         }
 
-        return [implode(' AND ', $where), $params];
-    }
+        $categoryId = (int)($doc['categoryID'] ?? 0);
+        $category = Category::allById()[$categoryId] ?? null;
+        $kind = $category['kind'] ?? 'vehicle';
+        $product = [
+            'id' => (int)($doc['productID'] ?? 0),
+            'product_id' => (string)($doc['productID'] ?? ''),
+            'category_id' => $categoryId,
+            'kind' => $kind,
+            'is_accessory' => $kind === 'accessory',
+            'category_label' => (string)($category['name'] ?? ''),
+            'name' => (string)($doc['name'] ?? ''),
+            'slug' => (string)($doc['slug'] ?? ''),
+            'description' => $doc['description'] ?? null,
+            'specs' => $attributes,
+            'price' => (float)($doc['basePrice'] ?? 0),
+            'images' => array_values(is_array($doc['images'] ?? null) ? $doc['images'] : []),
+            'is_active' => !empty($doc['isActive']) ? 1 : 0,
+            'created_at' => $createdAtStr,
+            'exterior_colors' => self::normalizeColorRows($colors),
+            'variants' => $variants,
+            'default_variant_id' => (string)($variants[0]['variantId'] ?? self::defaultVariantId($doc['productID'] ?? '')),
+            'avg_rating' => (float)($doc['avgRating'] ?? 0),
+            'total_reviews' => (int)($doc['totalReviews'] ?? 0),
+            'total_sold' => (int)($doc['totalSold'] ?? 0),
+        ];
 
-    private static function buildAdminFilters(array $filters = []): array
-    {
-        $where = ['1=1'];
-        $params = [];
-
-        if (!empty($filters['search'])) {
-            $where[] = '(p.name LIKE :search_name OR c.name LIKE :search_category)';
-            $searchTerm = '%' . $filters['search'] . '%';
-            $params[':search_name'] = $searchTerm;
-            $params[':search_category'] = $searchTerm;
-        }
-
-        if (!empty($filters['category_id'])) {
-            $where[] = 'p.category_id = :category_id';
-            $params[':category_id'] = (int)$filters['category_id'];
-        }
-
-        if (($filters['status'] ?? 'all') === 'active') {
-            $where[] = 'p.is_active = 1';
-        } elseif (($filters['status'] ?? 'all') === 'inactive') {
-            $where[] = 'p.is_active = 0';
-        }
-
-        // Price range filter for admin list
-        if (isset($filters['price_min']) && $filters['price_min'] !== null && $filters['price_min'] !== '') {
-            if (is_numeric($filters['price_min'])) {
-                $where[] = 'p.price >= :price_min';
-                $params[':price_min'] = (float)$filters['price_min'];
-            }
-        }
-
-        if (isset($filters['price_max']) && $filters['price_max'] !== null && $filters['price_max'] !== '') {
-            if (is_numeric($filters['price_max'])) {
-                $where[] = 'p.price <= :price_max';
-                $params[':price_max'] = (float)$filters['price_max'];
-            }
-        }
-
-        return [implode(' AND ', $where), $params];
-    }
-
-    public static function create($categoryId, $name, $slug, $description, $specs, $price, $images, $isActive)
-    {
-        global $pdo;
-        $stmt = $pdo->prepare("
-            INSERT INTO products (category_id, name, slug, description, specs, price, images, is_active) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        return $stmt->execute([
-            $categoryId,
-            $name,
-            $slug,
-            $description,
-            json_encode($specs),
-            $price,
-            json_encode($images),
-            $isActive
-        ]) ? (int)$pdo->lastInsertId() : 0;
-    }
-    private static function formatProduct($product)
-    {
-        if (!$product) return null;
-        $product['specs'] = json_decode($product['specs'] ?? '', true) ?? [];
-        $product['images'] = json_decode($product['images'] ?? '', true) ?? [];
-
-        $productId = (int)($product['id'] ?? 0);
-        if ($productId > 0) {
-            $product['exterior_colors'] = self::getExteriorColorsByProductId($productId);
-        } else {
-            $product['exterior_colors'] = [];
+        if (isset($categoryNames[$categoryId])) {
+            $product['category_name'] = $categoryNames[$categoryId];
         }
 
         return $product;
     }
 
-    private static function colorTableExists(): bool
+    private static function formatMany(iterable $cursor, array $categoryNames = []): array
     {
-        if (self::$hasColorTable !== null) {
-            return self::$hasColorTable;
+        $items = [];
+        foreach ($cursor as $doc) {
+            $items[] = self::formatProduct($doc, $categoryNames);
         }
-
-        global $pdo;
-
-        try {
-            $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name');
-            $stmt->execute([':table_name' => 'product_colors']);
-            self::$hasColorTable = (int)$stmt->fetchColumn() > 0;
-        } catch (Throwable $e) {
-            self::$hasColorTable = false;
-        }
-
-        return self::$hasColorTable;
+        return $items;
     }
 
     private static function normalizeColorRows(array $rows): array
@@ -170,14 +126,14 @@ class Product
                 continue;
             }
 
-            $code = strtoupper(trim((string)($row['code'] ?? $row['color_code'] ?? '')));
-            $name = trim((string)($row['name'] ?? $row['color_name'] ?? ''));
+            $code = strtoupper(trim((string)($row['code'] ?? $row['colorCode'] ?? $row['color_code'] ?? '')));
+            $name = trim((string)($row['name'] ?? $row['colorName'] ?? $row['color_name'] ?? ''));
             if ($code === '' || $name === '') {
                 continue;
             }
 
-            $hex = strtoupper(trim((string)($row['hex'] ?? $row['color_hex'] ?? '')));
-            $image = trim((string)($row['image'] ?? $row['image_path'] ?? ''));
+            $hex = strtoupper(trim((string)($row['hex'] ?? $row['colorHex'] ?? $row['color_hex'] ?? '')));
+            $image = trim((string)($row['image'] ?? $row['imagePath'] ?? $row['image_path'] ?? ''));
             $sortOrder = (int)($row['sortOrder'] ?? $row['sort_order'] ?? $index);
 
             $normalized[] = [
@@ -216,205 +172,268 @@ class Product
         return $normalized;
     }
 
-    public static function getExteriorColorsByProductId(int $productId): array
+    // ------------------------------------------------------------------
+    // Filters
+    // ------------------------------------------------------------------
+
+    private static function isTextSearch(array $filters): bool
     {
-        if ($productId > 0 && self::colorTableExists()) {
-            global $pdo;
-
-            try {
-                $stmt = $pdo->prepare('SELECT color_code AS code, color_name AS name, color_hex AS hex, image_path AS image, surcharge, sort_order, is_default FROM product_colors WHERE product_id = ? ORDER BY sort_order ASC, id ASC');
-                $stmt->execute([$productId]);
-                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if (!empty($rows)) {
-                    return self::normalizeColorRows($rows);
-                }
-            } catch (Throwable $e) {
-                // Fall through to empty result below.
-            }
-        }
-
-        return [];
+        return trim((string)($filters['search'] ?? '')) !== ''
+            && Db::env('SEARCH_MODE', 'regex') === 'text';
     }
 
-    public static function syncExteriorColors(int $productId, array $rows): bool
+    private static function buildCatalogFilters(array $filters = []): array
     {
-        global $pdo;
+        $query = ['isActive' => true];
 
-        if ($productId <= 0) {
-            return false;
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            if (self::isTextSearch($filters)) {
+                $query['$text'] = ['$search' => $search];
+            } else {
+                $query['name'] = self::regex($search);
+            }
         }
 
-        if (!self::colorTableExists()) {
-            return true;
+        if (!empty($filters['category_id'])) {
+            $query['categoryID'] = (int)$filters['category_id'];
+        } elseif (!empty($filters['kind']) && in_array($filters['kind'], Category::KINDS, true)) {
+            $query['categoryID'] = ['$in' => Category::idsByKind($filters['kind'])];
         }
 
-        try {
-            $pdo->beginTransaction();
+        $price = [];
+        if (!empty($filters['price_min'])) {
+            $price['$gte'] = (float)$filters['price_min'];
+        }
+        if (!empty($filters['price_max'])) {
+            $price['$lte'] = (float)$filters['price_max'];
+        }
+        if ($price) {
+            $query['basePrice'] = $price;
+        }
 
-            $delete = $pdo->prepare('DELETE FROM product_colors WHERE product_id = ?');
-            $delete->execute([$productId]);
+        if (!empty($filters['range']) && $filters['range'] !== 'all') {
+            if ($filters['range'] === 'lt200') {
+                $query['attributes.rangeKm'] = ['$gt' => 0, '$lt' => 200];
+            } elseif ($filters['range'] === '200-400') {
+                $query['attributes.rangeKm'] = ['$gte' => 200, '$lte' => 400];
+            } elseif ($filters['range'] === 'gt400') {
+                $query['attributes.rangeKm'] = ['$gt' => 400];
+            }
+        }
 
-            if (!empty($rows)) {
-                $insert = $pdo->prepare('INSERT INTO product_colors (product_id, color_code, color_name, color_hex, image_path, surcharge, sort_order, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-                foreach (array_values($rows) as $index => $row) {
-                    if (!is_array($row)) {
-                        continue;
-                    }
-
-                    $code = strtoupper(trim((string)($row['code'] ?? '')));
-                    $name = trim((string)($row['name'] ?? ''));
-                    if ($code === '' || $name === '') {
-                        continue;
-                    }
-
-                    $hex = trim((string)($row['hex'] ?? ''));
-                    $hex = $hex !== '' ? (strpos($hex, '#') === 0 ? $hex : '#' . $hex) : null;
-                    $image = trim((string)($row['image'] ?? ''));
-                    $image = $image !== '' ? ltrim($image, '/') : null;
-                    $surcharge = max(0, (int)($row['surcharge'] ?? 0));
-                    $sortOrder = isset($row['sortOrder']) ? (int)$row['sortOrder'] : $index;
-                    $isDefault = !empty($row['isDefault']) ? 1 : 0;
-
-                    $insert->execute([
-                        $productId,
-                        $code,
-                        $name,
-                        $hex,
-                        $image,
-                        $surcharge,
-                        $sortOrder,
-                        $isDefault,
-                    ]);
+        // T2-12: lọc thuộc tính động đã được controller whitelist theo category
+        if (!empty($filters['attrs']) && is_array($filters['attrs'])) {
+            foreach ($filters['attrs'] as $attrKey => $attrVal) {
+                if (!is_string($attrKey) || preg_match('/^[a-zA-Z][a-zA-Z0-9_]*$/', $attrKey) !== 1) {
+                    continue;
+                }
+                if (is_bool($attrVal) || is_int($attrVal) || is_float($attrVal) || (is_string($attrVal) && $attrVal !== '')) {
+                    $query['attributes.' . $attrKey] = $attrVal;
                 }
             }
-
-            $pdo->commit();
-            return true;
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-
-            return false;
         }
+
+        return $query;
     }
+
+    private static function catalogSort(array $filters): array
+    {
+        $sort = $filters['sort'] ?? 'default';
+        if ($sort === 'price_asc') {
+            return ['basePrice' => 1, 'productID' => 1];
+        }
+        if ($sort === 'price_desc') {
+            return ['basePrice' => -1, 'productID' => 1];
+        }
+        if (self::isTextSearch($filters)) {
+            return ['score' => ['$meta' => 'textScore'], 'createdAt' => -1, 'productID' => 1];
+        }
+        return ['createdAt' => -1, 'productID' => 1];
+    }
+
+    private static function catalogFindOptions(array $filters, ?int $page = null, ?int $perPage = null): array
+    {
+        $options = [
+            'sort' => self::catalogSort($filters),
+        ];
+        if (self::isTextSearch($filters) && ($filters['sort'] ?? 'default') === 'default') {
+            $options['projection'] = ['score' => ['$meta' => 'textScore']];
+        }
+        if ($page !== null && $perPage !== null) {
+            $page = max(1, $page);
+            $perPage = max(1, $perPage);
+            $options['skip'] = ($page - 1) * $perPage;
+            $options['limit'] = $perPage;
+        }
+        return $options;
+    }
+
+    private static function buildAdminFilters(array $filters = []): array
+    {
+        $query = [];
+
+        if (!empty($filters['search'])) {
+            $search = (string)$filters['search'];
+            $categoryIds = [];
+            foreach (Category::namesById() as $id => $name) {
+                if (mb_stripos($name, $search) !== false) {
+                    $categoryIds[] = $id;
+                }
+            }
+            $or = [['name' => self::regex($search)]];
+            if ($categoryIds) {
+                $or[] = ['categoryID' => ['$in' => $categoryIds]];
+            }
+            $query['$or'] = $or;
+        }
+
+        if (!empty($filters['category_id'])) {
+            $query['categoryID'] = (int)$filters['category_id'];
+        } elseif (!empty($filters['kind']) && in_array($filters['kind'], Category::KINDS, true)) {
+            $query['categoryID'] = ['$in' => Category::idsByKind($filters['kind'])];
+        }
+
+        if (($filters['status'] ?? 'all') === 'active') {
+            $query['isActive'] = true;
+        } elseif (($filters['status'] ?? 'all') === 'inactive') {
+            $query['isActive'] = false;
+        }
+
+        $price = [];
+        if (isset($filters['price_min']) && $filters['price_min'] !== '' && is_numeric($filters['price_min'])) {
+            $price['$gte'] = (float)$filters['price_min'];
+        }
+        if (isset($filters['price_max']) && $filters['price_max'] !== '' && is_numeric($filters['price_max'])) {
+            $price['$lte'] = (float)$filters['price_max'];
+        }
+        if ($price) {
+            $query['basePrice'] = $price;
+        }
+
+        return $query;
+    }
+
+    // ------------------------------------------------------------------
+    // Reads
+    // ------------------------------------------------------------------
+
     public static function getById($id)
     {
-        global $pdo;
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE is_active = 1 AND id = ? LIMIT 0,1");
-        $stmt->execute([$id]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        return self::formatProduct($product);
+        return self::formatProduct(self::collection()->findOne(['productID' => (string)(int)$id, 'isActive' => true]));
     }
+
+    /**
+     * Many products in one $in round trip, keyed by productID (string), including inactive
+     * ones so old orders still resolve. Missing ids are simply absent from the result.
+     */
+    public static function findManyByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('strval', $ids), static fn(string $id): bool => $id !== '')));
+        if ($ids === []) {
+            return [];
+        }
+
+        $out = [];
+        foreach (self::collection()->find(['productID' => ['$in' => $ids]]) as $doc) {
+            $product = self::formatProduct($doc);
+            $out[$product['product_id']] = $product;
+        }
+
+        return $out;
+    }
+
     public static function getByIdAdmin($id)
     {
-        global $pdo;
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? LIMIT 0,1");
-        $stmt->execute([(int)$id]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        return self::formatProduct($product);
+        return self::formatProduct(self::collection()->findOne(['productID' => (string)(int)$id]));
     }
-    public static function getAll($page = 1, $perPage = 10)
+
+    /**
+     * Lấy nhiều sản phẩm bằng 1 query $in (dùng cho trang wishlist, tránh N+1).
+     * @return array<string, array> Map theo product_id
+     */
+    public static function getByIds(array $ids, bool $includeInactive = true): array
     {
-        global $pdo;
-        $page = max(1, $page);
-        $offset = max(0, (int)($page - 1) * $perPage);
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
-        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+        $uniqueIds = [];
+        foreach ($ids as $id) {
+            $str = trim((string)$id);
+            if ($str !== '' && !in_array($str, $uniqueIds, true)) {
+                $uniqueIds[] = $str;
+            }
+        }
+        if (empty($uniqueIds)) {
+            return [];
+        }
+
+        $filter = ['productID' => ['$in' => $uniqueIds]];
+        if (!$includeInactive) {
+            $filter['isActive'] = true;
+        }
+
+        $byId = [];
+        foreach (self::collection()->find($filter) as $doc) {
+            $formatted = self::formatProduct($doc);
+            if ($formatted !== null) {
+                $byId[$formatted['product_id']] = $formatted;
+            }
+        }
+        return $byId;
+    }
+
+    /** @param string|null $kind 'vehicle' | 'accessory' | null (tất cả) */
+    public static function getAll($page = 1, $perPage = 10, ?string $kind = null)
+    {
+        $page = max(1, (int)$page);
+        $perPage = max(1, (int)$perPage);
+        $query = ['isActive' => true];
+        if ($kind !== null) {
+            $query['categoryID'] = ['$in' => Category::idsByKind($kind)];
+        }
+        return self::formatMany(self::collection()->find($query, [
+            'sort' => ['createdAt' => -1, 'productID' => 1],
+            'skip' => ($page - 1) * $perPage,
+            'limit' => $perPage,
+        ]));
     }
 
     /** Used by navbar.php to populate dropdown menu per category. */
     public static function getByCategory($categoryId, $page = 1, $perPage = 10): array
     {
-        global $pdo;
-        $page = max(1, $page);
-        $offset = max(0, (int)($page - 1) * $perPage);
-        $sql = "SELECT * FROM products
-            WHERE is_active = 1 AND category_id = :id
-            ORDER BY created_at DESC
-            LIMIT :limit OFFSET :offset";
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':id', (int)$categoryId, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+        $page = max(1, (int)$page);
+        $perPage = max(1, (int)$perPage);
+        return self::formatMany(self::collection()->find(['isActive' => true, 'categoryID' => (int)$categoryId], [
+            'sort' => ['createdAt' => -1, 'productID' => 1],
+            'skip' => ($page - 1) * $perPage,
+            'limit' => $perPage,
+        ]));
     }
 
     public static function filterPaginated(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        global $pdo;
-
-        $page = max(1, $page);
-        $perPage = max(1, $perPage);
-        $offset = max(0, (int)($page - 1) * $perPage);
-
-        [$whereClause, $params] = self::buildCatalogFilters($filters);
-
-        $sort = $filters['sort'] ?? 'default';
-        $orderBy = 'created_at DESC';
-        if ($sort === 'price_asc') {
-            $orderBy = 'price ASC';
-        } elseif ($sort === 'price_desc') {
-            $orderBy = 'price DESC';
-        }
-
-        $sql = "SELECT * FROM products WHERE $whereClause ORDER BY $orderBy LIMIT :limit OFFSET :offset";
-
-        $stmt = $pdo->prepare($sql);
-        self::bindNamedParams($stmt, $params);
-        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+        return self::formatMany(self::collection()->find(
+            self::buildCatalogFilters($filters),
+            self::catalogFindOptions($filters, $page, $perPage)
+        ));
     }
 
     public static function filterAll(array $filters = []): array
     {
-        global $pdo;
-
-        [$whereClause, $params] = self::buildCatalogFilters($filters);
-
-        $sql = "SELECT * FROM products WHERE $whereClause ORDER BY ";
-
-        $sort = $filters['sort'] ?? 'default';
-        if ($sort === 'price_asc') {
-            $sql .= "price ASC ";
-        } elseif ($sort === 'price_desc') {
-            $sql .= "price DESC ";
-        } elseif ($sort === 'newest') {
-            $sql .= "created_at DESC ";
-        } else {
-            $sql .= "created_at DESC ";
-        }
-
-        $stmt = $pdo->prepare($sql);
-        self::bindNamedParams($stmt, $params);
-        $stmt->execute();
-
-        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+        return self::formatMany(self::collection()->find(
+            self::buildCatalogFilters($filters),
+            self::catalogFindOptions($filters)
+        ));
     }
 
     public static function countFiltered(array $filters = []): int
     {
-        global $pdo;
-
-        [$whereClause, $params] = self::buildCatalogFilters($filters);
-        $sql = "SELECT COUNT(*) FROM products WHERE $whereClause";
-
-        $stmt = $pdo->prepare($sql);
-        self::bindNamedParams($stmt, $params);
-        $stmt->execute();
-
-        return (int)$stmt->fetchColumn();
+        return (int)self::collection()->countDocuments(self::buildCatalogFilters($filters));
     }
 
     public static function extractRangeKm(array $specs): float
     {
+        if (isset($specs['rangeKm']) && is_numeric($specs['rangeKm'])) {
+            return (float)$specs['rangeKm'];
+        }
         if (!isset($specs['range'])) {
             return 0;
         }
@@ -463,10 +482,10 @@ class Product
     {
         $switchProductsRaw = $categoryId > 0
             ? self::getByCategory($categoryId, 1, $rawLimit)
-            : self::getAll(1, $rawLimit);
+            : self::getAll(1, $rawLimit, 'vehicle');
 
         if (empty($switchProductsRaw)) {
-            $switchProductsRaw = self::getAll(1, $rawLimit);
+            $switchProductsRaw = self::getAll(1, $rawLimit, 'vehicle');
         }
 
         $switchProducts = [];
@@ -503,92 +522,154 @@ class Product
 
     public static function getAdminList(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        global $pdo;
-
         $page = max(1, $page);
-        $offset = max(0, (int)($page - 1) * $perPage);
+        $perPage = max(1, $perPage);
 
-        [$whereSql, $params] = self::buildAdminFilters($filters);
+        $sortMap = [
+            'price_asc' => ['basePrice' => 1],
+            'price_desc' => ['basePrice' => -1],
+            'name_asc' => ['name' => 1],
+            'name_desc' => ['name' => -1],
+        ];
+        $sort = ($sortMap[$filters['sort'] ?? ''] ?? ['createdAt' => -1]) + ['productID' => 1];
 
-        $orderBy = 'p.created_at DESC';
-        $sort = $filters['sort'] ?? '';
-        if ($sort === 'price_asc') {
-            $orderBy = 'p.price ASC';
-        } elseif ($sort === 'price_desc') {
-            $orderBy = 'p.price DESC';
-        } elseif ($sort === 'name_asc') {
-            $orderBy = 'p.name ASC';
-        } elseif ($sort === 'name_desc') {
-            $orderBy = 'p.name DESC';
-        }
-
-        $sql = "SELECT p.*, c.name AS category_name
-                FROM products p
-                JOIN categories c ON c.id = p.category_id
-                WHERE {$whereSql}
-                ORDER BY {$orderBy}
-                LIMIT :limit OFFSET :offset";
-
-        $stmt = $pdo->prepare($sql);
-        self::bindNamedParams($stmt, $params);
-        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return array_map([self::class, 'formatProduct'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+        return self::formatMany(self::collection()->find(self::buildAdminFilters($filters), [
+            'sort' => $sort,
+            'skip' => ($page - 1) * $perPage,
+            'limit' => $perPage,
+        ]), Category::namesById());
     }
 
     public static function countAdminList(array $filters = []): int
     {
-        global $pdo;
-
-        [$whereSql, $params] = self::buildAdminFilters($filters);
-
-        $sql = "SELECT COUNT(*)
-                FROM products p
-                JOIN categories c ON c.id = p.category_id
-                WHERE {$whereSql}";
-
-        $stmt = $pdo->prepare($sql);
-        self::bindNamedParams($stmt, $params);
-        $stmt->execute();
-
-        return (int)$stmt->fetchColumn();
+        return (int)self::collection()->countDocuments(self::buildAdminFilters($filters));
     }
 
     public static function countAdminDistinctCategories(array $filters = []): int
     {
-        global $pdo;
-
-        [$whereSql, $params] = self::buildAdminFilters($filters);
-        $sql = "SELECT COUNT(DISTINCT p.category_id)
-                FROM products p
-                JOIN categories c ON c.id = p.category_id
-                WHERE {$whereSql}";
-
-        $stmt = $pdo->prepare($sql);
-        self::bindNamedParams($stmt, $params);
-        $stmt->execute();
-
-        return (int)$stmt->fetchColumn();
+        return count(self::collection()->distinct('categoryID', self::buildAdminFilters($filters)));
     }
 
     public static function slugExists(string $slug, ?int $excludeId = null): bool
     {
-        global $pdo;
-        $sql = 'SELECT COUNT(*) FROM products WHERE slug = :slug';
+        $query = ['slug' => $slug];
         if ($excludeId !== null) {
-            $sql .= ' AND id <> :id';
+            $query['productID'] = ['$ne' => (string)$excludeId];
+        }
+        return self::collection()->countDocuments($query) > 0;
+    }
+
+    // ------------------------------------------------------------------
+    // Colors (nằm trong variant đầu tiên)
+    // ------------------------------------------------------------------
+
+    public static function getExteriorColorsByProductId(int $productId): array
+    {
+        if ($productId <= 0) {
+            return [];
+        }
+        $product = self::getByIdAdmin($productId);
+        return $product['exterior_colors'] ?? [];
+    }
+
+    public static function syncExteriorColors(int $productId, array $rows): bool
+    {
+        if ($productId <= 0) {
+            return false;
         }
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':slug', $slug, PDO::PARAM_STR);
-        if ($excludeId !== null) {
-            $stmt->bindValue(':id', $excludeId, PDO::PARAM_INT);
-        }
-        $stmt->execute();
+        $colors = [];
+        foreach (array_values($rows) as $index => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
 
-        return (int)$stmt->fetchColumn() > 0;
+            $code = strtoupper(trim((string)($row['code'] ?? '')));
+            $name = trim((string)($row['name'] ?? ''));
+            if ($code === '' || $name === '') {
+                continue;
+            }
+
+            $hex = trim((string)($row['hex'] ?? ''));
+            $image = trim((string)($row['image'] ?? ''));
+            $colors[] = [
+                'colorCode' => $code,
+                'colorName' => $name,
+                'colorHex' => $hex !== '' ? (strpos($hex, '#') === 0 ? $hex : '#' . $hex) : null,
+                'imagePath' => $image !== '' ? ltrim($image, '/') : null,
+                'surcharge' => max(0, (int)($row['surcharge'] ?? 0)),
+                'sortOrder' => isset($row['sortOrder']) ? (int)$row['sortOrder'] : $index,
+                'isDefault' => !empty($row['isDefault']),
+            ];
+        }
+
+        try {
+            self::collection()->updateOne(
+                ['productID' => (string)$productId],
+                ['$set' => ['variants.0.colors' => $colors, 'updatedAt' => self::now()]]
+            );
+            return true;
+        } catch (Throwable $e) {
+            error_log('Product::syncExteriorColors: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Writes
+    // ------------------------------------------------------------------
+
+    public static function create($categoryId, $name, $slug, $description, $specs, $price, $images, $isActive)
+    {
+        $counter = Db::mongo()->selectCollection('counters')->findOneAndUpdate(
+            ['_id' => 'productID'],
+            ['$inc' => ['seq' => 1]],
+            ['upsert' => true, 'returnDocument' => MongoDB\Operation\FindOneAndUpdate::RETURN_DOCUMENT_AFTER]
+        );
+        $id = (int)$counter['seq'];
+        $variantId = self::defaultVariantId($id);
+
+        self::collection()->insertOne([
+            'productID' => (string)$id,
+            'categoryID' => (int)$categoryId,
+            'name' => (string)$name,
+            'slug' => (string)$slug,
+            'description' => $description,
+            'basePrice' => (float)$price,
+            'images' => array_values((array)$images),
+            'isActive' => (bool)$isActive,
+            'attributes' => self::attributesFromSpecs((array)$specs),
+            'variants' => [[
+                'variantId' => $variantId,
+                'name' => 'Tiêu chuẩn',
+                'price' => (float)$price,
+                'isActive' => true,
+                'attributes' => (object)[],
+                'colors' => [],
+            ]],
+            'avgRating' => 0.0,
+            'totalReviews' => 0,
+            'totalSold' => 0,
+            'reviews' => [],
+            'createdAt' => self::now(),
+            'updatedAt' => self::now(),
+        ]);
+
+        // Mỗi variant cần 1 dòng tồn kho bên PG
+        InventoryService::ensureRows((string)$id, [$variantId => null]);
+
+        return $id;
+    }
+
+    private static function attributesFromSpecs(array $specs): object
+    {
+        $rangeKm = self::extractRangeKm(array_diff_key($specs, ['rangeKm' => true]));
+        if ($rangeKm > 0) {
+            $specs['rangeKm'] = $rangeKm;
+        } else {
+            unset($specs['rangeKm']);
+        }
+        return (object)$specs;
     }
 
     public static function updateById(
@@ -602,45 +683,225 @@ class Product
         array $images,
         int $isActive
     ): bool {
-        global $pdo;
-        $stmt = $pdo->prepare(
-            'UPDATE products
-             SET category_id = ?, name = ?, slug = ?, description = ?, specs = ?, price = ?, images = ?, is_active = ?
-             WHERE id = ?'
-        );
+        $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
+            'categoryID' => $categoryId,
+            'name' => $name,
+            'slug' => $slug,
+            'description' => $description,
+            'attributes' => self::attributesFromSpecs($specs),
+            'basePrice' => $price,
+            'variants.0.price' => $price,
+            'images' => array_values($images),
+            'isActive' => (bool)$isActive,
+            'updatedAt' => self::now(),
+        ]]);
 
-        return $stmt->execute([
-            $categoryId,
-            $name,
-            $slug,
-            $description,
-            json_encode($specs),
-            $price,
-            json_encode($images),
-            $isActive,
-            $id,
-        ]);
+        return $result->getMatchedCount() > 0;
     }
 
     public static function setActive(int $id, int $isActive): bool
     {
-        global $pdo;
-        $stmt = $pdo->prepare('UPDATE products SET is_active = ? WHERE id = ?');
-        return $stmt->execute([$isActive ? 1 : 0, $id]);
+        $result = self::collection()->updateOne(
+            ['productID' => (string)$id],
+            ['$set' => ['isActive' => (bool)$isActive, 'updatedAt' => self::now()]]
+        );
+        return $result->getMatchedCount() > 0;
     }
 
     public static function hasOrders(int $id): bool
     {
-        global $pdo;
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE product_id = ?');
-        $stmt->execute([$id]);
-        return (int)$stmt->fetchColumn() > 0;
+        $stmt = Db::pg()->prepare('SELECT EXISTS (SELECT 1 FROM order_items WHERE product_id = ?)');
+        $stmt->execute([(string)$id]);
+        return (bool)$stmt->fetchColumn();
     }
 
     public static function deleteById(int $id): bool
     {
-        global $pdo;
-        $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
-        return $stmt->execute([$id]);
+        $deleted = self::collection()->deleteOne(['productID' => (string)$id])->getDeletedCount() > 0;
+
+        // Dọn dữ liệu PG tham chiếu logic tới sản phẩm (không có FK chéo DB)
+        $pdo = Db::pg();
+        InventoryService::deleteProduct((string)$id);
+        foreach (['cart_items', 'wishlist_items'] as $table) {
+            $pdo->prepare("DELETE FROM {$table} WHERE product_id = ?")->execute([(string)$id]);
+        }
+
+        return $deleted;
+    }
+
+    // ------------------------------------------------------------------
+    // Phụ kiện: sản phẩm nhiều phiên bản
+    // ------------------------------------------------------------------
+
+    private static function nextProductId(): int
+    {
+        $counter = Db::mongo()->selectCollection('counters')->findOneAndUpdate(
+            ['_id' => 'productID'],
+            ['$inc' => ['seq' => 1]],
+            ['upsert' => true, 'returnDocument' => MongoDB\Operation\FindOneAndUpdate::RETURN_DOCUMENT_AFTER]
+        );
+        return (int)$counter['seq'];
+    }
+
+    /** "Áo polo VinFast" -> "ao-polo-vinfast" (bỏ dấu tiếng Việt) */
+    public static function slugify(string $text): string
+    {
+        return strtolower(self::variantCode($text));
+    }
+
+    /** "Đỏ / M" -> "DO-M" (bỏ dấu, chỉ A-Z0-9) */
+    private static function variantCode(string $text): string
+    {
+        $map = ['à'=>'a','á'=>'a','ạ'=>'a','ả'=>'a','ã'=>'a','â'=>'a','ầ'=>'a','ấ'=>'a','ậ'=>'a','ẩ'=>'a','ẫ'=>'a','ă'=>'a','ằ'=>'a','ắ'=>'a','ặ'=>'a','ẳ'=>'a','ẵ'=>'a',
+            'è'=>'e','é'=>'e','ẹ'=>'e','ẻ'=>'e','ẽ'=>'e','ê'=>'e','ề'=>'e','ế'=>'e','ệ'=>'e','ể'=>'e','ễ'=>'e','ì'=>'i','í'=>'i','ị'=>'i','ỉ'=>'i','ĩ'=>'i',
+            'ò'=>'o','ó'=>'o','ọ'=>'o','ỏ'=>'o','õ'=>'o','ô'=>'o','ồ'=>'o','ố'=>'o','ộ'=>'o','ổ'=>'o','ỗ'=>'o','ơ'=>'o','ờ'=>'o','ớ'=>'o','ợ'=>'o','ở'=>'o','ỡ'=>'o',
+            'ù'=>'u','ú'=>'u','ụ'=>'u','ủ'=>'u','ũ'=>'u','ư'=>'u','ừ'=>'u','ứ'=>'u','ự'=>'u','ử'=>'u','ữ'=>'u','ỳ'=>'y','ý'=>'y','ỵ'=>'y','ỷ'=>'y','ỹ'=>'y','đ'=>'d'];
+        $text = strtr(mb_strtolower($text, 'UTF-8'), $map);
+        $code = strtoupper(trim((string)preg_replace('/[^a-z0-9]+/', '-', $text), '-'));
+        return $code !== '' ? substr($code, 0, 40) : 'V';
+    }
+
+    /**
+     * Chuẩn hóa danh sách phiên bản từ form/seed.
+     * Mỗi phần tử: [variant_id?, name, price, is_active?, attributes?(array), stock?(int|null)]
+     * variant_id cũ được giữ; phiên bản mới sinh "{productID}-{CODE}" (duy nhất trong sản phẩm).
+     *
+     * @return array{0: array, 1: array<string,int|null>} [variants cho Mongo, stockByVariant]
+     */
+    private static function buildVariants(int $productId, array $rows): array
+    {
+        $variants = [];
+        $stock = [];
+        $used = [];
+        foreach (array_values($rows) as $i => $row) {
+            $name = trim((string)($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $id = trim((string)($row['variant_id'] ?? ''));
+            if ($id === '' || strpos($id, $productId . '-') !== 0) {
+                $base = $productId . '-' . self::variantCode($name);
+                $id = $base;
+                for ($n = 2; isset($used[$id]); $n++) {
+                    $id = $base . '-' . $n;
+                }
+            }
+            if (isset($used[$id])) {
+                continue;
+            }
+            $used[$id] = true;
+
+            $attrs = [];
+            foreach ((array)($row['attributes'] ?? []) as $k => $v) {
+                if ($v === '' || $v === null) {
+                    continue;
+                }
+                $attrs[(string)$k] = is_numeric($v) && !is_string($v) ? $v : (string)$v;
+            }
+
+            $variants[] = [
+                'variantId' => $id,
+                'name' => $name,
+                'price' => max(0, (float)($row['price'] ?? 0)),
+                'isActive' => !array_key_exists('is_active', $row) || !empty($row['is_active']),
+                'attributes' => (object)$attrs,
+                'colors' => [],
+            ];
+            $stock[$id] = array_key_exists('stock', $row) && $row['stock'] !== '' && $row['stock'] !== null ? max(0, (int)$row['stock']) : null;
+        }
+        return [$variants, $stock];
+    }
+
+    private static function basePriceOf(array $variants): float
+    {
+        $prices = array_map(static fn(array $v): float => (float)$v['price'], array_filter($variants, static fn(array $v): bool => $v['isActive']));
+        if (!$prices) {
+            $prices = array_map(static fn(array $v): float => (float)$v['price'], $variants);
+        }
+        return $prices ? min($prices) : 0.0;
+    }
+
+    /**
+     * Tạo sản phẩm nhiều phiên bản (phụ kiện).
+     * $data: category_id, name, slug, description, images[], is_active, attributes[], variants[] (xem buildVariants)
+     * @return int productID mới, 0 nếu không có phiên bản hợp lệ
+     */
+    public static function createWithVariants(array $data): int
+    {
+        $id = self::nextProductId();
+        [$variants, $stock] = self::buildVariants($id, (array)($data['variants'] ?? []));
+        if (!$variants) {
+            return 0;
+        }
+
+        self::collection()->insertOne([
+            'productID' => (string)$id,
+            'categoryID' => (int)$data['category_id'],
+            'name' => (string)$data['name'],
+            'slug' => (string)$data['slug'],
+            'description' => $data['description'] ?? null,
+            'basePrice' => self::basePriceOf($variants),
+            'images' => array_values((array)($data['images'] ?? [])),
+            'isActive' => !empty($data['is_active']),
+            'attributes' => (object)(array)($data['attributes'] ?? []),
+            'variants' => $variants,
+            'avgRating' => 0.0,
+            'totalReviews' => 0,
+            'totalSold' => 0,
+            'reviews' => [],
+            'createdAt' => isset($data['created_at']) && $data['created_at'] instanceof MongoDB\BSON\UTCDateTime ? $data['created_at'] : self::now(),
+            'updatedAt' => self::now(),
+        ]);
+
+        InventoryService::ensureRows((string)$id, $stock);
+        return $id;
+    }
+
+    /**
+     * Sửa sản phẩm nhiều phiên bản. Phiên bản bị bỏ khỏi danh sách sẽ bị xóa khỏi Mongo,
+     * dòng tồn kho của nó bị xóa nếu không có hàng đang giữ (order_items vẫn giữ snapshot).
+     */
+    public static function updateWithVariants(int $id, array $data): bool
+    {
+        [$variants, $stock] = self::buildVariants($id, (array)($data['variants'] ?? []));
+        if (!$variants) {
+            return false;
+        }
+
+        return Db::transaction(static function (PDO $pdo) use ($id, $data, $stock, $variants) {
+            $rows = array_column($data['variants'], null, 'variant_id');
+            $new = [];
+            foreach ($stock as $vid => $qty) {
+                if (!isset($rows[$vid])) { // ID sinh từ tên cho phiên bản mới.
+                    $new[$vid] = $qty;
+                    continue;
+                }
+                if ($qty === null) {
+                    continue; // Không sửa tồn: không ghi và không kiểm tra version cũ.
+                }
+                $version = $rows[$vid]['version_orig'] ?? null;
+                if (!is_int($version) || $version < 0 || !InventoryService::setStock((string)$id, $vid, $qty, $version)) {
+                    throw new ConcurrentUpdateException("Tồn kho không còn khớp: {$vid}");
+                }
+            }
+            if ($new) {
+                InventoryService::ensureRows((string)$id, $new);
+            }
+            InventoryService::removeRowsExcept((string)$id, array_keys($stock));
+            $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
+                'categoryID' => (int)$data['category_id'],
+                'name' => (string)$data['name'],
+                'slug' => (string)$data['slug'],
+                'description' => $data['description'] ?? null,
+                'basePrice' => self::basePriceOf($variants),
+                'images' => array_values((array)($data['images'] ?? [])),
+                'isActive' => !empty($data['is_active']),
+                'attributes' => (object)(array)($data['attributes'] ?? []),
+                'variants' => $variants,
+                'updatedAt' => self::now(),
+            ]]);
+            if (!$result->getMatchedCount()) throw new ConcurrentUpdateException((string)$id);
+            return true;
+        });
     }
 }

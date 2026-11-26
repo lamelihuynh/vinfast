@@ -689,7 +689,7 @@ $total = count($timeline ?? []);
  
             <!-- Main image -->
             <div class="tl-photo-main">
-              <img src="<?= htmlspecialchars($item['img_main']).'?v='.time() ?>"
+              <img src="<?= htmlspecialchars($item['img_main'] ?? '').'?v='.time() ?>"
                    alt="<?= htmlspecialchars($item['year']) ?>"
                    loading="lazy">
             </div>

@@ -2,7 +2,7 @@
 
 /**
  * app/models/PageAsset.php — Page Assets (Images, Videos)
- * Table: page_assets
+ * Table: page_assets (PostgreSQL)
  * Owner: Nhat Linh (Member 2)
  *
  * Used by: About page, FAQ page, admin controllers
@@ -12,10 +12,25 @@ class PageAsset
 {
     private $pdo;
 
+    /** Column list; created_at formatted like the old MySQL TIMESTAMP. */
+    private const COLS = "id, page_type, asset_key, file_path, file_size, mime_type,
+                to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at";
+
     public function __construct()
     {
         global $pdo;
         $this->pdo = $pdo;
+    }
+
+    /**
+     * Thư mục gốc chứa file upload (file_path lưu tương đối so với UPLOAD_PATH).
+     */
+    private function uploadRoot(): string
+    {
+        if (defined('UPLOAD_PATH')) {
+            return UPLOAD_PATH;
+        }
+        return (defined('ROOT') ? ROOT : dirname(__DIR__, 2)) . '/public/images/uploads/';
     }
 
     /**
@@ -24,7 +39,7 @@ class PageAsset
     public function getByKey(string $pageType, string $assetKey): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT * FROM page_assets WHERE page_type = ? AND asset_key = ? LIMIT 1'
+            'SELECT ' . self::COLS . ' FROM page_assets WHERE page_type = ? AND asset_key = ? LIMIT 1'
         );
         $stmt->execute([$pageType, $assetKey]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -37,7 +52,7 @@ class PageAsset
     public function getByPageType(string $pageType): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT * FROM page_assets WHERE page_type = ? ORDER BY created_at DESC'
+            'SELECT ' . self::COLS . ' FROM page_assets pa WHERE page_type = ? ORDER BY pa.created_at DESC'
         );
         $stmt->execute([$pageType]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -49,7 +64,7 @@ class PageAsset
     public function getByPattern(string $pageType, string $pattern): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT * FROM page_assets WHERE page_type = ? AND asset_key LIKE ? ORDER BY asset_key ASC'
+            'SELECT ' . self::COLS . ' FROM page_assets WHERE page_type = ? AND asset_key LIKE ? ORDER BY asset_key ASC'
         );
         $stmt->execute([$pageType, $pattern]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -60,14 +75,14 @@ class PageAsset
 
         $assets = $this->getByPattern('about', 'timeline_%');
 
-        $timeline = []; 
+        $timeline = [];
         foreach ($assets as $asset) {
-            $parts = explode('_', $asset['asset_key']); 
+            $parts = explode('_', $asset['asset_key']);
 
             if (count($parts) >= 3){
-                $year = $parts[1]; 
+                $year = $parts[1];
                 $type = $parts[2];
-                $timeline[$year]["imag_$type"] = $asset['$file_path'];
+                $timeline[$year]["imag_$type"] = $asset['file_path'];
             }
         }
         return $timeline;
@@ -79,11 +94,15 @@ class PageAsset
     public function save(string $pageType, string $assetKey, string $filePath, int $fileSize = 0, string $mimeType = null): bool
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO page_assets (page_type, asset_key, file_path, file_size, mime_type) 
+            'INSERT INTO page_assets (page_type, asset_key, file_path, file_size, mime_type)
              VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE file_path = ?, file_size = ?, mime_type = ?, created_at = NOW()'
+             ON CONFLICT (page_type, asset_key) DO UPDATE
+                SET file_path  = EXCLUDED.file_path,
+                    file_size  = EXCLUDED.file_size,
+                    mime_type  = EXCLUDED.mime_type,
+                    created_at = now()'
         );
-        return $stmt->execute([$pageType, $assetKey, $filePath, $fileSize, $mimeType, $filePath, $fileSize, $mimeType]);
+        return $stmt->execute([$pageType, $assetKey, $filePath, $fileSize, $mimeType]);
     }
 
     /**
@@ -108,10 +127,11 @@ class PageAsset
      */
     public function deleteByPageType(string $pageType): bool
     {
+        $root = $this->uploadRoot();
         $assets = $this->getByPageType($pageType);
         foreach ($assets as $asset) {
-            if (file_exists(PUBLIC_PATH . $asset['file_path'])) {
-                unlink(PUBLIC_PATH . $asset['file_path']);
+            if (file_exists($root . $asset['file_path'])) {
+                unlink($root . $asset['file_path']);
             }
         }
 
@@ -151,14 +171,14 @@ class PageAsset
 
         // Tạo tên file unique
         $ext = pathinfo($fileInput['name'], PATHINFO_EXTENSION);
-        $filename = $assetKey . '.' . $ext; 
+        $filename = $assetKey . '.' . $ext;
         $filePath = $uploadPath . $filename;
 
 
-        // Check duplicate 
+        // Check duplicate
         if (file_exists($filePath)) {
-            unlink($filePath); 
-        }       
+            unlink($filePath);
+        }
 
         // Move file
         if (!move_uploaded_file($fileInput['tmp_name'], $filePath)) {

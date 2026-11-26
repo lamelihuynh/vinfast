@@ -8,7 +8,7 @@
     </div>
     <form method="GET" action="<?= ADMIN_URL ?>products" class="mb-2">
         <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label class="form-label small">Tìm kiếm</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
@@ -25,6 +25,15 @@
                 </select>
             </div>
 
+            <div class="col-6 col-md-1">
+                <label class="form-label small">Loại</label>
+                <?php $kind = (string)($kind ?? 'all'); ?>
+                <select name="kind" class="form-select form-select-sm">
+                    <option value="all" <?= $kind === 'all' ? 'selected' : '' ?>>Tất cả</option>
+                    <option value="vehicle" <?= $kind === 'vehicle' ? 'selected' : '' ?>>Xe</option>
+                    <option value="accessory" <?= $kind === 'accessory' ? 'selected' : '' ?>>Phụ kiện</option>
+                </select>
+            </div>
             <div class="col-4 col-md-2">
                 <label class="form-label small">Trạng thái</label>
                 <select name="status" class="form-select form-select-sm">

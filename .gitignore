@@ -32,3 +32,5 @@ logs/
 .cache/
 %CACHE%/
 commit.md
+# Composer
+vendor/

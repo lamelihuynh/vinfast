@@ -8,19 +8,21 @@
  * Order matters: constants → DB → helpers → session.
  */
 
+date_default_timezone_set('Asia/Ho_Chi_Minh');
 define('ROOT',          __DIR__ . '/..');
 define('APP_NAME',      'VinFast');
 // define('BASE_URL',      'http://localhost/vinfast/');
 
 
 // Tự động lấy giao thức (http hoặc https)
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$isCli = PHP_SAPI === 'cli';
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https://" : "http://";
 
 // Tự động lấy tên miền hoặc IP đang truy cập
-$host = $_SERVER['HTTP_HOST']; 
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost:8080';
 
 // Tự động lấy thư mục gốc của dự án (ví dụ: /vinfast/)
-$project_folder = str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
+$project_folder = $isCli ? '/' : str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
 
 // Kết hợp lại thành BASE_URL hoàn chỉnh
 define('BASE_URL', $protocol . $host . $project_folder);
@@ -38,6 +40,10 @@ define('MAX_FILE_SIZE', 5 * 1024 * 1024);            // 2 MB
 define('ALLOWED_MIME',  ['image/jpeg', 'image/png', 'image/webp']);
 
 
+// Composer (mongodb/mongodb) + lớp DB dùng chung, phải có trước database.php
+require_once ROOT . '/vendor/autoload.php';
+require_once ROOT . '/app/core/Exceptions.php';
+require_once ROOT . '/app/core/Db.php';
 require_once ROOT . '/config/database.php';
 
 // Auto-load helpers (always needed)
@@ -47,9 +53,18 @@ foreach (['Auth', 'Validator', 'Upload', 'Pagination', 'SEO', 'View', 'AssetHelp
 
 // Auto-load models on demand
 spl_autoload_register(function (string $class): void {
-    $file = ROOT . "/app/models/{$class}.php";
-    if (file_exists($file)) require_once $file;
+    foreach (['models', 'services', 'services/inventory', 'core'] as $dir) {
+        $file = ROOT . "/app/{$dir}/{$class}.php";
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+    }
 });
+
+if ($isCli) {
+    return; // seed / bench: không cần session
+}
 
 $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['SERVER_PORT'] ?? '') === '443');

@@ -1,0 +1,1586 @@
+<title>T4 Transaction Tasks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky progress bar + milestone sections of task cards; status per task is shared via db */
+:root{
+  --bg:#f6f8fa; --surface:#ffffff; --fg:#17202a; --muted:#5a6773; --line:#dde3e9;
+  --accent:#1f5fbf; --accent-soft:#e7effb;
+  --pg:#2f5d8a; --pg-soft:#e4edf6; --mg:#1d7a46; --mg-soft:#e2f3e9;
+  --warn:#9a5b00; --warn-soft:#fdf1dc; --ok:#1d7a46; --ok-soft:#e2f3e9; --doing:#8a5a00; --doing-soft:#fdf1dc;
+  --code-bg:#eef2f6;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --surface:#161d23; --fg:#e3e9ee; --muted:#93a1ad; --line:#26313a;
+  --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
+  --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --surface:#161d23; --fg:#e3e9ee; --muted:#93a1ad; --line:#26313a;
+  --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
+  --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;margin:0;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:920px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+header.top{padding-block:36px 18px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.2;margin:6px 0 10px;text-wrap:balance}
+h2{font-size:21px;margin:0 0 12px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+section>h3{margin:22px 0 8px}
+h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px}
+p{margin:0 0 10px;max-width:72ch}
+.lede{color:var(--muted);max-width:68ch}
+a{color:var(--accent)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-left,0px))}
+.bar-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.meter{flex:1 1 220px;height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex;min-width:0}
+.meter .m-done{background:var(--ok)} .meter .m-doing{background:var(--doing)}
+.counts{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.counts b{color:var(--fg)}
+.filters{display:flex;gap:4px;flex-wrap:wrap}
+.filters button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:3px 10px;border-radius:99px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.sync{font-size:12px;color:var(--muted)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;margin-top:8px;scrollbar-width:thin}
+nav.toc a{flex:none;font-size:12.5px;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;white-space:nowrap}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent);outline:none}
+section{padding-top:36px;scroll-margin-top:110px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid>*{min-width:0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:4px;vertical-align:middle}
+.tag.pg{background:var(--pg-soft);color:var(--pg)} .tag.mg{background:var(--mg-soft);color:var(--mg)}
+.tag.ddl{background:var(--warn-soft);color:var(--warn)} .tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.ready{background:var(--ok-soft);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent)}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;word-break:break-word;overflow-wrap:anywhere}
+pre{background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:8px 0 12px;max-width:100%}
+pre code{background:none;padding:0;font-size:inherit;word-break:normal;overflow-wrap:normal}
+ul,ol{margin:0 0 10px;padding-left:22px} li{margin:3px 0}
+.tbl{overflow-x:auto;margin:8px 0 14px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+.callout{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.info{border-color:var(--accent);background:var(--accent-soft)}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.milestone>h2 .wk{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:400;margin-right:6px}
+.tasks{display:grid;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.task[data-status="done"]{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.task[data-status="doing"]{border-color:color-mix(in srgb,var(--doing) 45%,var(--line))}
+.task-head{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:12px 16px;cursor:pointer}
+.task-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tid{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.task-head h3{min-width:0}
+.task-head .meta{grid-column:2/3;font-size:12.5px;color:var(--muted)}
+.status-slot{grid-row:1/3;grid-column:3}
+.status-slot select{font:inherit;font-size:12.5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.task[data-status="done"] .status-slot select{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.task[data-status="doing"] .status-slot select{background:var(--doing-soft);color:var(--doing);border-color:var(--doing)}
+.who{display:block;font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
+.task-body{padding:0 16px 14px;border-top:1px solid var(--line);min-width:0}
+.task:not(.open) .task-body{display:none}
+.task-body>p:first-child{margin-top:12px}
+.files li code{font-weight:600}
+.dod{list-style:none;padding-left:0}
+.dod li::before{content:"✓ ";color:var(--ok);font-weight:700}
+dl.gloss{display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:6px 16px;margin:0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--fg)}
+@media (max-width:560px){
+  .task-head{grid-template-columns:1fr auto}.tid{grid-column:1/2}.task-head h3{grid-column:1/3;grid-row:2}.task-head .meta{grid-column:1/3;grid-row:3}.status-slot{grid-row:1;grid-column:2}
+  .card{padding:14px}
+  dl.gloss{grid-template-columns:1fr}
+  dl.gloss dd{margin-bottom:8px}
+  h1{font-size:24px}
+}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Đồ án DBMS · VinFast hybrid · Topic T4</div>
+  <h1>T4 · Transaction (Giao dịch)</h1>
+  <p class="lede">Hướng dẫn và danh sách việc cho topic Transaction. Trang viết cho sinh viên năm 4: biết SQL và PHP cơ bản, chưa cần biết MongoDB, Docker hay isolation level. Bấm vào một task để mở chi tiết. Chọn trạng thái để cập nhật tiến độ cho cả nhóm. Task có nhãn <span class="tag ready">Đã làm sẵn</span> đã xong ở Phase 0/0.5, bạn chỉ cần đọc hiểu.</p>
+</header>
+
+<div class="bar" role="region" aria-label="Tiến độ">
+  <div class="bar-row">
+    <div class="meter" aria-hidden="true"><div class="m-done" id="m-done" style="width:0"></div><div class="m-doing" id="m-doing" style="width:0"></div></div>
+    <span class="counts" id="counts">0 task</span>
+    <div class="filters" role="group" aria-label="Lọc theo trạng thái">
+      <button type="button" data-filter="all" aria-pressed="true">Tất cả</button>
+      <button type="button" data-filter="todo" aria-pressed="false">Chưa làm</button>
+      <button type="button" data-filter="doing" aria-pressed="false">Đang làm</button>
+      <button type="button" data-filter="done" aria-pressed="false">Xong</button>
+    </div>
+    <span class="sync" id="sync">Đang kết nối…</span>
+  </div>
+  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#kien-thuc">Kiến thức</a><a href="#bat-dau">30 phút đầu</a><a href="#w2">Tuần 1–2</a><a href="#w3">Tuần 3</a><a href="#w4">Tuần 4</a><a href="#w5">Tuần 5</a><a href="#w6">Tuần 6</a><a href="#thi-nghiem">Thí nghiệm</a><a href="#report">Report &amp; demo</a><a href="#phoi-hop">Phối hợp</a><a href="#thuat-ngu">Thuật ngữ</a><a href="#dod">Definition of Done</a></nav>
+</div>
+
+<!-- ======================================================================= -->
+<section id="tong-quan">
+  <h2>Tổng quan</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Topic này nói về gì</h3>
+      <p>Khi khách đặt cọc xe hay mua phụ kiện, app phải ghi nhiều bảng cùng lúc: <code>orders</code>, <code>order_items</code>, <code>inventory</code>, <code>coupons</code>, <code>cart_items</code>. Nếu một bước lỗi giữa chừng, dữ liệu không được dở dang (có đơn mà không có hàng, trừ kho mà không có đơn). Transaction giải quyết việc đó: hoặc tất cả cùng ghi, hoặc không ghi gì. T4 xây luồng giỏ hàng, checkout và mã giảm giá quanh một hàm duy nhất <code>OrderService::place()</code>. Sau đó T4 đo và chứng minh bằng thí nghiệm.</p>
+    </div>
+    <div class="card">
+      <h3>Sau topic này bạn trả lời được</h3>
+      <ul>
+        <li>ACID là gì, mỗi chữ thể hiện ở đâu trong luồng đặt hàng VinFast.</li>
+        <li>Vì sao CHECK/FK làm cả transaction rollback, và PHP nhận lỗi đó thế nào.</li>
+        <li>Vì sao 50 người cùng dùng 1 mã còn 5 lượt mà chỉ đúng 5 người thành công.</li>
+        <li>Vì sao không có transaction chung PostgreSQL + MongoDB, và nhóm xử lý thế nào.</li>
+        <li>Bấm "Thanh toán" 2 lần thì sao, làm sao để chỉ ra 1 đơn.</li>
+        <li>Transaction tốn thêm bao nhiêu thời gian (có số đo của chính nhóm).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Hiện trạng code (đã kiểm tra trên nhánh hiện tại)</h3>
+  <div class="tbl"><table>
+    <tr><th>Đã có sẵn</th><th>Chưa có, T4 phải làm</th></tr>
+    <tr><td><code>app/core/Db.php</code>: <code>Db::pg()</code>, <code>Db::mongo()</code>, <code>Db::transaction(fn(PDO $pdo) =&gt; …, ?$isolation)</code> bọc BEGIN/COMMIT/ROLLBACK. SQLSTATE <code>40001</code>/<code>40P01</code>/<code>55P03</code> → <code>ConcurrentUpdateException</code>, <code>23514</code> → <code>OutOfStockException</code>.</td><td><code>app/services/OrderService.php</code> (chưa tồn tại). Đây là ranh giới transaction chung cho đặt cọc và mua giỏ.</td></tr>
+    <tr><td>DDL: <code>orders</code>, <code>order_items</code>, <code>inventory</code>, <code>carts</code>, <code>cart_items</code> trong <code>001_schema.sql</code>; <code>coupons</code>, <code>coupon_redemptions</code> trong <code>004_coupons.sql</code>.</td><td><code>app/models/Cart.php</code>, <code>app/services/CartService.php</code>, <code>app/controllers/frontend/CartController.php</code>, trang <code>/cart</code> (chưa tồn tại).</td></tr>
+    <tr><td><code>Order::create()</code> ghi <code>orders</code> + <code>order_items</code> trong 1 <code>Db::transaction</code>, dùng <code>RETURNING id</code>, số tiền lấy từ <code>deposit_base_amount</code>.</td><td><code>Order::create()</code> chưa trừ kho, chưa retry, nuốt lỗi và trả <code>false</code>, luôn dùng <code>default_variant_id</code> (bỏ qua phiên bản khách chọn).</td></tr>
+    <tr><td><code>InventoryService::decrement(PDO $pdo, $productId, $variantId, $qty, ?$strategy)</code>: hợp đồng T4↔T5, thân hàm tạm là 1 câu UPDATE có điều kiện.</td><td>Chưa có chỗ nào gọi <code>decrement</code> trong luồng đặt hàng. T4 gọi nó trong <code>OrderService::runSteps()</code>.</td></tr>
+    <tr><td>Trang phụ kiện (<code>app/views/frontend/products/accessory.php</code>) có form POST <code>cart/add</code>, nút "Thêm vào giỏ" đang <code>disabled</code>. <code>OrderController::checkout</code> chặn phụ kiện khỏi luồng đặt cọc.</td><td>Bật nút, giỏ hàng, checkout giỏ (<code>type='purchase'</code>).</td></tr>
+    <tr><td><code>ActivityLog::record($actionType, $targetId, $metadata)</code>; actionType hợp lệ có <code>add_to_cart</code>, <code>remove_from_cart</code>, <code>place_order</code>, <code>deposit</code>, <code>apply_coupon</code>.</td><td>Gọi các actionType đó sau khi commit.</td></tr>
+    <tr><td>MongoDB chạy replica set <code>rs0</code> (bắt buộc cho transaction Mongo).</td><td>Chưa có code transaction Mongo nào (T4-20 tùy chọn).</td></tr>
+    <tr><td><code>bench/t4/</code>, <code>bench/results/</code> đã tạo (trống). DB benchmark <code>vinfast_bench</code> theo <code>bench/README.md</code>.</td><td>Mọi script bench T4, CSV, biểu đồ.</td></tr>
+  </table></div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Trong phạm vi</h3>
+      <ul>
+        <li>Đặt cọc xe và mua phụ kiện từ giỏ cùng đi qua <code>OrderService::place()</code>.</li>
+        <li>Giỏ hàng: 1 giỏ mỗi user, phải đăng nhập, chỉ chứa phụ kiện.</li>
+        <li>Mã giảm giá trong cùng transaction; chống đặt trùng khi bấm 2 lần.</li>
+        <li>Thí nghiệm trong <code>bench/t4/</code>, CSV trong <code>bench/results/</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Ngoài phạm vi</h3>
+      <ul>
+        <li>Chiến lược khóa tồn kho thật và demo 100 request: T5.</li>
+        <li>Lịch sử đơn, dashboard, các hàm đọc của <code>Order.php</code>: T3.</li>
+        <li>Cổng thanh toán thật, giữ hàng tạm, giỏ cho khách chưa đăng nhập.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Người phụ trách</h3>
+      <p>(điền)</p>
+      <p>Nhánh tách từ <code>develop-hybrid</code>: <code>topic4/auth-errors</code>, <code>topic4/cart</code>, <code>topic4/checkout-orderservice</code>, <code>topic4/coupon</code>, <code>topic4/bench</code>.</p>
+    </div>
+  </div>
+  <h4>Đầu ra cuối cùng</h4>
+  <p>Code giỏ hàng, checkout, coupon, chống đặt trùng; script <code>bench/t4/</code>; CSV <code>bench/results/t4_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code> và biểu đồ; chương report; demo 10 phút.</p>
+</section>
+
+<!-- ======================================================================= -->
+<section id="kien-thuc">
+  <h2>Kiến thức cần nắm trước</h2>
+  <p>Đọc phần này trước khi làm task. Mỗi mục có ví dụ từ VinFast và link tài liệu chính thức.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>1. ACID</h3>
+      <ul>
+        <li><b>A (Atomicity, nguyên tử)</b>: tất cả hoặc không gì. Đặt cọc lỗi ở bước trừ kho thì đơn cũng biến mất.</li>
+        <li><b>C (Consistency, nhất quán)</b>: dữ liệu luôn thỏa ràng buộc. <code>ck_inventory_stock CHECK (stock &gt;= 0)</code> không cho kho âm.</li>
+        <li><b>I (Isolation, cô lập)</b>: hai giao dịch chạy cùng lúc không làm hỏng nhau. Hai người mua chiếc sạc cuối cùng, chỉ một người được.</li>
+        <li><b>D (Durability, bền vững)</b>: đã COMMIT thì mất điện cũng không mất. PostgreSQL ghi WAL trước khi báo commit.</li>
+      </ul>
+      <p><a href="https://www.postgresql.org/docs/16/tutorial-transactions.html">PostgreSQL: Transactions</a></p>
+    </div>
+    <div class="card">
+      <h3>2. BEGIN / COMMIT / ROLLBACK</h3>
+      <p><code>BEGIN</code> mở giao dịch. Các câu sau đó chỉ mình bạn thấy. <code>COMMIT</code> công bố tất cả. <code>ROLLBACK</code> bỏ tất cả.</p>
+      <p>Trong app, không viết BEGIN bằng tay. Dùng <code>Db::transaction()</code>: nó gọi <code>beginTransaction()</code>, chạy hàm của bạn, <code>commit()</code> nếu ổn, <code>rollBack()</code> nếu có exception rồi ném lại.</p>
+<pre><code>$orderId = Db::transaction(function (PDO $pdo) {
+    // mọi câu dùng CHÍNH $pdo này
+    return $id;
+});</code></pre>
+      <p><a href="https://www.php.net/manual/en/pdo.transactions.php">PHP: PDO transactions</a></p>
+    </div>
+    <div class="card">
+      <h3>3. Savepoint</h3>
+      <p>Savepoint là "điểm lưu" bên trong một transaction. <code>ROLLBACK TO SAVEPOINT sp</code> chỉ bỏ phần sau điểm đó, phần trước vẫn giữ. PDO không có hàm riêng, dùng <code>$pdo-&gt;exec('SAVEPOINT sp')</code>.</p>
+      <p>Ví dụ VinFast: áp mã giảm giá thất bại nhưng vẫn muốn đặt đơn không giảm giá. Đặt savepoint trước bước coupon, lỗi thì quay về savepoint. Nhóm <b>không</b> dùng cách này mặc định (lỗi coupon thì báo khách và hủy cả đơn), nhưng phải hiểu để viết report.</p>
+      <p><a href="https://www.postgresql.org/docs/16/sql-savepoint.html">PostgreSQL: SAVEPOINT</a></p>
+    </div>
+    <div class="card">
+      <h3>4. CHECK / FK / UNIQUE làm rollback</h3>
+      <p>Câu nào vi phạm ràng buộc thì PostgreSQL báo lỗi. Từ lúc đó transaction bị "hỏng": mọi câu sau đều lỗi <code>25P02</code> (current transaction is aborted) cho tới khi ROLLBACK. PDO ném <code>PDOException</code>, <code>Db::transaction</code> rollback.</p>
+      <div class="tbl"><table>
+        <tr><th>SQLSTATE</th><th>Nghĩa</th><th>Ví dụ VinFast</th></tr>
+        <tr><td><code>23514</code></td><td>vi phạm CHECK</td><td>kho âm, <code>used_count &gt; usage_limit</code></td></tr>
+        <tr><td><code>23505</code></td><td>trùng UNIQUE</td><td>1 user dùng 1 mã 2 lần</td></tr>
+        <tr><td><code>23503</code></td><td>vi phạm FK</td><td>xóa user đã có đơn (RESTRICT)</td></tr>
+        <tr><td><code>40001</code>, <code>40P01</code></td><td>serialization fail, deadlock</td><td>2 đơn khóa kho ngược thứ tự</td></tr>
+      </table></div>
+      <p><a href="https://www.postgresql.org/docs/16/ddl-constraints.html">Constraints</a> · <a href="https://www.postgresql.org/docs/16/errcodes-appendix.html">Mã lỗi SQLSTATE</a></p>
+    </div>
+    <div class="card">
+      <h3>5. Transaction nhiều document trên MongoDB</h3>
+      <p>Ghi <b>1 document</b> trên Mongo luôn nguyên tử, kể cả mảng con. Ghi <b>nhiều document</b> cùng lúc thì cần transaction. Transaction Mongo chỉ chạy trên <b>replica set</b> hoặc sharded cluster, nên <code>docker-compose.yml</code> chạy Mongo với <code>--replSet rs0</code>.</p>
+      <p>Cách dùng: mở <b>session</b>, <code>startTransaction()</code>, truyền <code>['session' =&gt; $s]</code> vào mỗi lệnh, rồi commit hoặc abort. Thư viện PHP có <code>MongoDB\with_transaction($session, $fn)</code> tự retry lỗi tạm thời.</p>
+      <p><a href="https://www.mongodb.com/docs/manual/core/transactions/">MongoDB: Transactions</a> · <a href="https://www.mongodb.com/docs/manual/core/write-operations-atomicity/">Atomicity</a></p>
+    </div>
+    <div class="card">
+      <h3>6. Không có transaction chung PG + Mongo</h3>
+      <p>Đơn hàng nằm ở PostgreSQL, sản phẩm (giá, tên, <code>totalSold</code>) nằm ở MongoDB. Hai hệ không tham gia chung một giao thức commit 2 pha (2PC/XA). Không thể BEGIN một lần cho cả hai.</p>
+      <p>Cách nhóm làm:</p>
+      <ol>
+        <li><b>PG là nguồn sự thật</b> cho tiền và hàng. Đọc Mongo (giá, tên) <b>trước</b> BEGIN.</li>
+        <li>Cập nhật Mongo (<code>totalSold</code>, log) <b>sau</b> COMMIT, kiểu best-effort: lỗi thì chỉ ghi log.</li>
+        <li>Có script <b>đối soát</b> tính lại <code>totalSold</code> từ PG.</li>
+        <li>Hướng mở rộng: <b>outbox</b> (ghi sự kiện vào bảng PG trong cùng transaction, worker đẩy sang Mongo sau) hoặc <b>bù trừ</b> (ghi Mongo trước, PG lỗi thì chạy thao tác ngược).</li>
+      </ol>
+      <p><a href="https://microservices.io/patterns/data/transactional-outbox.html">Transactional outbox</a></p>
+    </div>
+    <div class="card">
+      <h3>7. Idempotency: bấm thanh toán 2 lần</h3>
+      <p>Mạng chậm, khách bấm "Đặt cọc" 2 lần. Hai request đều hợp lệ, nên có thể ra 2 đơn và trừ kho 2 lần. Transaction không chặn được việc này, vì đó là 2 transaction riêng.</p>
+      <p>Cách chặn: form gửi kèm một <b>idempotency key</b> ngẫu nhiên. DB có UNIQUE trên <code>(user_id, idempotency_key)</code>. Request thứ hai gặp trùng thì trả lại đơn đã có, không tạo đơn mới. Xem T4-23.</p>
+      <p><a href="https://www.postgresql.org/docs/16/sql-insert.html#SQL-ON-CONFLICT">INSERT … ON CONFLICT</a></p>
+    </div>
+    <div class="card">
+      <h3>8. Isolation level (đủ dùng cho T4)</h3>
+      <p>PostgreSQL mặc định <b>READ COMMITTED</b>: mỗi câu thấy dữ liệu đã commit tại lúc câu đó chạy. Khi 2 giao dịch cùng UPDATE 1 dòng, giao dịch sau phải chờ. Khi được chạy, nó kiểm tra lại điều kiện WHERE trên bản mới nhất.</p>
+      <p>Nhờ vậy câu <code>UPDATE coupons SET used_count = used_count + 1 WHERE … used_count &lt; usage_limit</code> không bao giờ vượt quota. T5 đi sâu phần này.</p>
+      <p><a href="https://www.postgresql.org/docs/16/transaction-iso.html">PostgreSQL: Transaction Isolation</a></p>
+    </div>
+  </div>
+
+  <h3>Ba tình huống VinFast nên nhớ</h3>
+  <div class="tbl"><table>
+    <tr><th>Tình huống</th><th>Bảng bị ghi</th><th>Nếu không có transaction</th></tr>
+    <tr><td>Đặt cọc 1 xe</td><td><code>orders</code>, <code>order_items</code>, <code>inventory</code></td><td>Có đơn nhưng kho chưa trừ, hoặc kho đã trừ mà không có đơn.</td></tr>
+    <tr><td>Mua 3 phụ kiện từ giỏ</td><td>thêm <code>cart_items</code></td><td>Món thứ 3 hết hàng, nhưng 2 món đầu đã bị trừ kho; giỏ đã xóa.</td></tr>
+    <tr><td>Mã giảm giá còn 1 lượt, 2 người dùng cùng lúc</td><td>thêm <code>coupons</code>, <code>coupon_redemptions</code></td><td>Cả hai cùng đọc "còn 1", cùng giảm giá, mã bị dùng quá quota.</td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================================= -->
+<section id="bat-dau">
+  <h2>Bắt đầu trong 30 phút</h2>
+  <p>Mục tiêu: chạy app, tự tạo một đơn đặt cọc, nhìn thấy nó trong PostgreSQL, và tự tay thử BEGIN/ROLLBACK với 2 phiên psql.</p>
+  <ol>
+    <li><b>Chạy app</b> (cần Git + Docker Desktop, chi tiết ở mục "Cài đặt và chạy trên máy local" của <code>README.md</code>):
+<pre><code>git checkout develop-hybrid
+docker compose up -d --build
+docker compose ps    # postgres, mongo, app: running/healthy; mongo-init, seed: exited (0)</code></pre>
+      Lần đầu mất vài phút. Mở <a href="http://localhost:8080">http://localhost:8080</a>.</li>
+    <li><b>Đăng nhập tài khoản member</b> ở <code>/auth/login</code> bằng tài khoản test trong README (<code>member@vinfast.vn</code>).</li>
+    <li><b>Đặt cọc 1 xe</b>: vào <code>/products</code>, chọn một <b>xe</b> (không phải phụ kiện), bấm đặt cọc. Đi hết 3 bước ở <code>/order/checkout/{id}</code> tới trang xác nhận.</li>
+    <li><b>Xem đơn trong psql</b>:
+<pre><code>docker compose exec postgres psql -U vinfast
+
+SELECT o.id, o.type, o.status, o.payment_status, o.total_amount,
+       i.product_id, i.variant_id, i.unit_price, i.quantity
+FROM orders o JOIN order_items i ON i.order_id = o.id
+ORDER BY o.id DESC LIMIT 3;
+
+-- thay '165' bằng product_id của đơn vừa tạo
+SELECT product_id, variant_id, stock, reserved FROM inventory WHERE product_id = '165';</code></pre>
+      Câu hỏi: tồn kho có giảm sau khi đặt cọc không? (Gợi ý: đọc <code>Order::create()</code>. Đây là việc T4-10 sửa.)</li>
+    <li><b>Mở 2 phiên psql</b> (2 cửa sổ terminal, cùng chạy <code>docker compose exec postgres psql -U vinfast</code>). Thay <code>165</code>/<code>165-STD</code> bằng một dòng có thật trong <code>inventory</code>.
+<pre><code>-- Phiên A
+BEGIN;
+UPDATE inventory SET stock = stock - 1
+ WHERE product_id = '165' AND variant_id = '165-STD' RETURNING stock;
+
+-- Phiên B: vẫn thấy số cũ (A chưa commit)
+SELECT stock FROM inventory WHERE product_id = '165' AND variant_id = '165-STD';
+-- Phiên B: câu này bị TREO, vì A đang giữ khóa dòng
+UPDATE inventory SET stock = stock - 1
+ WHERE product_id = '165' AND variant_id = '165-STD';
+
+-- Phiên A
+ROLLBACK;        -- B chạy tiếp ngay; kho chỉ giảm 1 (của B)
+
+-- Phiên B: trả lại như cũ
+UPDATE inventory SET stock = stock + 1
+ WHERE product_id = '165' AND variant_id = '165-STD';</code></pre></li>
+    <li><b>Thử CHECK và savepoint</b> trong 1 phiên:
+<pre><code>BEGIN;
+UPDATE inventory SET reserved = stock + 1
+ WHERE product_id = '165' AND variant_id = '165-STD';   -- ERROR 23514 ck_inventory_reserved
+SELECT 1;                                                 -- ERROR: current transaction is aborted
+ROLLBACK;
+
+BEGIN;
+UPDATE inventory SET stock = stock - 1 WHERE product_id = '165' AND variant_id = '165-STD';
+SAVEPOINT sp1;
+UPDATE inventory SET stock = -1 WHERE product_id = '165' AND variant_id = '165-STD';  -- lỗi CHECK
+ROLLBACK TO SAVEPOINT sp1;      -- transaction sống lại, câu UPDATE đầu vẫn còn
+SELECT stock FROM inventory WHERE product_id = '165' AND variant_id = '165-STD';
+ROLLBACK;                       -- bỏ hết</code></pre></li>
+  </ol>
+  <div class="callout info">Làm xong 6 bước này là bạn đã hiểu 80% điều T4 cần. Phần còn lại là đưa đúng các bước đó vào code PHP.</div>
+</section>
+
+<!-- ======================================================================= -->
+<section class="milestone" id="w2">
+  <h2><span class="wk">Tuần 1–2</span>Đọc hiểu nền móng và sửa lỗi auth</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t4-01" data-default="done">
+  <div class="task-head">
+    <span class="tid">T4-01</span>
+    <h3>Port User.php sang PostgreSQL</h3>
+    <span class="status-slot"></span>
+    <span class="meta"><span class="tag ready">Đã làm sẵn</span> · Độ khó: Dễ · ~1h đọc · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Đã làm sẵn ở Phase 0/0.5.</b> <code>User::findByEmail</code> dùng <code>lower(email) = lower(?)</code>; <code>paginateAdmin</code> dùng <code>ILIKE</code>; DDL có <code>uq_users_email_lower</code> và CHECK cho <code>role</code>.</p>
+    <h4>Việc của bạn: đọc hiểu</h4><ul class="files">
+      <li><code>app/models/User.php</code> (<code>findByEmail</code>, <code>paginateAdmin</code>, <code>delete</code>)</li>
+      <li><code>database/postgres/001_schema.sql</code> bảng <code>users</code>, index <code>uq_users_email_lower</code></li>
+      <li><code>config/database.php</code> (vì sao model cũ vẫn dùng được <code>global $pdo</code>)</li>
+    </ul>
+    <h4>Tự trả lời</h4><ol>
+      <li>Vì sao cần index trên <code>lower(email)</code> thay vì UNIQUE thường trên <code>email</code>?</li>
+      <li><code>UPDATE users SET role = 'boss' WHERE id = 1</code> báo SQLSTATE gì? Thử trong psql.</li>
+      <li><code>User::delete()</code> gặp user đã có đơn thì sao? (Gợi ý: <code>orders.user_id … ON DELETE RESTRICT</code>. Lỗi này để T4-02 xử lý.)</li>
+      <li><code>ILIKE '%' || q || '%'</code> với <code>q = "50%"</code> khớp những gì? Có cần escape không?</li>
+    </ol>
+  </div>
+</article>
+
+<article class="task" data-task="t4-03" data-default="done">
+  <div class="task-head">
+    <span class="tid">T4-03</span>
+    <h3>DDL giao dịch và 004_coupons.sql</h3>
+    <span class="status-slot"></span>
+    <span class="meta"><span class="tag ready">Đã làm sẵn</span> · Độ khó: Vừa · ~2h đọc · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Đã làm sẵn ở Phase 0/0.5.</b> Mọi bảng T4 cần đã có, kèm CHECK làm chốt chặn cuối. Coupon mẫu (WELCOME10, FLASH50K, OLDCODE5 hết hạn, DISABLED10 tạm khóa…) chỉ có khi seed với <code>--size</code> (xem <code>database/seed/generate.php</code>). Seed cơ bản không có coupon.</p>
+    <h4>Việc của bạn: đọc hiểu</h4><ul class="files">
+      <li><code>database/postgres/001_schema.sql</code>: <code>inventory</code>, <code>carts</code>, <code>cart_items</code>, <code>orders</code>, <code>order_items</code></li>
+      <li><code>database/postgres/004_coupons.sql</code>: <code>coupons</code>, <code>coupon_redemptions</code>, FK <code>fk_orders_coupon</code></li>
+      <li><code>database/seed/generate.php</code> phần "3. Coupons" (cách sinh redemption hợp lệ)</li>
+    </ul>
+    <h4>Bảng tên cột cần nhớ (khác bản kế hoạch cũ)</h4>
+    <div class="tbl"><table>
+      <tr><th>Bảng</th><th>Cột / ràng buộc</th></tr>
+      <tr><td><code>orders</code></td><td><code>subtotal_amount</code>, <code>discount_amount</code>, <code>total_amount</code>, <code>coupon_id</code>, <code>note JSONB</code>, <code>payment_status</code>; <code>ck_orders_total: total_amount = subtotal_amount - discount_amount</code></td></tr>
+      <tr><td><code>order_items</code></td><td><code>product_name_snapshot</code>, <code>variant_name_snapshot</code>, <code>color_code</code>, <code>color_name_snapshot</code>, <code>unit_price</code>, <code>quantity &gt; 0</code>; <code>subtotal</code> là cột GENERATED (không INSERT)</td></tr>
+      <tr><td><code>inventory</code></td><td><code>stock &gt;= 0</code>, <code>reserved BETWEEN 0 AND stock</code>, <code>version</code>, UNIQUE <code>(product_id, variant_id)</code></td></tr>
+      <tr><td><code>cart_items</code></td><td><code>quantity BETWEEN 1 AND 99</code>, <code>unit_price NOT NULL</code>, UNIQUE <code>(cart_id, product_id, variant_id)</code></td></tr>
+      <tr><td><code>coupons</code></td><td><code>usage_limit</code> (NULL = không giới hạn), <code>used_count</code>, <code>min_order_amount</code>, <code>max_discount</code>, <code>per_user_limit</code>; <code>ck_coupon_quota</code>; UNIQUE <code>upper(code)</code></td></tr>
+      <tr><td><code>coupon_redemptions</code></td><td><code>discount_amount</code>; <code>order_id</code> UNIQUE; UNIQUE <code>(coupon_id, user_id)</code></td></tr>
+    </table></div>
+    <h4>Tự trả lời</h4><ol>
+      <li>Đơn đặt cọc có <code>total_amount</code> = tiền cọc. Vậy <code>subtotal_amount</code> và <code>order_items.unit_price</code> phải bằng bao nhiêu để không vi phạm <code>ck_orders_total</code>? (Đối chiếu <code>Order::create()</code>.)</li>
+      <li>Vì sao <code>order_items</code> lưu snapshot tên và giá thay vì JOIN sang Mongo?</li>
+      <li>Vì sao <code>product_id</code> không có FK? Rủi ro là gì?</li>
+      <li>Vi phạm <code>ck_coupon_quota</code> là SQLSTATE 23514. <code>Db::transaction</code> sẽ đổi nó thành exception nào? Có đúng nghĩa không?</li>
+    </ol>
+  </div>
+</article>
+
+<article class="task" data-task="t4-04" data-default="done">
+  <div class="task-head">
+    <span class="tid">T4-04</span>
+    <h3>Order.php phần ghi trên PostgreSQL</h3>
+    <span class="status-slot"></span>
+    <span class="meta"><span class="tag ready">Đã làm sẵn</span> · Độ khó: Dễ · ~1h đọc · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Đã làm sẵn ở Phase 0/0.5.</b> <code>Order::create()</code> ghi <code>orders</code> + <code>order_items</code> trong 1 <code>Db::transaction</code> với <code>RETURNING id</code>. <code>updatePaymentStatus()</code> ghi cột thật <code>payment_status</code> và đồng bộ khóa cũ trong <code>note</code>. Việc tách <code>insertHeader</code>/<code>insertItems</code> chuyển sang T4-08.</p>
+    <h4>Việc của bạn: đọc hiểu</h4><ul class="files">
+      <li><code>app/models/Order.php</code>: <code>create</code>, <code>updatePaymentStatus</code>, <code>canTransition</code>, hằng <code>ALLOWED_PAYMENT_STATUSES</code></li>
+      <li><code>app/core/Db.php</code>: <code>transaction()</code></li>
+      <li><code>app/controllers/admin/OrderAdminController.php</code>: <code>setstatus()</code></li>
+    </ul>
+    <h4>Tự trả lời</h4><ol>
+      <li>Quy tắc: đơn chỉ chuyển sang <code>confirmed</code> khi thanh toán là <code>paid</code>. Quy tắc này nằm ở dòng nào? Nó đọc <code>payment_status</code> từ cột hay từ <code>note</code>?</li>
+      <li>Nếu INSERT <code>order_items</code> lỗi, dòng <code>orders</code> vừa INSERT có còn không? Vì sao?</li>
+      <li><code>Order::create()</code> bắt <code>Throwable</code> và trả <code>false</code>. Controller có biết lỗi là "hết hàng" hay "lỗi hệ thống" không?</li>
+      <li>Vì sao dùng <code>RETURNING id</code> thay vì <code>lastInsertId()</code>?</li>
+    </ol>
+  </div>
+</article>
+
+<article class="task" data-task="t4-24">
+  <div class="task-head">
+    <span class="tid">T4-24</span>
+    <h3>Bài lab khởi động: rollback, savepoint, CHECK</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~3h · Phụ thuộc: chạy được app · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Biến phần "Bắt đầu trong 30 phút" thành file lab chạy lại được, có ảnh chụp để dùng trong report.</p>
+    <p><b>Vì sao.</b> Report cần bằng chứng tay (psql) bên cạnh số liệu bench. Người mới vào nhóm cũng học nhanh nhất bằng file này.</p>
+    <h4>Các bước</h4><ol>
+      <li>Viết <code>bench/t4/00_lab_pg.sql</code>: 4 phần, mỗi phần có chú thích <code>-- [A1]</code>, <code>-- [B1]</code> cho phiên A/B: (1) ROLLBACK, (2) khóa dòng giữa 2 phiên, (3) CHECK làm transaction aborted, (4) SAVEPOINT.</li>
+      <li>Viết <code>bench/t4/00_lab_mongo.js</code> cho mongosh:
+<pre><code>const s = db.getMongo().startSession();
+const p = s.getDatabase('vinfast').products;
+s.startTransaction();
+p.updateOne({ productID: '165' }, { $inc: { totalSold: 1 } });
+printjson(p.findOne({ productID: '165' }, { totalSold: 1 }));   // trong txn: +1
+s.abortTransaction();
+printjson(db.products.findOne({ productID: '165' }, { totalSold: 1 })); // không đổi
+s.endSession();</code></pre>
+        Chạy: <code>docker compose exec -T mongo mongosh vinfast --quiet --file /dev/stdin &lt; bench/t4/00_lab_mongo.js</code></li>
+      <li>Chụp màn hình 2 phiên psql ở phần (2) và (3), lưu vào <code>bench/results/t4_lab_*.png</code>.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/00_lab_pg.sql</code>, <code>bench/t4/00_lab_mongo.js</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Chạy lab xong, <code>SELECT stock FROM inventory WHERE …</code> bằng giá trị trước khi chạy.</li>
+      <li>Bạn giải thích được vì sao phiên B bị treo ở phần (2).</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Quên ROLLBACK ở phiên A, phiên B treo mãi. Gõ <code>ROLLBACK;</code> hoặc thoát psql.</li>
+      <li>Mongo báo <code>Transaction numbers are only allowed on a replica set member</code>: kết nối không qua replica set. Kiểm tra <code>rs.status().ok</code> bằng 1.</li>
+      <li><code>productID</code> là chuỗi (<code>'165'</code>), không phải số.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-02">
+  <div class="task-head">
+    <span class="tid">T4-02</span>
+    <h3>Bắt lỗi ràng buộc ở auth, profile, admin user</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~4h · Phụ thuộc: T4-01 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Lỗi UNIQUE/FK hiện thành trang trắng 500. Sửa để người dùng thấy thông báo rõ ràng.</p>
+    <p><b>Vì sao.</b> PDO chạy ở <code>ERRMODE_EXCEPTION</code>, nên các nhánh <code>if (!$ok)</code> không bao giờ chạy. Đây cũng là bài tập đầu tiên về "DB từ chối, app phải phản ứng".</p>
+    <h4>Các bước</h4><ol>
+      <li><code>AuthController</code> (chỗ gọi <code>create</code> khi đăng ký): bắt <code>PDOException</code> có <code>errorInfo[0] === '23505'</code>, báo "Email đã tồn tại". Trường hợp này xảy ra khi 2 request cùng vượt qua <code>findByEmail</code>.</li>
+      <li><code>UserController</code> (lưu profile đổi email): bắt <code>23505</code> tương tự.</li>
+      <li><code>UserAdminController::delete</code>: bắt <code>23503</code>, báo "Tài khoản đã có đơn hàng, không thể xóa".</li>
+      <li>Viết 1 hàm nhỏ dùng chung, ví dụ <code>Db::sqlState(PDOException $e): string</code>, nếu Phase 0 đồng ý; nếu không thì viết riêng trong controller.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/controllers/frontend/AuthController.php</code>, <code>app/controllers/frontend/UserController.php</code>, <code>app/controllers/admin/UserAdminController.php</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Đăng nhập admin, xóa <code>member@vinfast.vn</code> (có 3 đơn mẫu): thấy thông báo lỗi, không phải trang 500; user vẫn còn.</li>
+      <li>Đăng ký với email khác hoa thường của email đã có: thấy "Email đã tồn tại"; <code>SELECT count(*) FROM users WHERE lower(email) = '…'</code> bằng 1.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>So sánh <code>$e-&gt;getCode()</code> với số nguyên. Mã SQLSTATE là chuỗi; dùng <code>$e-&gt;errorInfo[0]</code>.</li>
+      <li>Bắt mọi <code>PDOException</code> rồi báo "email trùng". Chỉ bắt đúng mã, còn lại ném tiếp.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<!-- ======================================================================= -->
+<section class="milestone" id="w3">
+  <h2><span class="wk">Tuần 3</span>Giỏ hàng, OrderService, checkout</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t4-05">
+  <div class="task-head">
+    <span class="tid">T4-05</span>
+    <h3>Cart model và CartService</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~6h · Phụ thuộc: T4-03 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Logic giỏ hàng nằm trong service, controller không chứa SQL. Thêm cùng 1 món 2 lần chỉ ra 1 dòng với số lượng cộng dồn.</p>
+    <p><b>Vì sao.</b> Cộng dồn bằng 1 câu UPSERT (<code>INSERT … ON CONFLICT DO UPDATE</code>) nên 2 request song song không mất số (lost update). T5 dùng bảng này cho thí nghiệm isolation.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>Cart::ensureForUser(PDO $pdo, int $userId): int</code>:
+        <code>INSERT INTO carts (user_id) VALUES (?) ON CONFLICT (user_id) DO UPDATE SET updated_at = now() RETURNING id</code>.</li>
+      <li><code>Cart::upsertItem</code>, <code>setQuantity</code>, <code>removeItem</code>, <code>items</code>, <code>countItems</code>, <code>deleteItems</code>. Mọi câu lọc theo <code>cart_id</code> của user hiện tại.</li>
+      <li><code>CartService::add($userId, $productId, $variantId, $qty)</code>: đọc sản phẩm ở Mongo (<code>Product::getById</code> trả <code>is_accessory</code> và <code>variants</code>). Chỉ nhận phụ kiện, variant phải <code>isActive</code>. Lấy <code>price</code> của variant làm <code>unit_price</code>.</li>
+      <li><code>CartService::summary($userId)</code>: lấy item từ PG, tra tên/giá/ảnh bằng <b>1</b> lần gọi Mongo (<code>find(['productID' =&gt; ['$in' =&gt; $ids]])</code>). Chưa có hàm tra theo lô trong <code>Product.php</code>: hỏi T1 thêm <code>Product::findByIds()</code>, hoặc tạm viết trong service. Variant đã tắt thì đánh dấu <code>unavailable</code>.</li>
+      <li>Sau khi ghi xong: <code>ActivityLog::record('add_to_cart', $productId, ['customData' =&gt; ['variantId' =&gt; $variantId, 'qty' =&gt; $qty]])</code>.</li>
+    </ol>
+<pre><code>// Cart::upsertItem. EMULATE_PREPARES = false nên mỗi placeholder chỉ dùng 1 lần.
+$stmt = $pdo-&gt;prepare(
+  'INSERT INTO cart_items (cart_id, product_id, variant_id, color_code, quantity, unit_price)
+   VALUES (:c, :p, :v, :color, :q, :price)
+   ON CONFLICT (cart_id, product_id, variant_id) DO UPDATE
+     SET quantity   = LEAST(cart_items.quantity + EXCLUDED.quantity, 99),
+         unit_price = EXCLUDED.unit_price,
+         color_code = COALESCE(EXCLUDED.color_code, cart_items.color_code)'
+);
+
+// CartService::add (rút gọn)
+Db::transaction(function (PDO $pdo) use ($userId, $productId, $variantId, $qty, $price) {
+    $cartId = Cart::ensureForUser($pdo, $userId);
+    Cart::upsertItem($pdo, $cartId, $productId, $variantId, $qty, $price);
+});
+ActivityLog::record('add_to_cart', $productId, [...]);   // SAU commit, best-effort</code></pre>
+    <h4>File</h4><ul class="files">
+      <li><code>app/models/Cart.php</code> MỚI</li>
+      <li><code>app/services/CartService.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Gọi <code>CartService::add</code> 2 lần cùng variant, qty 2: <code>SELECT quantity FROM cart_items</code> = 4, chỉ 1 dòng.</li>
+      <li>Thêm một xe (không phải phụ kiện) hoặc variant không tồn tại: ném <code>InvalidArgumentException</code>, không có dòng mới.</li>
+      <li><code>summary()</code> của giỏ 5 món chỉ tạo 1 query PG + 1 query Mongo.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Dùng cùng tên placeholder 2 lần trong 1 câu: lỗi "Invalid parameter number" vì prepare thật.</li>
+      <li>Truyền <code>product_id</code> dạng số: cột là VARCHAR, Mongo <code>productID</code> là chuỗi. Luôn ép <code>(string)</code>.</li>
+      <li>Gọi <code>ActivityLog::record</code> bên trong <code>Db::transaction</code>: log Mongo không rollback được khi PG rollback.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-06">
+  <div class="task-head">
+    <span class="tid">T4-06</span>
+    <h3>CartController và trang giỏ hàng</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~6h · Phụ thuộc: T4-05 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Các route <code>/cart</code>, <code>/cart/add</code>, <code>/cart/update</code>, <code>/cart/remove</code> chạy được.</p>
+    <p><b>Vì sao.</b> Form trên trang phụ kiện đã POST tới <code>cart/add</code>. Router trong <code>index.php</code> map <code>/cart/add</code> → <code>CartController::add</code> (tên method chuyển chữ thường), nên chỉ cần tạo controller.</p>
+    <h4>Các bước</h4><ol>
+      <li>Mỗi action gọi <code>Auth::requireLogin()</code>. Trước khi chuyển về login, lưu <code>$_SESSION['return_to']</code>.</li>
+      <li><code>index()</code>: <code>CartService::summary</code>, rồi <code>View::render('frontend/cart/index', …)</code>.</li>
+      <li><code>add()</code>, <code>update()</code>, <code>remove()</code>: chỉ nhận POST, gọi <code>Auth::verifyCsrf()</code>, gọi service, flash, redirect. Nếu header <code>Accept: application/json</code> thì trả <code>{ok, count}</code>.</li>
+      <li>View: bảng món (ảnh, tên, phiên bản, đơn giá, số lượng, thành tiền, nút xóa), tạm tính, nút "Thanh toán" tới <code>/order/cartcheckout</code>. Giỏ trống: link về <code>/products?type=accessory</code>.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/controllers/frontend/CartController.php</code> MỚI</li>
+      <li><code>app/views/frontend/cart/index.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Chưa đăng nhập vào <code>/cart</code>: chuyển về <code>/auth/login</code>, đăng nhập xong quay lại <code>/cart</code>.</li>
+      <li><code>curl -X POST http://localhost:8080/cart/add</code> không có CSRF: bị từ chối.</li>
+      <li>Sửa <code>item_id</code> trong form thành món của user khác: không dòng nào bị đổi.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Xóa/sửa theo <code>item_id</code> mà không kèm <code>cart_id</code> của user: lỗ hổng sửa giỏ người khác.</li>
+      <li>Quên <code>exit</code> sau <code>header('Location: …')</code>.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-07">
+  <div class="task-head">
+    <span class="tid">T4-07</span>
+    <h3>Bật nút "Thêm vào giỏ" ở trang phụ kiện, badge navbar</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~3h · Phụ thuộc: T4-06 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Khách thêm phụ kiện vào giỏ và thấy số món trên navbar.</p>
+    <p><b>Vì sao.</b> Form đã có sẵn (<code>#accForm</code>, gửi <code>product_id</code>, <code>variant_id</code>, <code>quantity</code>, <code>_csrf</code>), chỉ đang bị khóa.</p>
+    <h4>Các bước</h4><ol>
+      <li>Trong <code>accessory.php</code>: bỏ <code>disabled</code> ở <code>#accAddBtn</code>, bỏ dòng "Giỏ hàng … sẽ mở trong bản cập nhật tới". Chưa đăng nhập thì nút thành link tới <code>/auth/login</code>. Hết hàng (dựa trên <code>#accStock</code>) thì vẫn khóa.</li>
+      <li>Navbar (<code>partials/navbar/mainbar.php</code>, <code>mobile.php</code>): icon giỏ, số lấy từ <code>$_SESSION['cart_count']</code>. Cập nhật sau mỗi thao tác giỏ; khởi tạo bằng <code>Cart::countItems</code> lúc đăng nhập.</li>
+      <li>Tùy chọn: gửi bằng <code>fetch</code> với <code>Accept: application/json</code> để không tải lại trang.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/views/frontend/products/accessory.php</code></li>
+      <li><code>app/views/frontend/partials/navbar/mainbar.php</code>, <code>mobile.php</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Trên trang một phụ kiện có nhiều phiên bản, chọn phiên bản khác rồi thêm: <code>cart_items.variant_id</code> đúng phiên bản đã chọn, badge tăng.</li>
+      <li>Bấm 2 lần thật nhanh: vẫn 1 dòng, <code>quantity</code> = 2.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>JS đổi phiên bản nhưng không cập nhật input ẩn <code>#accVariantId</code>: giỏ luôn nhận phiên bản mặc định.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-08">
+  <div class="task-head">
+    <span class="tid">T4-08</span>
+    <h3>OrderService::place() với Db::transaction</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Khó · ~8h · Phụ thuộc: T4-03, hợp đồng T5 (đã có stub) · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Một hàm duy nhất tạo mọi loại đơn: BEGIN → INSERT <code>orders</code> → INSERT <code>order_items</code> → <code>InventoryService::decrement</code> → coupon → xóa <code>cart_items</code> → COMMIT. Lỗi ở đâu cũng ROLLBACK.</p>
+    <p><b>Vì sao.</b> Hiện chỉ có <code>Order::create()</code> cho đặt cọc, không trừ kho. Đặt cọc và mua giỏ phải dùng chung ranh giới transaction để thí nghiệm và hợp đồng với T5 chỉ có 1 chỗ.</p>
+    <h4>Các bước</h4><ol>
+      <li>Thêm vào <code>Order.php</code>: <code>insertHeader(PDO $pdo, array $h): int</code> (<code>INSERT … RETURNING id</code>, <code>note</code> bind qua <code>CAST(? AS jsonb)</code>) và <code>insertItems(PDO $pdo, int $orderId, array $lines): void</code> (không INSERT cột <code>subtotal</code> vì là GENERATED). Có thể tách từ thân <code>Order::create()</code>.</li>
+      <li>Tạo <code>app/services/OrderService.php</code> theo khung dưới. Tra giá/tên ở Mongo <b>trước</b> BEGIN (<code>buildLines</code>). Giá luôn lấy từ server, không lấy từ form.</li>
+      <li>Sắp item theo <code>(product_id, variant_id)</code> trước khi trừ kho. <b>Hợp đồng T5</b>: mọi giao dịch khóa dòng kho theo cùng thứ tự để tránh deadlock.</li>
+      <li>Gọi <code>InventoryService::decrement($pdo, …)</code> với <b>đúng <code>$pdo</code> của transaction</b>. Không bắt <code>OutOfStockException</code> bên trong; để nó bay ra cho <code>Db::transaction</code> rollback.</li>
+      <li>Retry cả transaction tối đa 3 lần khi gặp <code>ConcurrentUpdateException</code>. Không retry <code>OutOfStockException</code>, <code>CouponException</code>.</li>
+      <li><code>failPoint()</code> sau mỗi bước, chỉ bật khi <code>APP_ENV</code> là <code>local</code> hoặc <code>bench</code> (compose đặt <code>APP_ENV=local</code>).</li>
+      <li>CLI <code>bench/t4/smoke_place.php</code>: <code>require __DIR__ . '/../../config/bootstrap.php';</code>, đặt 1 đơn 2 món cho 1 user, in <code>order_id=…</code>.</li>
+    </ol>
+<pre><code>&lt;?php
+/** app/services/OrderService.php — MỚI (T4). Ranh giới transaction cho mọi đơn. */
+final class OrderService
+{
+    private const MAX_RETRY = 3;
+
+    /** $items: [['product_id' =&gt; '165', 'variant_id' =&gt; '165-STD', 'qty' =&gt; 1, 'color_code' =&gt; null], ...]
+     *  $opts : type (deposit|purchase), payment_status, note (array), coupon_code, cart_id, idempotency_key */
+    public static function place(int $userId, array $items, array $opts = []): int
+    {
+        if ($items === []) throw new InvalidArgumentException('Không có sản phẩm để đặt.');
+        $lines = self::buildLines($items, $opts);               // (1) đọc Mongo, NGOÀI transaction
+        usort($lines, fn($a, $b) =&gt; [$a['product_id'], $a['variant_id']]
+                                &lt;=&gt; [$b['product_id'], $b['variant_id']]);   // (2) hợp đồng T5
+
+        if (self::noTxnMode()) {                                 // chỉ cho bench T4-17, T4-19
+            return self::runSteps(Db::pg(), $userId, $lines, $opts, false);
+        }
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                $orderId = Db::transaction(
+                    fn(PDO $pdo) =&gt; self::runSteps($pdo, $userId, $lines, $opts, true));
+                break;
+            } catch (ConcurrentUpdateException $e) {             // 40001 / 40P01 / 55P03
+                if ($attempt &gt;= self::MAX_RETRY) throw $e;
+                usleep(random_int(5, 30) * 1000);                // backoff có jitter
+            }
+        }
+        self::afterCommit($userId, $orderId, $lines, $opts);    // (4) Mongo best-effort, T4-15
+        return $orderId;
+    }
+
+    private static function runSteps(PDO $pdo, int $userId, array $lines, array $opts, bool $inTxn): int
+    {
+        $type = $opts['type'] ?? 'purchase';
+        $subtotal = array_sum(array_map(fn($l) =&gt; $l['unit_price'] * $l['qty'], $lines));
+        [$coupon, $discount] = empty($opts['coupon_code'])
+            ? [null, 0]
+            : CouponService::quote($pdo, $opts['coupon_code'], $subtotal);   // T4-13
+
+        $orderId = Order::insertHeader($pdo, [
+            'user_id' =&gt; $userId, 'type' =&gt; $type,
+            'payment_status' =&gt; $opts['payment_status'] ?? ($type === 'deposit' ? 'pending_verify' : 'unpaid'),
+            'subtotal_amount' =&gt; $subtotal, 'discount_amount' =&gt; $discount,
+            'total_amount' =&gt; $subtotal - $discount,               // ck_orders_total
+            'coupon_id' =&gt; $coupon['id'] ?? null, 'note' =&gt; $opts['note'] ?? [],
+        ]);
+        self::failPoint('after_order');
+
+        Order::insertItems($pdo, $orderId, $lines);
+        self::failPoint('after_items');
+
+        foreach ($lines as $l) {                                 // (3) CHỖ GỌI HỢP ĐỒNG T5
+            $inTxn
+                ? InventoryService::decrement($pdo, $l['product_id'], $l['variant_id'], $l['qty'])
+                : self::decrementAutocommit($pdo, $l);           // chỉ bench, không phải hợp đồng
+        }
+        self::failPoint('after_inventory');
+
+        if ($coupon !== null) {
+            CouponService::redeem($pdo, (int)$coupon['id'], $userId, $orderId, $discount);
+        }
+        if (!empty($opts['cart_id'])) {
+            Cart::deleteItems($pdo, (int)$opts['cart_id'], $lines);  // chỉ xóa món đã đặt
+        }
+        self::failPoint('after_cart_delete');
+        return $orderId;
+    }
+
+    private static function failPoint(string $point): void
+    {
+        if (!in_array(Db::env('APP_ENV', 'production'), ['local', 'bench'], true)) return;
+        if (Db::env('FAIL_AT') === $point) throw new RuntimeException("FAIL_AT injected at {$point}");
+    }
+
+    private static function noTxnMode(): bool
+    {
+        return Db::env('APP_ENV') === 'bench' &amp;&amp; Db::env('T4_NO_TXN') === '1';
+    }
+}</code></pre>
+    <h4>File</h4><ul class="files">
+      <li><code>app/services/OrderService.php</code> MỚI</li>
+      <li><code>app/models/Order.php</code> thêm <code>insertHeader</code>, <code>insertItems</code></li>
+      <li><code>bench/t4/smoke_place.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li><code>docker compose exec app php bench/t4/smoke_place.php</code> in <code>order_id=…</code>; có 1 dòng <code>orders</code>, 2 dòng <code>order_items</code>, <code>inventory.stock</code> giảm đúng.</li>
+      <li>Đặt số lượng lớn hơn tồn kho (seed cơ bản: xe có 10 mỗi variant, ví dụ <code>165-STD</code>; phụ kiện có tồn kho riêng, từ 0 đến vài chục; xem bằng <code>SELECT … FROM inventory</code>): nhận <code>OutOfStockException</code>, <code>SELECT count(*) FROM orders</code> không tăng.</li>
+      <li><code>docker compose exec -e FAIL_AT=after_items app php bench/t4/smoke_place.php</code>: ném RuntimeException, không có dòng mới. Thêm <code>-e APP_ENV=production</code>: đơn tạo thành công (fail point tắt).</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Dùng <code>global $pdo</code> hoặc <code>Db::pg()</code> trong model thay vì <code>$pdo</code> được truyền vào. Hiện cả hai trỏ cùng 1 kết nối nên vẫn chạy, nhưng code khó đọc và dễ sai khi đổi kết nối. Luôn truyền <code>$pdo</code>.</li>
+      <li>Gọi Mongo bên trong transaction: giữ khóa dòng kho trong lúc chờ mạng, làm chậm mọi đơn khác.</li>
+      <li>Tính sai <code>total_amount</code> → vi phạm <code>ck_orders_total</code> (23514) → <code>Db::transaction</code> báo <code>OutOfStockException</code>. Thấy "hết hàng" lạ thì xem <code>$e-&gt;getPrevious()-&gt;getMessage()</code> để biết tên constraint.</li>
+      <li>Bắt <code>Throwable</code> bên trong <code>runSteps</code>: transaction không rollback, dữ liệu dở dang.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-09">
+  <div class="task-head">
+    <span class="tid">T4-09</span>
+    <h3>Checkout từ giỏ: /order/cartcheckout</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~6h · Phụ thuộc: T4-08, T4-06 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Tạo đơn <code>type='purchase'</code> từ toàn bộ giỏ phụ kiện.</p>
+    <p><b>Vì sao.</b> Đây là luồng nhiều món, nơi transaction thể hiện rõ nhất: món thứ 3 hết hàng thì 2 món đầu cũng không bị trừ.</p>
+    <h4>Các bước</h4><ol>
+      <li>GET: yêu cầu đăng nhập, <code>CartService::summary</code>; giỏ trống hoặc có món <code>unavailable</code> thì về <code>/cart</code>.</li>
+      <li>Form: họ tên, điện thoại, email, tỉnh, showroom (<code>config/locations.php</code>), phương thức thanh toán, mã giảm giá, điều khoản. Tách phần validate trong <code>OrderController::checkout</code> thành <code>validateContact()</code> dùng chung.</li>
+      <li>POST: <code>OrderService::placeFromCart($userId, $form)</code> gọi <code>place()</code> với <code>cart_id</code>. Bắt <code>OutOfStockException</code>, <code>CouponException</code> để báo lý do; lỗi khác ghi <code>error_log</code> và báo lỗi chung. Giỏ còn nguyên vì đã rollback.</li>
+      <li>Thành công: lưu <code>checkout_confirmation</code> có <code>'type' =&gt; 'purchase'</code>; <code>confirmation()</code> render view mới <code>order/purchase-success</code>, giữ view cũ cho đặt cọc.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/controllers/frontend/OrderController.php</code> thêm <code>cartcheckout()</code>, <code>validateContact()</code></li>
+      <li><code>app/services/OrderService.php</code> thêm <code>placeFromCart()</code></li>
+      <li><code>app/views/frontend/order/cart-checkout.php</code>, <code>purchase-success.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Giỏ 2 phụ kiện, đặt hàng: 1 <code>orders</code> (<code>type='purchase'</code>, <code>payment_status='unpaid'</code>), 2 <code>order_items</code> có snapshot, giỏ trống, badge = 0.</li>
+      <li>Sửa giá trong HTML trước khi gửi: <code>order_items.unit_price</code> vẫn là giá từ Mongo.</li>
+      <li>Trong psql đặt <code>stock = 1</code> cho 1 món, giỏ có số lượng 2: báo hết hàng, giỏ còn nguyên, không có <code>orders</code> mới, món còn lại không bị trừ kho.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Xóa giỏ sau khi <code>place()</code> trả về (ngoài transaction): nếu xóa lỗi, đơn đã có mà giỏ vẫn còn. Xóa giỏ phải nằm trong <code>runSteps</code>.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-10">
+  <div class="task-head">
+    <span class="tid">T4-10</span>
+    <h3>placeDeposit thay Order::create trong OrderController</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~5h · Phụ thuộc: T4-08 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Luồng đặt cọc 3 bước giữ nguyên giao diện, nhưng đơn tạo qua <code>OrderService::placeDeposit()</code>: có trừ kho, đúng phiên bản khách chọn, báo đúng lý do lỗi.</p>
+    <p><b>Vì sao.</b> <code>Order::create()</code> hiện không gọi <code>decrement</code>, luôn dùng <code>default_variant_id</code>, và nuốt mọi lỗi thành <code>false</code>.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>placeDeposit()</code> gọi <code>place()</code> với 1 món, <code>qty = 1</code>, <code>type = 'deposit'</code>, <code>payment_status = 'pending_verify'</code>. <code>unit_price</code> = tiền cọc (giống <code>Order::create()</code> hiện tại), nên <code>subtotal_amount = total_amount</code> = tiền cọc. Giá xe và phụ phí màu nằm trong <code>note</code>.</li>
+      <li><code>resolveVariantId($product, $variantName)</code>: so <code>variant_name</code> của form với <code>$product['variants'][*]['name']</code>; không khớp thì dùng <code>$product['default_variant_id']</code>.</li>
+      <li>Trong <code>OrderController::checkout</code>: thay đoạn gọi <code>Order::create(…)</code> bằng try/catch dưới. Vẫn ghi <code>payment_status</code> vào <code>note</code>, vì <code>OrderAdminController::setstatus</code> đang đọc từ <code>note</code> (xem phần Phối hợp với T3).</li>
+      <li>Lỗi có sẵn: <code>public/js/frontend/checkout.js</code> POST JSON tới <code>?save_checkout_step2=1</code>, controller chưa xử lý nên rơi vào nhánh validate và báo lỗi giả. Thêm nhánh đầu POST: lưu <code>checkout_old</code> từ JSON, trả <code>204</code>.</li>
+      <li>Đánh dấu <code>Order::create()</code> là <code>@deprecated</code>; không còn ai gọi.</li>
+    </ol>
+<pre><code>// OrderController::checkout — thay chỗ gọi Order::create(...)
+try {
+    $variantId = OrderService::resolveVariantId($product, (string)$formData['variant_name']);
+    $created = OrderService::placeDeposit((int)Auth::id(), (string)$product['product_id'], $variantId,
+                                          $selectedColor, $depositAmount, $notePayload);
+} catch (Throwable $e) {
+    $oos = $e instanceof OutOfStockException;
+    if (!$oos) error_log('placeDeposit failed: ' . $e-&gt;getMessage());
+    $_SESSION['errors'] = ['system' =&gt; $oos ? 'Phiên bản này tạm hết hàng.'
+                                           : 'Không thể tạo đơn đặt cọc lúc này, vui lòng thử lại sau.'];
+    $_SESSION['checkout_old'] = $formData;
+    header('Location: ' . $buildCheckoutUrl($id, $selectedColorCode));
+    exit;
+}</code></pre>
+    <h4>File</h4><ul class="files">
+      <li><code>app/controllers/frontend/OrderController.php</code></li>
+      <li><code>app/services/OrderService.php</code> thêm <code>placeDeposit()</code>, <code>resolveVariantId()</code></li>
+      <li><code>app/models/Order.php</code> đánh dấu <code>create()</code> deprecated</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Đi hết 3 bước ở <code>/order/checkout/{id}</code>: trang xác nhận như trước; DB có 1 <code>orders</code> <code>type='deposit'</code>, <code>payment_status='pending_verify'</code>, 1 <code>order_items</code>; <code>inventory.stock</code> của variant đó giảm 1.</li>
+      <li>Đặt <code>stock = 0</code> cho variant đó trong psql rồi đặt cọc: thấy "Phiên bản này tạm hết hàng", không có đơn mới.</li>
+      <li>Chuyển từ bước 2 sang 3: không còn flash lỗi giả.</li>
+      <li><code>grep -rn "Order::create" app</code> chỉ còn định nghĩa hàm.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Đặt <code>unit_price</code> = giá xe nhưng <code>total_amount</code> = tiền cọc: vi phạm <code>ck_orders_total</code>.</li>
+      <li>Truyền <code>$id</code> (int) làm <code>product_id</code>; dùng <code>$product['product_id']</code> (chuỗi).</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-23">
+  <div class="task-head">
+    <span class="tid">T4-23</span>
+    <h3>Chống đặt trùng khi bấm 2 lần (idempotency key)</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~5h · Phụ thuộc: T4-08, T4-10 · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Cùng một lần bấm "Đặt cọc"/"Đặt hàng" gửi 2 request thì chỉ có 1 đơn, kho chỉ trừ 1 lần.</p>
+    <p><b>Vì sao.</b> Hai request là 2 transaction hợp lệ riêng biệt; transaction không chặn được. Cần một ràng buộc UNIQUE để DB tự từ chối bản thứ hai.</p>
+    <h4>Các bước</h4><ol>
+      <li>DDL mới, và thêm tên file vào danh sách trong <code>applySchema()</code> của <code>database/seed/seed.php</code>:
+<pre><code>-- database/postgres/005_order_idempotency.sql (T4)
+BEGIN;
+ALTER TABLE orders ADD COLUMN idempotency_key VARCHAR(64);
+CREATE UNIQUE INDEX uq_orders_idempotency ON orders (user_id, idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
+COMMIT;</code></pre>
+        Áp vào DB đang chạy: <code>docker compose exec -T postgres psql -U vinfast -v ON_ERROR_STOP=1 -f /dev/stdin &lt; database/postgres/005_order_idempotency.sql</code></li>
+      <li>Khi render form: <code>$_SESSION['checkout_token'] = bin2hex(random_bytes(16))</code>, in vào input ẩn <code>checkout_token</code>. Khi POST: lấy token từ form, truyền vào <code>$opts['idempotency_key']</code>.</li>
+      <li><code>insertHeader</code> dùng <code>INSERT … ON CONFLICT (user_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING RETURNING id</code>. Không có dòng trả về nghĩa là đơn đã tồn tại: <code>SELECT id FROM orders WHERE user_id = ? AND idempotency_key = ?</code>, trả id đó và <b>bỏ qua</b> các bước sau (không trừ kho, không coupon, không <code>afterCommit</code>).</li>
+      <li>Phía client: khóa nút submit sau lần bấm đầu (chỉ là lớp phụ, không thay DB).</li>
+      <li>Bench: <code>bench/t4/double_submit.php --n=2|5|10 --runs=10</code> mở n tiến trình cùng token. Ghi <code>bench/results/t4_idempotency_&lt;size&gt;.csv</code>.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>database/postgres/005_order_idempotency.sql</code> MỚI; <code>database/seed/seed.php</code> thêm vào danh sách file</li>
+      <li><code>app/models/Order.php</code> (<code>insertHeader</code>), <code>app/services/OrderService.php</code>, <code>app/controllers/frontend/OrderController.php</code>, view checkout</li>
+      <li><code>bench/t4/double_submit.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Gửi cùng form 2 lần (ví dụ copy request trong DevTools thành curl, chạy 2 lần): <code>SELECT count(*) FROM orders WHERE idempotency_key = '…'</code> = 1; kho chỉ giảm 1.</li>
+      <li>CSV: mọi dòng có <code>orders_created = 1</code>, <code>stock_delta = -1</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Kiểm tra trùng bằng <code>SELECT</code> trước rồi mới <code>INSERT</code>: 2 request cùng thấy "chưa có". Phải để UNIQUE quyết định.</li>
+      <li>Bắt 23505 bên trong transaction rồi chạy tiếp: transaction đã aborted (25P02). Dùng <code>ON CONFLICT DO NOTHING</code> để không có lỗi.</li>
+      <li>Quên chạy file 005 trên DB benchmark <code>vinfast_bench</code>.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-11">
+  <div class="task-head">
+    <span class="tid">T4-11</span>
+    <h3>Test rollback thủ công và smoke tuần 3</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~4h · Phụ thuộc: T4-09, T4-10 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Chứng minh sớm rằng 4 điểm <code>FAIL_AT</code> đều rollback sạch, trước khi viết bench tự động.</p>
+    <p><b>Vì sao.</b> Phát hiện lỗi ranh giới transaction ở tuần 3 rẻ hơn nhiều so với tuần 5.</p>
+    <h4>Các bước</h4><ol>
+      <li>Ghi lại số liệu trước bằng <code>bench/t4/verify_fail.sql</code> (xem mục Thí nghiệm).</li>
+      <li>Với mỗi điểm <code>after_order</code>, <code>after_items</code>, <code>after_inventory</code>, <code>after_cart_delete</code>:
+        <code>docker compose exec -e FAIL_AT=after_items app php bench/t4/smoke_place.php</code>, rồi chạy lại <code>verify_fail.sql</code>.</li>
+      <li>Smoke test web: <code>/order/checkout/{id}</code> 3 bước, <code>/order/confirmation</code>, <code>/order</code>, <code>/cart</code>, <code>/order/cartcheckout</code>, <code>/admin/orders</code>.</li>
+      <li>Mở PR <code>topic4/cart</code>, rồi <code>topic4/checkout-orderservice</code> vào <code>develop-hybrid</code>.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/verify_fail.sql</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Cả 4 điểm: <code>orders_without_items = 0</code>; số <code>orders</code>, <code>stock</code>, <code>cart_items</code> bằng trước khi chạy.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Đặt <code>FAIL_AT</code> cho cả service <code>app</code> (sửa compose) rồi quên bỏ: mọi đơn trên web đều lỗi. Chỉ dùng <code>-e</code> trên từng lệnh <code>exec</code>.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<!-- ======================================================================= -->
+<section class="milestone" id="w4">
+  <h2><span class="wk">Tuần 4</span>Mã giảm giá và cập nhật sau commit</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t4-12">
+  <div class="task-head">
+    <span class="tid">T4-12</span>
+    <h3>Coupon model và CouponException</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~3h · Phụ thuộc: T4-03 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Đọc/ghi bảng <code>coupons</code>, <code>coupon_redemptions</code>. Chỉ chạm PG.</p>
+    <p><b>Vì sao.</b> Tách truy cập dữ liệu khỏi quy tắc nghiệp vụ (T4-13), dễ test riêng.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>Coupon::findActiveByCode(PDO $pdo, string $code): ?array</code>: <code>WHERE upper(code) = upper(?) AND is_active</code> (dùng được index <code>uq_coupons_code_upper</code>).</li>
+      <li><code>Coupon::paginateAdmin</code>, <code>Coupon::create</code>, <code>Coupon::setActive</code> (cho T4-16).</li>
+      <li>Thêm <code>class CouponException extends RuntimeException {}</code> vào <code>app/core/Exceptions.php</code> (báo Phase 0).</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/models/Coupon.php</code> MỚI</li>
+      <li><code>app/core/Exceptions.php</code> thêm <code>CouponException</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Trên DB seed <code>--size=small</code>: <code>findActiveByCode($pdo, 'welcome10')</code> trả dòng WELCOME10; <code>'DISABLED10'</code> trả <code>null</code>.</li>
+      <li><code>EXPLAIN</code> câu tìm theo mã dùng <code>uq_coupons_code_upper</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Viết <code>WHERE code = ?</code> rồi <code>strtoupper</code> trong PHP: không dùng được index biểu thức <code>upper(code)</code>.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-13">
+  <div class="task-head">
+    <span class="tid">T4-13</span>
+    <h3>CouponService trong cùng transaction</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Khó · ~6h · Phụ thuộc: T4-12, T4-08 · <span class="tag pg">PG</span> <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Giữ quota bằng 1 câu UPDATE có điều kiện + <code>RETURNING</code>. 50 request cùng lúc cũng chỉ đúng <code>usage_limit</code> lượt thành công. Mã hết hạn bị từ chối ngay trong transaction.</p>
+    <p><b>Vì sao.</b> Cách "đọc còn lượt rồi mới ghi" (check-then-act) bị race condition. UPDATE có điều kiện để PostgreSQL tự khóa dòng và kiểm tra lại điều kiện.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>quote()</code>: đọc coupon, kiểm tra <code>min_order_amount</code>, tính tiền giảm (percent có trần <code>max_discount</code>). Chưa trừ lượt.</li>
+      <li><code>redeem()</code>: UPDATE có điều kiện; 0 dòng thì ném <code>CouponException</code>, cả đơn rollback.</li>
+      <li>INSERT <code>coupon_redemptions</code>; gặp <code>23505</code> (UNIQUE <code>coupon_id, user_id</code>) thì ném <code>CouponException('Bạn đã dùng mã này rồi.')</code>. Transaction lúc đó đã aborted, phải ném lên để rollback.</li>
+      <li>Ghi vào report: <code>now()</code> trong PG là thời điểm <b>bắt đầu transaction</b>, không phải thời điểm câu chạy.</li>
+    </ol>
+<pre><code>final class CouponService
+{
+    /** @return array{0: array, 1: float} [coupon, discount] */
+    public static function quote(PDO $pdo, string $code, float $subtotal): array
+    {
+        $c = Coupon::findActiveByCode($pdo, trim($code));
+        if ($c === null) throw new CouponException('Mã giảm giá không tồn tại hoặc đã tắt.');
+        if ($subtotal &lt; (float)$c['min_order_amount']) {
+            throw new CouponException('Đơn hàng chưa đạt giá trị tối thiểu của mã.');
+        }
+        $d = $c['discount_type'] === 'percent'
+            ? round($subtotal * (float)$c['discount_value'] / 100)
+            : (float)$c['discount_value'];
+        if ($c['max_discount'] !== null) $d = min($d, (float)$c['max_discount']);
+        return [$c, min($d, $subtotal)];
+    }
+
+    public static function redeem(PDO $pdo, int $couponId, int $userId, int $orderId, float $discount): void
+    {
+        $stmt = $pdo-&gt;prepare(
+            'UPDATE coupons SET used_count = used_count + 1
+              WHERE id = :id AND is_active
+                AND now() &gt;= starts_at AND now() &lt; expires_at
+                AND (usage_limit IS NULL OR used_count &lt; usage_limit)
+          RETURNING used_count');
+        $stmt-&gt;execute([':id' =&gt; $couponId]);
+        if ($stmt-&gt;fetchColumn() === false) {
+            throw new CouponException('Mã giảm giá đã hết lượt hoặc hết hạn.');
+        }
+        try {
+            $pdo-&gt;prepare('INSERT INTO coupon_redemptions (coupon_id, user_id, order_id, discount_amount)
+                           VALUES (?, ?, ?, ?)')
+                -&gt;execute([$couponId, $userId, $orderId, $discount]);
+        } catch (PDOException $e) {
+            if (($e-&gt;errorInfo[0] ?? '') === '23505') {
+                throw new CouponException('Bạn đã dùng mã này rồi.', 0, $e);
+            }
+            throw $e;
+        }
+    }
+}</code></pre>
+    <h4>File</h4><ul class="files">
+      <li><code>app/services/CouponService.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Checkout với mã hết hạn (<code>OLDCODE5</code> trên seed <code>--size=small</code>, hoặc mã trong fixture): báo lỗi, <code>SELECT count(*) FROM orders</code> không tăng, giỏ còn nguyên.</li>
+      <li>Dùng 1 mã 2 lần cùng user: lần 2 bị từ chối, <code>used_count</code> chỉ tăng 1.</li>
+      <li><code>FAIL_AT=after_cart_delete</code> với coupon: <code>used_count</code> và <code>coupon_redemptions</code> không đổi.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Trừ lượt trong <code>quote()</code> (lúc xem trước): khách xem trước mà không mua vẫn mất lượt.</li>
+      <li>Ghi <code>used_count = :old + 1</code> (giá trị tuyệt đối): đây chính là bản "naive" bị lost update ở T4-18.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-14">
+  <div class="task-head">
+    <span class="tid">T4-14</span>
+    <h3>Ô nhập mã và hiển thị giảm giá</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~4h · Phụ thuộc: T4-13, T4-09 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Khách nhập mã ở trang checkout giỏ, xem trước tiền giảm; đơn lưu đúng <code>discount_amount</code>.</p>
+    <p><b>Vì sao.</b> Hiển thị cho người dùng thấy sự khác nhau giữa "xem trước" (chỉ đọc) và "đặt hàng" (giữ lượt trong transaction).</p>
+    <h4>Các bước</h4><ol>
+      <li><code>cart-checkout.php</code>: input <code>coupon_code</code>, nút "Áp dụng" gọi <code>POST /order/couponpreview</code>. Action này gọi <code>CouponService::quote</code> và trả JSON. Không giữ lượt.</li>
+      <li>Ghi rõ trên giao diện: xem trước không giữ lượt; lượt chỉ bị trừ khi đặt hàng thành công.</li>
+      <li><code>purchase-success.php</code> hiển thị tạm tính, giảm giá, tổng.</li>
+      <li>Sau commit: <code>ActivityLog::record('apply_coupon', (string)$orderId, …)</code> (trong <code>afterCommit</code>).</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/views/frontend/order/cart-checkout.php</code>, <code>purchase-success.php</code></li>
+      <li><code>app/controllers/frontend/OrderController.php</code> thêm <code>couponpreview()</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Với WELCOME10 (10%, trần 300.000đ theo <code>generate.php</code>): giỏ 1.000.000đ giảm 100.000đ; giỏ 5.000.000đ giảm 300.000đ. <code>orders.total_amount = subtotal_amount - discount_amount</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Tin số tiền giảm từ client gửi lên. Luôn tính lại trong <code>place()</code>.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-15">
+  <div class="task-head">
+    <span class="tid">T4-15</span>
+    <h3>Cập nhật Mongo sau commit: totalSold, ActivityLog, đối soát</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~3h · Phụ thuộc: T4-08 · <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> PG commit trước, Mongo cập nhật sau kiểu best-effort, có script đối soát.</p>
+    <p><b>Vì sao.</b> Không có transaction chung PG + Mongo (xem Kiến thức mục 6). Cần cách chấp nhận được khi Mongo lỗi.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>OrderService::afterCommit()</code>: với mỗi món, <code>updateOne(['productID' =&gt; $pid], ['$inc' =&gt; ['totalSold' =&gt; $qty]])</code> trên collection <code>products</code>. Đề xuất T1 thêm <code>Product::incrementSold(string $productId, int $qty)</code>.</li>
+      <li>Ghi log: <code>ActivityLog::record($type === 'deposit' ? 'deposit' : 'place_order', (string)$orderId, ['customData' =&gt; […]])</code>; có coupon thì thêm <code>apply_coupon</code>. Bọc try/catch, chỉ <code>error_log</code>.</li>
+      <li>Script đối soát <code>bench/t4/reconcile_sold.php</code>: tái dùng hàm <code>gen_sync_product_stats()</code> trong <code>database/seed/generate.php</code> (tính <code>totalSold</code> từ <code>order_items</code> của đơn chưa hủy rồi ghi đè lên Mongo).</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/services/OrderService.php</code> <code>afterCommit()</code></li>
+      <li><code>bench/t4/reconcile_sold.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li><code>docker compose stop mongo</code>, đặt 1 đơn bằng <code>smoke_place.php</code>: đơn vẫn commit trên PG (đọc giá trước BEGIN sẽ lỗi nếu Mongo tắt từ đầu, nên tắt Mongo <b>sau</b> bước đọc, ví dụ bằng <code>FAIL_AT</code> giả trong <code>afterCommit</code>). Bật lại, chạy <code>reconcile_sold.php</code>: <code>totalSold</code> khớp <code>SELECT SUM(quantity) FROM order_items …</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Dùng actionType không có trong validator (ví dụ <code>order_placed</code>): Mongo từ chối document, log mất. Danh sách hợp lệ ở <code>database/mongo/001_collections.js</code>.</li>
+      <li>Để lỗi Mongo trong <code>afterCommit</code> bay ra controller: khách thấy "lỗi" dù đơn đã tạo, rồi đặt lại thành đơn trùng.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-16">
+  <div class="task-head">
+    <span class="tid">T4-16</span>
+    <h3>Admin coupon tối thiểu (stretch)</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~4h · Phụ thuộc: T4-12 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Danh sách, tạo, bật/tắt coupon trong admin. Chỉ làm khi luồng chính đã ổn; nếu không kịp, quản lý coupon bằng SQL.</p>
+    <p><b>Vì sao.</b> Cho thấy CHECK chặn dữ liệu sai ngay cả khi admin nhập.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>CouponAdminController</code>: <code>index</code>, <code>create</code>, <code>toggle</code>. Đặt <code>usage_limit</code> nhỏ hơn <code>used_count</code> bị <code>ck_coupon_quota</code> chặn: bắt <code>23514</code>, báo rõ.</li>
+      <li>Thêm link trong sidebar admin.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>app/controllers/admin/CouponAdminController.php</code>, <code>app/views/admin/coupons/index.php</code> MỚI</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Tắt WELCOME10 trên admin: checkout với mã này bị từ chối.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Admin controller không đi qua <code>admin.php</code> nên thiếu kiểm tra quyền. Đặt file đúng thư mục <code>app/controllers/admin/</code>.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<!-- ======================================================================= -->
+<section class="milestone" id="w5">
+  <h2><span class="wk">Tuần 5</span>Thí nghiệm</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t4-17">
+  <div class="task-head">
+    <span class="tid">T4-17</span>
+    <h3>Bench chèn lỗi FAIL_AT</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~6h · Phụ thuộc: T4-11 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Ma trận 4 điểm lỗi × có/không transaction × 10 lần, đếm dòng dở dang bằng SQL cố định.</p>
+    <p><b>Vì sao.</b> Đây là bằng chứng chính cho chữ A (Atomicity) trong report.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>bench/t4/fixtures.sql</code>: user bench id từ 900001, giỏ 2 món, kho 10, coupon <code>FAIL10</code>, <code>RACE5</code> (<code>usage_limit = 5</code>), mã hết hạn. Dùng <code>ON CONFLICT DO NOTHING</code> để chạy lại được.</li>
+      <li><code>bench/t4/fail_inject.php --point=… --txn=on|off --runs=10 --size=small</code>: mỗi lần reset fixture, chụp số liệu trước, gọi <code>OrderService::place</code> với <code>FAIL_AT</code>, bắt exception, chụp số liệu sau, ghi 1 dòng CSV.</li>
+      <li>Thêm dòng đối chứng <code>--point=none</code>: đơn thành công phải thay đổi đúng các bảng.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/fail_inject.php</code>, <code>bench/t4/fixtures.sql</code> MỚI</li>
+      <li><code>bench/results/t4_failpoint_&lt;size&gt;.csv</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>CSV có 90 dòng (4 điểm × 2 chế độ × 10 + 10 dòng none). Mọi dòng <code>txn_mode=on</code> có <code>consistent=1</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Chạy trên DB dev <code>vinfast</code> thay vì <code>vinfast_bench</code>: làm bẩn dữ liệu cả nhóm.</li>
+      <li>Không reset fixture giữa các lần: kho cạn dần, lần sau ra <code>OutOfStockException</code> thay vì lỗi đã chèn.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-18">
+  <div class="task-head">
+    <span class="tid">T4-18</span>
+    <h3>Bench coupon quota 5, 50 request đồng thời</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Khó · ~6h · Phụ thuộc: T4-13 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> So sánh "đọc rồi ghi" (naive) với UPDATE có điều kiện (conditional) khi 50 tiến trình cùng dùng 1 mã còn 5 lượt.</p>
+    <p><b>Vì sao.</b> Bằng chứng cho chữ I (Isolation) và cho việc CHECK một mình không đủ.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>bench/t4/coupon_race.php --strategy=naive|conditional --n=50 --runs=10</code> mở 50 tiến trình <code>php bench/t4/coupon_worker.php</code> bằng <code>proc_open</code>. Mỗi worker kết nối PDO trước, ngủ tới mốc <code>--start-at</code> chung, rồi chạy 1 transaction: INSERT <code>orders</code> tối giản cho user riêng (900001…900050), bước coupon, COMMIT. Không đi qua Apache nên không bị khóa session PHP.</li>
+      <li>Naive: <code>SELECT used_count, usage_limit</code>; còn lượt thì <code>usleep(2000)</code> rồi <code>UPDATE coupons SET used_count = :old + 1</code> và INSERT redemption.</li>
+      <li>Conditional: gọi <code>CouponService::redeem</code>.</li>
+      <li>Thu JSON từ stdout từng worker; đếm thành công, bị từ chối, lỗi; đọc lại <code>used_count</code> và <code>count(*)</code> từ <code>coupon_redemptions</code>.</li>
+      <li>Tùy chọn: quét n = 10, 50, 100, 200 (PG trong compose có <code>max_connections=200</code>, bench compose nâng 250).</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/coupon_race.php</code>, <code>bench/t4/coupon_worker.php</code> MỚI</li>
+      <li><code>bench/results/t4_coupon_race_&lt;size&gt;.csv</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Conditional: 10/10 lần có <code>ok_count = 5</code>, <code>redemptions = 5</code>, <code>used_count_final = 5</code>.</li>
+      <li>Naive: ghi lại số lần <code>redemptions &gt; 5</code> hoặc <code>used_count_final &lt; redemptions</code>. Nếu không thấy lần nào, tăng <code>usleep</code> và ghi rõ trong report.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Naive vượt <code>usage_limit</code> bằng giá trị tuyệt đối thì <code>ck_coupon_quota</code> có thể chặn (23514) và <code>Db::transaction</code> báo nhầm thành <code>OutOfStockException</code>. Trong worker, ghi tên lớp exception và message gốc vào JSON.</li>
+      <li>Quên reset trước mỗi run: <code>DELETE FROM coupon_redemptions WHERE coupon_id = …; UPDATE coupons SET used_count = 0 WHERE upper(code) = 'RACE5';</code></li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-19">
+  <div class="task-head">
+    <span class="tid">T4-19</span>
+    <h3>Bench độ trễ của transaction</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~4h · Phụ thuộc: T4-08 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Đo chi phí của việc bọc các bước trong 1 transaction so với autocommit từng câu.</p>
+    <p><b>Vì sao.</b> Report cần trả lời "transaction có làm chậm không, chậm bao nhiêu" bằng số đo của nhóm.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>bench/t4/txn_latency.php --mode=txn|autocommit --items=1,3,5 --warmup=5 --iter=30 --runs=3 --size=10k</code>. Đo bằng <code>hrtime(true)</code> quanh <code>OrderService::place</code>, tách thời gian đọc Mongo khỏi phần PG.</li>
+      <li>Kho đủ lớn để không gặp <code>OutOfStockException</code>; reset fixture giữa các run.</li>
+      <li>Tính p50, p95, trung bình, overhead % = (txn − autocommit) / autocommit.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/txn_latency.php</code> MỚI</li>
+      <li><code>bench/results/t4_latency_&lt;size&gt;.csv</code>, <code>t4_latency_summary_&lt;size&gt;.csv</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>CSV có 3 × 2 × 3 × 30 = 540 dòng đo; summary có 6 dòng.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Tính cả lần khởi động (warmup) vào kết quả.</li>
+      <li>Bật Xdebug hoặc chạy lúc máy đang build image: số liệu nhiễu. Ghi cấu hình máy vào report.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-20">
+  <div class="task-head">
+    <span class="tid">T4-20</span>
+    <h3>(Tùy chọn) So sánh transaction Mongo</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Khó · ~5h · Phụ thuộc: replica set rs0 (đã có) · <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Chạy cùng kịch bản đặt hàng trên Mongo: transaction nhiều document so với không transaction, và độ trễ so với PG.</p>
+    <p><b>Vì sao.</b> Đồ án là hybrid; report nên cho thấy khi nào Mongo cần transaction, khi nào không.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>bench/t4/mongo_txn.php</code> dùng DB <code>vinfast_bench</code>, collection riêng <code>bench_orders</code> (món nhúng trong đơn), <code>bench_inventory</code>, <code>bench_carts</code>.</li>
+      <li>Chế độ <code>txn</code>:
+<pre><code>$session = Db::mongo()-&gt;getManager()-&gt;startSession();
+MongoDB\with_transaction($session, function ($s) use ($db, $order, $lines) {
+    $db-&gt;bench_orders-&gt;insertOne($order, ['session' =&gt; $s]);
+    foreach ($lines as $l) {
+        $r = $db-&gt;bench_inventory-&gt;updateOne(
+            ['sku' =&gt; $l['sku'], 'stock' =&gt; ['$gte' =&gt; $l['qty']]],
+            ['$inc' =&gt; ['stock' =&gt; -$l['qty']]], ['session' =&gt; $s]);
+        if ($r-&gt;getModifiedCount() === 0) throw new OutOfStockException($l['sku']);
+    }
+    // xóa giỏ ...
+});</code></pre>
+        Chế độ <code>none</code>: các lệnh rời, không session. Cùng các điểm FAIL_AT (after_order và after_items gộp vì món nhúng trong đơn).</li>
+      <li>Ghi chú cho report: đơn + món nhúng là 1 document nên tự nguyên tử; transaction chỉ cần khi chạm kho và giỏ.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/mongo_txn.php</code> MỚI</li>
+      <li><code>bench/results/t4_mongo_txn_&lt;size&gt;.csv</code></li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li><code>docker compose exec mongo mongosh --quiet --eval "rs.status().ok"</code> in <code>1</code>.</li>
+      <li>Chế độ txn: 0 document dở dang ở mọi điểm lỗi.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Quên truyền <code>['session' =&gt; $s]</code> vào một lệnh: lệnh đó chạy ngoài transaction và không bị abort.</li>
+      <li>Tạo collection bên trong transaction trên phiên bản cũ: tạo sẵn collection trước khi bench.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<!-- ======================================================================= -->
+<section class="milestone" id="w6">
+  <h2><span class="wk">Tuần 6</span>Report và demo</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t4-21">
+  <div class="task-head">
+    <span class="tid">T4-21</span>
+    <h3>Biểu đồ và chương report Transaction</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Vừa · ~8h · Phụ thuộc: T4-17, T4-18, T4-19</span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Biến CSV thành biểu đồ và viết chương theo dàn ý ở phần Report.</p>
+    <p><b>Vì sao.</b> Số liệu không có diễn giải thì không thành kết luận.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>bench/t4/plot.py</code>, chạy bằng <code>docker run --rm -v "$PWD/bench:/b" -w /b python:3.12-slim sh -c "pip install -q pandas matplotlib &amp;&amp; python t4/plot.py"</code> (không cần cài Python trên máy).</li>
+      <li>Xuất <code>bench/results/t4_failpoint_&lt;size&gt;.png</code>, <code>t4_coupon_race_&lt;size&gt;.png</code>, <code>t4_latency_&lt;size&gt;.png</code>, <code>t4_idempotency_&lt;size&gt;.png</code>, <code>t4_mongo_txn_&lt;size&gt;.png</code> (nếu có).</li>
+      <li>Viết chương report; dùng ảnh lab T4-24 làm bằng chứng tay.</li>
+      <li>Thêm mục T4 vào <code>bench/README.md</code> (lệnh chạy lại từng thí nghiệm).</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/plot.py</code> MỚI, <code>bench/results/t4_*.png</code></li>
+      <li><code>bench/README.md</code> thêm mục T4</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Một bạn khác trong nhóm chạy lại được từ <code>bench/README.md</code> và ra CSV cùng cấu trúc.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>Trên Windows PowerShell, <code>$PWD</code> trong ngoặc kép vẫn chạy; trên cmd.exe thì không. Dùng Git Bash hoặc PowerShell.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t4-22">
+  <div class="task-head">
+    <span class="tid">T4-22</span>
+    <h3>Kịch bản demo và reset</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Độ khó: Dễ · ~3h · Phụ thuộc: T4-21</span>
+  </div>
+  <div class="task-body">
+    <p><b>Mục tiêu.</b> Demo 10 phút chạy bằng lệnh có sẵn, dữ liệu reset về trạng thái biết trước.</p>
+    <p><b>Vì sao.</b> Demo trực tiếp dễ hỏng nếu dữ liệu khác lần tập.</p>
+    <h4>Các bước</h4><ol>
+      <li><code>bench/t4/demo.sh</code>: <code>docker compose run --rm seed php database/seed/seed.php --force --size=small</code>, áp <code>005_order_idempotency.sql</code> nếu chưa có trong seed, nạp <code>fixtures.sql</code>, đặt <code>RACE5</code> về 0.</li>
+      <li>Tập theo kịch bản ở phần Report, bấm giờ từng bước.</li>
+    </ol>
+    <h4>File</h4><ul class="files">
+      <li><code>bench/t4/demo.sh</code> MỚI (giữ đuôi dòng LF)</li>
+    </ul>
+    <h4>Tự kiểm tra</h4><ul>
+      <li>Chạy <code>demo.sh</code> 2 lần liên tiếp ra cùng kết quả; tổng thời gian dưới 10 phút.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4><ul>
+      <li>File <code>.sh</code> bị đổi sang CRLF: lỗi <code>$'\r': command not found</code>. Xem bảng lỗi trong README.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<!-- ======================================================================= -->
+<section id="thi-nghiem">
+  <h2>Quy trình thí nghiệm</h2>
+  <p>Mọi lệnh chạy trong container, trên DB riêng <code>vinfast_bench</code> để không đụng DB dev. Cùng máy, cùng kích thước dữ liệu, không bật Xdebug. User bench có id từ 900001.</p>
+
+  <h3>0. Chuẩn bị DB benchmark (theo bench/README.md)</h3>
+<pre><code>docker compose exec -T postgres createdb -U vinfast vinfast_bench
+docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php database/seed/seed.php --force --size=small
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -f /dev/stdin &lt; bench/t4/fixtures.sql
+
+# biến dùng chung cho các lệnh dưới
+BENCH="-e APP_ENV=bench -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench"</code></pre>
+  <p>Tên CSV: <code>bench/results/t4_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code>, ví dụ <code>t4_failpoint_small.csv</code>, <code>t4_coupon_race_small.csv</code>, <code>t4_latency_10k.csv</code>.</p>
+
+  <h3>1. Ma trận chèn lỗi FAIL_AT</h3>
+<pre><code>docker compose exec $BENCH app php bench/t4/fail_inject.php --point=all --txn=on  --runs=10 --size=small
+docker compose exec $BENCH -e T4_NO_TXN=1 app php bench/t4/fail_inject.php --point=all --txn=off --runs=10 --size=small
+# kiểm tra tay 1 lần chạy
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench \
+  -v uid=900001 -v pid=B-1 -v vid=B-1-STD -f /dev/stdin &lt; bench/t4/verify_fail.sql</code></pre>
+<pre><code>-- bench/t4/verify_fail.sql
+SELECT
+  (SELECT count(*) FROM orders o
+    WHERE o.user_id = :uid
+      AND NOT EXISTS (SELECT 1 FROM order_items i WHERE i.order_id = o.id)) AS orders_without_items,
+  (SELECT count(*) FROM orders WHERE user_id = :uid) AS orders_total,
+  (SELECT count(*) FROM order_items i JOIN orders o ON o.id = i.order_id
+    WHERE o.user_id = :uid) AS items_total,
+  (SELECT stock FROM inventory
+    WHERE product_id = :'pid' AND variant_id = :'vid') AS stock_now,
+  (SELECT COALESCE(SUM(i.quantity), 0) FROM order_items i JOIN orders o ON o.id = i.order_id
+    WHERE o.user_id = :uid AND i.product_id = :'pid') AS qty_ordered,
+  (SELECT count(*) FROM cart_items ci JOIN carts c ON c.id = ci.cart_id
+    WHERE c.user_id = :uid) AS cart_items_now,
+  (SELECT used_count FROM coupons WHERE upper(code) = 'FAIL10') AS coupon_used,
+  (SELECT count(*) FROM coupon_redemptions WHERE user_id = :uid) AS redemptions;
+-- nhất quán khi: orders_without_items = 0, stock_ban_đầu - stock_now = qty_ordered,
+-- và (orders_total = 0 =&gt; cart_items_now = số món ban đầu)</code></pre>
+  <div class="tbl"><table>
+    <tr><th>FAIL_AT</th><th>Có transaction (kỳ vọng)</th><th>Không transaction (kỳ vọng)</th></tr>
+    <tr><td><code>after_order</code></td><td>Không đổi gì</td><td>1 đơn không có món; kho, giỏ không đổi</td></tr>
+    <tr><td><code>after_items</code></td><td>Không đổi gì</td><td>Đơn + món nhưng kho chưa trừ (có thể bán vượt kho)</td></tr>
+    <tr><td><code>after_inventory</code></td><td>Không đổi gì</td><td>Kho đã trừ, coupon chưa trừ, giỏ còn; bấm lại sẽ tạo đơn trùng</td></tr>
+    <tr><td><code>after_cart_delete</code></td><td>Không đổi gì (xóa giỏ cũng rollback)</td><td>Mọi thứ đã ghi nhưng request báo lỗi; thử lại thì kho bị trừ 2 lần</td></tr>
+  </table></div>
+  <p>Cột CSV <code>t4_failpoint_&lt;size&gt;.csv</code>:</p>
+<pre><code>run_id,fail_at,txn_mode,orders_delta,orders_without_items,items_delta,stock_delta,qty_ordered_delta,cart_items_delta,coupon_used_delta,redemptions_delta,consistent,error_class</code></pre>
+  <p>Biểu đồ: cột nhóm, trục x là điểm lỗi, mỗi điểm 2 cột (on/off), trục y là số lần không nhất quán trên 10 lần chạy.</p>
+
+  <h3>2. Coupon quota 5, 50 request đồng thời</h3>
+<pre><code>docker compose exec $BENCH app php bench/t4/coupon_race.php --strategy=naive       --n=50 --runs=10 --size=small
+docker compose exec $BENCH app php bench/t4/coupon_race.php --strategy=conditional --n=50 --runs=10 --size=small
+# kiểm tra sau mỗi run (trong psql vinfast_bench)
+SELECT c.used_count, c.usage_limit,
+       (SELECT count(*) FROM coupon_redemptions r WHERE r.coupon_id = c.id) AS redemptions
+  FROM coupons c WHERE upper(c.code) = 'RACE5';</code></pre>
+  <p>CHECK <code>ck_coupon_quota</code> vẫn bật. Naive ghi giá trị tuyệt đối nên có thể không vượt CHECK mà vẫn sai: chỉ bảng <code>coupon_redemptions</code> cho thấy vượt quota. Đây là điểm cần nói trong report.</p>
+  <p>Cột CSV <code>t4_coupon_race_&lt;size&gt;.csv</code>:</p>
+<pre><code>run_id,strategy,concurrency,usage_limit,ok_count,rejected_count,error_count,redemptions,used_count_final,over_quota,lost_updates,duration_ms,p95_ms</code></pre>
+  <p><code>over_quota = max(0, redemptions - usage_limit)</code>, <code>lost_updates = redemptions - used_count_final</code>. Biểu đồ: cột <code>ok_count</code> theo strategy (10 lần, thanh min/max), đường ngang tại 5.</p>
+
+  <h3>3. Chi phí độ trễ transaction</h3>
+<pre><code>docker compose exec $BENCH app php bench/t4/txn_latency.php --mode=txn --items=1,3,5 --warmup=5 --iter=30 --runs=3 --size=10k
+docker compose exec $BENCH -e T4_NO_TXN=1 app php bench/t4/txn_latency.php --mode=autocommit --items=1,3,5 --warmup=5 --iter=30 --runs=3 --size=10k</code></pre>
+<pre><code># bench/results/t4_latency_&lt;size&gt;.csv
+run_id,mode,items,iteration,total_ms,mongo_ms,pg_ms,retries
+# bench/results/t4_latency_summary_&lt;size&gt;.csv
+mode,items,n,p50_ms,p95_ms,mean_ms,overhead_pct</code></pre>
+  <p>Biểu đồ: boxplot <code>pg_ms</code> theo số món, 2 màu cho txn/autocommit.</p>
+
+  <h3>4. Bấm 2 lần (idempotency)</h3>
+<pre><code>docker compose exec $BENCH app php bench/t4/double_submit.php --n=2,5,10 --runs=10 --size=small
+# bench/results/t4_idempotency_&lt;size&gt;.csv
+run_id,with_key,concurrency,orders_created,stock_delta,duplicate_returned,errors</code></pre>
+  <p>Chạy thêm 1 lần <code>--no-key</code> (không gửi khóa) làm đối chứng.</p>
+
+  <h3>5. (Tùy chọn) Transaction nhiều document trên Mongo</h3>
+<pre><code>docker compose exec mongo mongosh --quiet --eval "rs.status().ok"   # phải in 1
+docker compose exec $BENCH app php bench/t4/mongo_txn.php --mode=txn,none --point=all --runs=10 --iter=30 --size=small
+# bench/results/t4_mongo_txn_&lt;size&gt;.csv
+run_id,engine,mode,fail_at,iteration,latency_ms,orphans,consistent</code></pre>
+
+  <div class="callout">Không điền số vào trang này trước khi chạy. Chỉ ghi số đo thật vào CSV và report, kèm cấu hình máy và kích thước dữ liệu.</div>
+</section>
+
+<!-- ======================================================================= -->
+<section id="report">
+  <h2>Report và demo</h2>
+  <h3>Dàn ý chương Transaction</h3>
+  <ol>
+    <li><b>ACID trong đặt hàng VinFast.</b> A: rollback khi lỗi (FAIL_AT). C: <code>ck_inventory_stock</code>, <code>ck_orders_total</code>, <code>ck_coupon_quota</code>, UNIQUE giỏ/redemption. I: READ COMMITTED + UPDATE có điều kiện + sắp món. D: WAL khi commit.</li>
+    <li><b>Ranh giới transaction.</b> Sơ đồ <code>place()</code>; đọc Mongo trước BEGIN; 1 service cho đặt cọc và mua giỏ; retry 3 lần, lỗi kho/coupon không retry; chỗ gọi hợp đồng T5.</li>
+    <li><b>Bằng chứng rollback.</b> Ma trận <code>t4_failpoint_*.csv</code>, biểu đồ, ảnh psql (T4-24).</li>
+    <li><b>Nhất quán coupon.</b> Naive vs UPDATE có điều kiện; kiểm tra lại WHERE sau khi chờ khóa; vì sao CHECK không bắt được lost update.</li>
+    <li><b>Idempotency.</b> Transaction không chặn đặt trùng; UNIQUE + <code>ON CONFLICT DO NOTHING</code>.</li>
+    <li><b>Chi phí transaction</b> theo số món.</li>
+    <li><b>Vì sao không có transaction chung PG + Mongo.</b> PG là nguồn sự thật; <code>totalSold</code> cập nhật sau (eventual consistency); snapshot giữ đơn cũ đúng; script đối soát; hướng mở rộng: outbox, bù trừ.</li>
+    <li><b>So sánh Mongo</b> (T4-20) và <b>giới hạn</b> (không cổng thanh toán, không giữ hàng tạm).</li>
+  </ol>
+  <h3>Kịch bản demo 10 phút</h3>
+  <div class="tbl"><table>
+    <tr><th>Phút</th><th>Việc</th><th>Lệnh / thao tác</th></tr>
+    <tr><td>0–1</td><td>Reset dữ liệu</td><td><code>bash bench/t4/demo.sh</code></td></tr>
+    <tr><td>1–3</td><td>Thêm 2 phụ kiện vào giỏ, badge tăng, checkout với WELCOME10</td><td>Trang phụ kiện → <code>/cart</code> → <code>/order/cartcheckout</code></td></tr>
+    <tr><td>3–4</td><td>Xem dữ liệu: đơn, snapshot món, kho, coupon, giỏ trống</td><td><code>verify_fail.sql</code> với uid demo</td></tr>
+    <tr><td>4–6</td><td>Chèn lỗi <code>after_inventory</code>: có txn thì không đổi gì; không txn thì kho đã trừ mà giỏ còn</td><td><code>fail_inject.php --point=after_inventory --txn=on --runs=1</code>, rồi <code>--txn=off</code></td></tr>
+    <tr><td>6–8</td><td>Coupon race: naive so với conditional</td><td><code>coupon_race.php --strategy=naive --n=50 --runs=1</code>, rồi <code>conditional</code></td></tr>
+    <tr><td>8–9</td><td>Đặt cọc 3 bước, bấm 2 lần vẫn 1 đơn <code>type='deposit'</code></td><td><code>/order/checkout/{id}</code></td></tr>
+    <tr><td>9–10</td><td>Biểu đồ và kết luận</td><td><code>bench/results/t4_*.png</code></td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================================= -->
+<section id="phoi-hop">
+  <h2>Phối hợp với topic khác</h2>
+  <div class="callout info"><b>Hợp đồng T4 ↔ T5 (quan trọng nhất).</b> T5 sở hữu <code>app/services/InventoryService.php</code>. T4 chỉ <b>gọi</b> <code>InventoryService::decrement(PDO $pdo, string $productId, string $variantId, int $qty, ?string $strategy = null): void</code>, không sửa thân hàm.
+    <ul>
+      <li>Gọi ở <b>một chỗ duy nhất</b>: vòng lặp trong <code>OrderService::runSteps()</code>, bên trong <code>Db::transaction</code>, với chính <code>$pdo</code> của transaction.</li>
+      <li>Món đã sắp theo <code>(product_id, variant_id)</code> trước khi gọi.</li>
+      <li>T4 không bắt <code>OutOfStockException</code> bên trong transaction; retry cả transaction tối đa 3 lần khi <code>ConcurrentUpdateException</code>.</li>
+      <li>Chiến lược chọn qua tham số hoặc env <code>INVENTORY_STRATEGY</code> (compose đặt <code>pessimistic</code>; hiện mọi chiến lược đều chạy bản atomic tạm). T4 không truyền <code>$strategy</code>, để T5 điều khiển bằng env khi bench.</li>
+      <li>T5 cần từ T4: <code>OrderService::placeDeposit</code> cho demo 100 request, bảng <code>cart_items</code> cho thí nghiệm isolation.</li>
+    </ul>
+  </div>
+  <div class="tbl"><table>
+    <tr><th>Với</th><th>T4 cung cấp</th><th>T4 cần</th></tr>
+    <tr><td>T5</td><td><code>OrderService::place()</code>, <code>placeDeposit()</code>; điểm gọi <code>decrement</code> như trên; retry + backoff</td><td>Giữ nguyên chữ ký <code>decrement</code> và 2 exception; báo trước khi đổi hành vi</td></tr>
+    <tr><td>T1</td><td>Danh sách khóa cần đọc (tên, giá variant, <code>isActive</code>, ảnh)</td><td><code>Product::getById</code> (đã có, trả <code>variants</code>, <code>is_accessory</code>); hàm tra theo lô nhiều sản phẩm; <code>Product::incrementSold()</code></td></tr>
+    <tr><td>T3</td><td><code>order_items</code> có snapshot; <code>orders.payment_status</code>, <code>subtotal_amount</code>, <code>discount_amount</code>; log <code>place_order</code>, <code>deposit</code>, <code>apply_coupon</code>, <code>add_to_cart</code></td><td><code>OrderAdminController::setstatus</code> đang đọc trạng thái thanh toán từ <code>note</code> (<code>getPaymentStatusFromNote</code>). Đề nghị đổi sang cột thật; trong lúc chờ, T4 vẫn ghi <code>payment_status</code> vào <code>note</code>.</td></tr>
+    <tr><td>T2</td><td>Các câu truy vấn mới: giỏ theo user, coupon theo <code>upper(code)</code>, đơn theo <code>(user_id, idempotency_key)</code></td><td>Index phù hợp trong <code>002_indexes.sql</code> nếu EXPLAIN cho thấy cần</td></tr>
+    <tr><td>Phase 0</td><td>Yêu cầu thêm <code>CouponException</code> (và có thể <code>Db::sqlState()</code>)</td><td>Duyệt thay đổi ở <code>app/core/</code></td></tr>
+  </table></div>
+</section>
+
+<!-- ======================================================================= -->
+<section id="thuat-ngu">
+  <h2>Thuật ngữ</h2>
+  <div class="card">
+  <dl class="gloss">
+    <dt>Transaction</dt><dd>Nhóm câu lệnh chạy như một khối: tất cả cùng thành công hoặc không câu nào có hiệu lực.</dd>
+    <dt>ACID</dt><dd>Atomicity, Consistency, Isolation, Durability: 4 tính chất của transaction.</dd>
+    <dt>COMMIT / ROLLBACK</dt><dd>Công bố / hủy toàn bộ thay đổi của transaction.</dd>
+    <dt>Savepoint</dt><dd>Điểm lưu bên trong transaction; có thể quay về đó mà không hủy cả transaction.</dd>
+    <dt>SQLSTATE</dt><dd>Mã lỗi 5 ký tự chuẩn SQL, ví dụ <code>23514</code> (CHECK), <code>23505</code> (UNIQUE).</dd>
+    <dt>Aborted transaction</dt><dd>Transaction PG đã gặp lỗi; mọi câu sau đều lỗi <code>25P02</code> cho tới khi ROLLBACK.</dd>
+    <dt>Isolation level</dt><dd>Mức độ một transaction thấy thay đổi của transaction khác. PG mặc định READ COMMITTED.</dd>
+    <dt>Race condition</dt><dd>Kết quả phụ thuộc thứ tự chạy của các request song song.</dd>
+    <dt>Lost update</dt><dd>Hai giao dịch cùng đọc giá trị cũ rồi ghi đè, một lần cập nhật bị mất.</dd>
+    <dt>Check-then-act</dt><dd>Đọc kiểm tra rồi mới ghi, ở 2 câu riêng. Dễ bị race condition.</dd>
+    <dt>Deadlock</dt><dd>Hai giao dịch chờ khóa của nhau. PG hủy một bên với mã <code>40P01</code>.</dd>
+    <dt>Retry / backoff</dt><dd>Chạy lại cả transaction sau một khoảng chờ ngẫu nhiên ngắn.</dd>
+    <dt>Idempotency key</dt><dd>Khóa duy nhất gắn với một lần thao tác; gửi lại cùng khóa thì không tạo thêm kết quả.</dd>
+    <dt>Replica set</dt><dd>Nhóm máy MongoDB cùng giữ dữ liệu; bắt buộc để dùng transaction Mongo. Dự án chạy 1 node tên <code>rs0</code>.</dd>
+    <dt>Session (Mongo)</dt><dd>Ngữ cảnh mà các lệnh Mongo cùng thuộc một transaction.</dd>
+    <dt>2PC</dt><dd>Two-phase commit: giao thức commit chung giữa nhiều hệ. PG + Mongo trong dự án không dùng.</dd>
+    <dt>Best-effort</dt><dd>Cố gắng làm, lỗi thì ghi log chứ không làm hỏng việc chính.</dd>
+    <dt>Eventual consistency</dt><dd>Dữ liệu ở hai nơi có thể lệch một lúc, sau đó khớp lại.</dd>
+    <dt>Outbox</dt><dd>Ghi sự kiện vào bảng trong cùng transaction PG; tiến trình khác đọc và đẩy đi sau.</dd>
+    <dt>Bù trừ (compensation)</dt><dd>Thao tác ngược để hủy một bước đã làm ở hệ khác.</dd>
+    <dt>Snapshot (order_items)</dt><dd>Bản chụp tên, giá tại lúc đặt; đổi giá sản phẩm sau đó không ảnh hưởng đơn cũ.</dd>
+    <dt>Fail point (FAIL_AT)</dt><dd>Chỗ cố ý ném lỗi trong code để thử rollback; tắt ở production.</dd>
+    <dt>p50 / p95</dt><dd>50% / 95% số lần đo có thời gian nhỏ hơn hoặc bằng giá trị này.</dd>
+  </dl>
+  </div>
+</section>
+
+<!-- ======================================================================= -->
+<section id="dod">
+  <h2>Definition of Done</h2>
+  <ul class="dod">
+    <li>Đã đọc và trả lời được câu hỏi của T4-01, T4-03, T4-04; đã chạy lab T4-24.</li>
+    <li>Lỗi UNIQUE/FK ở đăng ký, profile, xóa user hiện thông báo, không còn trang 500.</li>
+    <li>Giỏ hàng: 1 giỏ mỗi user, chỉ phụ kiện, không có dòng trùng, phải đăng nhập, badge đúng.</li>
+    <li>Đặt cọc và checkout giỏ đều đi qua <code>OrderService::place()</code>; <code>InventoryService::decrement</code> được gọi đúng 1 chỗ, trong transaction; không còn SQL ghi đơn trong controller.</li>
+    <li>Đặt cọc trừ kho đúng phiên bản khách chọn; hết hàng thì báo rõ.</li>
+    <li>Mọi điểm FAIL_AT để lại 0 dòng dở dang, giỏ còn nguyên, tồn kho không đổi (10/10 lần).</li>
+    <li>Coupon RACE5 kết thúc với đúng 5 lượt; <code>used_count</code> không vượt <code>usage_limit</code> (10/10 lần).</li>
+    <li>Mã hết hạn hoặc đã dùng bị từ chối bên trong transaction, không tạo đơn.</li>
+    <li>Bấm đặt hàng 2 lần với cùng khóa chỉ ra 1 đơn, kho trừ 1 lần.</li>
+    <li>Mongo (<code>totalSold</code>, log) cập nhật sau commit; Mongo lỗi không làm hỏng đơn; có script đối soát.</li>
+    <li>Luồng đặt cọc 3 bước và trang xác nhận không đổi với người dùng.</li>
+    <li>CSV <code>bench/results/t4_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code> và biểu đồ đã commit; <code>bench/README.md</code> có lệnh chạy lại.</li>
+    <li>Chương report và demo 10 phút đã tập dượt.</li>
+  </ul>
+</section>
+
+<footer>Dựa trên kế hoạch tổng <code>docs/hybrid-db-plan.html</code> (quyết định 4, 5, 11, 12, 13 và hợp đồng T4 ↔ T5) và code hiện tại: <code>app/core/Db.php</code>, <code>app/models/Order.php</code>, <code>app/services/InventoryService.php</code>, <code>database/postgres/001_schema.sql</code>, <code>004_coupons.sql</code>. Tên hàm và cột theo nhánh hiện tại; nếu code đổi, cập nhật trang này.</footer>
+</div>
+
+<script>
+(function(){
+  var TOPIC = 't4';
+  var LABELS = {todo:'Chưa làm', doing:'Đang làm', done:'Xong'};
+  var tasks = Array.prototype.slice.call(document.querySelectorAll('.task[data-task]'));
+  var state = {}; // id -> {status, by, at}
+  var db = null, user = null, myId = null, canWrite = true, names = {};
+  var LKEY = 'vinfast-tasks-' + TOPIC;
+  try { state = JSON.parse(localStorage.getItem(LKEY) || '{}') || {}; } catch(e) { state = {}; }
+  var syncEl = document.getElementById('sync');
+  function setSync(t){ syncEl.textContent = t; }
+  // Trạng thái mặc định khi chưa ai cập nhật: data-default="done" cho task đã làm sẵn ở Phase 0/0.5
+  function defaultStatus(t){ var d = t.getAttribute('data-default'); return LABELS[d] ? d : 'todo'; }
+
+  tasks.forEach(function(t){
+    var id = t.getAttribute('data-task');
+    var slot = t.querySelector('.status-slot');
+    var sel = document.createElement('select');
+    sel.id = 'st-' + id;
+    sel.setAttribute('aria-label', 'Trạng thái ' + id);
+    ['todo','doing','done'].forEach(function(k){ var o = document.createElement('option'); o.value = k; o.textContent = LABELS[k]; sel.appendChild(o); });
+    var who = document.createElement('span'); who.className = 'who';
+    slot.appendChild(sel); slot.appendChild(who);
+    sel.addEventListener('click', function(e){ e.stopPropagation(); });
+    sel.addEventListener('change', function(){ save(id, sel.value); });
+    var head = t.querySelector('.task-head');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('role','button');
+    head.addEventListener('click', function(){ t.classList.toggle('open'); head.setAttribute('aria-expanded', t.classList.contains('open')); });
+    head.addEventListener('keydown', function(e){ if ((e.key === 'Enter' || e.key === ' ') && e.target === head) { e.preventDefault(); head.click(); } });
+    head.setAttribute('aria-expanded','false');
+  });
+
+  function render(){
+    var c = {todo:0, doing:0, done:0};
+    tasks.forEach(function(t){
+      var id = t.getAttribute('data-task');
+      var s = (state[id] && state[id].status) || defaultStatus(t);
+      c[s]++;
+      t.setAttribute('data-status', s);
+      var sel = document.getElementById('st-' + id);
+      if (sel.value !== s) sel.value = s;
+      sel.disabled = !canWrite;
+      var who = t.querySelector('.who');
+      var st = state[id];
+      if (st && st.by && st.status !== 'todo') {
+        var n = names[st.by] || '';
+        var d = st.at ? new Date(st.at) : null;
+        who.textContent = (n ? n : 'Ai đó') + (d ? ' · ' + d.toLocaleDateString('vi-VN') : '');
+      } else if (!st && t.getAttribute('data-default') === 'done') {
+        who.textContent = 'Phase 0/0.5';
+      } else who.textContent = '';
+    });
+    var total = tasks.length || 1;
+    document.getElementById('m-done').style.width = (c.done/total*100) + '%';
+    document.getElementById('m-doing').style.width = (c.doing/total*100) + '%';
+    document.getElementById('counts').innerHTML = '<b>' + c.done + '</b>/' + tasks.length + ' xong · ' + c.doing + ' đang làm';
+    applyFilter();
+  }
+
+  var filter = 'all';
+  document.querySelectorAll('.filters button').forEach(function(b){
+    b.addEventListener('click', function(){
+      filter = b.getAttribute('data-filter');
+      document.querySelectorAll('.filters button').forEach(function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      applyFilter();
+    });
+  });
+  function applyFilter(){
+    tasks.forEach(function(t){ t.hidden = !(filter === 'all' || t.getAttribute('data-status') === filter); });
+  }
+
+  function persistLocal(){ try { localStorage.setItem(LKEY, JSON.stringify(state)); } catch(e) {} }
+
+  var writing = {};
+  function save(id, status){
+    state[id] = {status: status, by: myId || null, at: new Date().toISOString()};
+    render();
+    if (!db) { persistLocal(); return; }
+    if (writing[id]) { writing[id].next = status; return; }
+    writing[id] = {};
+    (function go(s){
+      db.collection('tasks').doc(id).set({status: s, by: myId || null, at: new Date().toISOString(), topic: TOPIC})
+        .catch(function(e){
+          if (e && e.code === 'invalid_argument') { canWrite = false; setSync('Chỉ xem: bạn chưa có quyền cập nhật'); render(); }
+          else setSync('Chưa lưu được, thử lại sau');
+        })
+        .then(function(){
+          var n = writing[id] && writing[id].next;
+          if (n && n !== s) { writing[id].next = null; go(n); } else delete writing[id];
+        });
+    })(status);
+  }
+
+  function resolveNames(){
+    if (!user || !user.profiles) return;
+    var ids = [];
+    Object.keys(state).forEach(function(k){ var b = state[k] && state[k].by; if (b && ids.indexOf(b) < 0) ids.push(b); });
+    if (!ids.length) return;
+    user.profiles(ids).then(function(ps){ ids.forEach(function(i){ names[i] = (ps && ps[i] && ps[i].name) || ''; }); render(); }).catch(function(){});
+  }
+
+  render();
+  if (!window.claude || !window.claude.use) { setSync('Lưu trên trình duyệt này'); return; }
+  Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function(r){
+    db = r[0]; user = r[1];
+    if (!db) { setSync('Lưu trên trình duyệt này'); return; }
+    var p = (user && user.id) ? user.id() : Promise.resolve(null);
+    p.then(function(id){ myId = id; }).catch(function(){});
+    if (user && user.can) { Promise.resolve(user.can('data.write')).then(function(v){ if (v === false) { canWrite = false; setSync('Chỉ xem'); render(); } }).catch(function(){}); }
+    var timer = setTimeout(function(){ setSync('Chưa kết nối được dữ liệu chung'); }, 10000);
+    db.collection('tasks').where('topic','==',TOPIC).onSnapshot(function(snap){
+      var next = {};
+      snap.docs.forEach(function(d){ var v = d.data(); if (v) next[d.id] = {status: v.status, by: v.by, at: v.at}; });
+      state = next;
+      if (!snap.metadata.fromCache) { clearTimeout(timer); if (canWrite) setSync('Đồng bộ với cả nhóm'); }
+      render(); resolveNames();
+    }, function(){ clearTimeout(timer); setSync('Mất kết nối dữ liệu chung'); });
+  }).catch(function(){ setSync('Lưu trên trình duyệt này'); });
+})();
+</script>

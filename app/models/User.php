@@ -2,19 +2,27 @@
 
 /**
  * app/models/User.php — User Model
- * Table: users
+ * Table: users (PostgreSQL)
  * Owner: All members (common)
  * Shared by: AuthController, UserController, UserAdminController
  *
  * Columns: id, name, email, password, role(member|admin),
- *          avatar, is_locked, created_at
+ *          avatar, is_locked (BOOLEAN), created_at, updated_at
+ *
+ * is_locked is returned as 0/1 and timestamps as 'YYYY-MM-DD HH24:MI:SS'
+ * (old MySQL shape). Email is unique on lower(email); lookups are case-insensitive.
  */
 class User
 {
+    private const COLS = "id, name, email, password, role, avatar,
+                is_locked::int AS is_locked,
+                to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at";
+
     public function findById(int $id): ?array
     {
         global $pdo;
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT ' . self::COLS . ' FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([$id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         return $user ?: null;
@@ -23,7 +31,7 @@ class User
     public function findByEmail(string $email): ?array
     {
         global $pdo;
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT ' . self::COLS . ' FROM users WHERE lower(email) = lower(?) LIMIT 1');
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         return $user ?: null;
@@ -101,30 +109,30 @@ class User
         global $pdo;
         $where = [];
         $params = [];
-        
+
         if ($q !== '') {
-            $where[] = '(name LIKE ? OR email LIKE ?)';
+            $where[] = '(name ILIKE ? OR email ILIKE ?)';
             $params[] = "%$q%";
             $params[] = "%$q%";
         }
-        
+
         if ($role !== '') {
             $where[] = 'role = ?';
             $params[] = $role;
         }
-        
+
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-        
+
         $countStmt = $pdo->prepare("SELECT COUNT(id) FROM users $whereClause");
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
-        
+
         $pg = new Pagination($total, $page, $perPage);
-        
-        $sql = "SELECT * FROM users $whereClause ORDER BY id DESC LIMIT {$pg->limit()} OFFSET {$pg->offset()}";
+
+        $sql = 'SELECT ' . self::COLS . " FROM users $whereClause ORDER BY id DESC LIMIT " . (int)$pg->limit() . ' OFFSET ' . (int)$pg->offset();
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        
+
         return [
             'users' => $stmt->fetchAll(PDO::FETCH_ASSOC),
             'pg' => $pg

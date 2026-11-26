@@ -89,7 +89,10 @@ $extractOrderDetail = $extractOrderDetail ?? function ($v) {
                                             }
                                             ?>
                                             <div class="fw-semibold" title="<?= htmlspecialchars($prodName) ?>" style="max-width:260px;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($displayProdName) ?></div>
-                                            <div class="small text-muted"><?= number_format((float)($order['price'] ?? 0), 0, ',', '.') ?> VND</div>
+                                            <?php if ((int)($order['item_count'] ?? 0) > 1): ?>
+                                                <div class="small text-muted">+ <?= (int)$order['item_count'] - 1 ?> sản phẩm khác</div>
+                                            <?php endif; ?>
+                                            <div class="small text-muted"><?= number_format((float)($order['total_amount'] ?? 0), 0, ',', '.') ?> VND</div>
                                         </td>
                                         <td>
                                             <span class="badge badge-light text-black border">

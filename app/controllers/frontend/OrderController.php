@@ -23,6 +23,12 @@ class OrderController
             return;
         }
 
+        // Đặt cọc chỉ áp dụng cho xe; phụ kiện mua qua giỏ hàng (T4)
+        if (!empty($product['is_accessory'])) {
+            header('Location: ' . BASE_URL . 'products/detail/' . (int)$product['id']);
+            exit;
+        }
+
         $categoryId = (int)($product['category_id'] ?? 0);
 
         $specs = is_array($product['specs'] ?? null) ? $product['specs'] : [];
@@ -323,34 +329,46 @@ class OrderController
         $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = 12;
 
-        $raw = Order::getByUserId((int)Auth::id(), $page, $perPage);
-        $orders = [];
-        foreach ($raw as $r) {
-            $note = [];
-            if (is_string($r['note'] ?? '')) {
-                $decoded = json_decode((string)$r['note'], true);
-                if (is_array($decoded)) {
-                    $note = $decoded;
-                }
-            } elseif (is_array($r['note'] ?? null)) {
-                $note = $r['note'];
-            }
-
-            $paymentStatus = Order::getPaymentStatusFromNote($r['note'] ?? null);
-            $orders[] = [
-                'orderId' => 'VF-' . strtoupper(dechex((int)$r['id'])) . '-' . strtoupper(substr(md5((string)$r['id']), 0, 4)),
-                'orderDbId' => (int)$r['id'],
-                'carName' => (string)($r['product_name'] ?? '—'),
-                'orderDate' => !empty($r['created_at']) ? date('d/m/Y H:i', strtotime($r['created_at'])) : '',
-                'customerName' => (string)($note['full_name'] ?? ($r['user_name'] ?? '')),
-                'email' => (string)($note['email'] ?? ($r['email'] ?? '')),
-                'phone' => (string)($note['phone'] ?? ''),
-                'depositAmount' => (float)($note['deposit_amount'] ?? 0),
-                'paymentStatus' => $paymentStatus,
-            ];
-        }
+        $result = Order::getUserOrderPage((int)Auth::id(), $page, $perPage);
+        $pg = new Pagination($result['total'], $result['page'], $perPage);
+        $pageUrl = BASE_URL . 'order?page=';
 
         SEO::set('Đơn hàng của tôi');
-        View::render('frontend/order/index', ['orders' => $orders]);
+        View::render('frontend/order/index', [
+            'orders' => $result['orders'],
+            'pg' => $pg,
+            'pageUrl' => $pageUrl,
+        ]);
+    }
+
+    /**
+     * Backend join: order + items from PG in one query, images/links from Mongo in one $in.
+     * Item names and prices always come from the order snapshot, so renamed or hidden
+     * products still show what the customer actually bought.
+     */
+    public function detail($id = 0): void
+    {
+        if (!Auth::check()) {
+            $_SESSION['flash'] = 'Vui lòng đăng nhập để xem đơn hàng.';
+            header('Location: ' . BASE_URL . 'auth/login');
+            exit;
+        }
+
+        $order = Order::getByIdForUser((int)$id, (int)Auth::id());
+        if (!$order) {
+            $_SESSION['flash'] = 'Không tìm thấy đơn hàng.';
+            header('Location: ' . BASE_URL . 'order');
+            exit;
+        }
+
+        $items = $order['items'];
+        $products = Product::findManyByIds(array_column($items, 'product_id'));
+
+        SEO::set('Đơn hàng #' . (int)$order['id']);
+        View::render('frontend/order/detail', [
+            'order' => $order,
+            'items' => $items,
+            'products' => $products,
+        ]);
     }
 }

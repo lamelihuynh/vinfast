@@ -14,6 +14,10 @@ $trend = is_array($dashboard['trend'] ?? null) ? $dashboard['trend'] : [];
 $ordersByModel = is_array($dashboard['ordersByModel'] ?? null) ? $dashboard['ordersByModel'] : [];
 $modelStats = is_array($dashboard['modelStats'] ?? null) ? $dashboard['modelStats'] : [];
 $recentOrders = is_array($dashboard['recentOrders'] ?? null) ? $dashboard['recentOrders'] : [];
+$topSelling = is_array($dashboard['topSelling'] ?? null) ? $dashboard['topSelling'] : [];
+$lowStock = is_array($dashboard['lowStock'] ?? null) ? $dashboard['lowStock'] : [];
+$searchKeywords = is_array($dashboard['searchKeywords'] ?? null) ? $dashboard['searchKeywords'] : [];
+$topViewed = is_array($dashboard['topViewed'] ?? null) ? $dashboard['topViewed'] : [];
 $recentContacts = is_array($dashboard['recentContacts'] ?? null) ? $dashboard['recentContacts'] : [];
 $activities = is_array($dashboard['activities'] ?? null) ? $dashboard['activities'] : [];
 $quickActions = is_array($dashboard['quickActions'] ?? null) ? $dashboard['quickActions'] : [];
@@ -60,6 +64,21 @@ foreach ($trend as $month) {
     <div class="row mt-4">
         <div class="col-xl-7 col-12 mb-4 mb-xl-0">
             <?php include ROOT . '/app/views/admin/dashboard/partials/model-stats.php'; ?>
+        </div>
+        <div class="col-xl-5 col-12">
+            <?php include ROOT . '/app/views/admin/dashboard/partials/low-stock.php'; ?>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-xl-6 col-12 mb-4 mb-xl-0">
+            <?php include ROOT . '/app/views/admin/dashboard/partials/top-selling.php'; ?>
+        </div>
+        <div class="col-xl-3 col-md-6 col-12 mb-4 mb-md-0">
+            <?php include ROOT . '/app/views/admin/dashboard/partials/search-keywords.php'; ?>
+        </div>
+        <div class="col-xl-3 col-md-6 col-12">
+            <?php include ROOT . '/app/views/admin/dashboard/partials/top-viewed.php'; ?>
         </div>
     </div>
 </div>

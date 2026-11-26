@@ -2,7 +2,7 @@
 
 /**
  * app/models/SiteSetting.php — Site Settings Key-Value Store
- * Table: site_settings
+ * Table: site_settings (PostgreSQL)
  * Owner: Tang Vu (Member 1)
  * Used by: SettingsAdminController (admin), HomeController (reads banners/logo)
  *
@@ -18,7 +18,7 @@ class SiteSetting
     public static function all(): array
     {
         global $pdo;
-        $stmt = $pdo->query('SELECT `key`, value FROM site_settings');
+        $stmt = $pdo->query('SELECT key, value FROM site_settings');
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         $out = [];
@@ -36,7 +36,7 @@ class SiteSetting
     public static function get(string $key, string $default = ''): string
     {
         global $pdo;
-        $stmt = $pdo->prepare('SELECT value FROM site_settings WHERE `key` = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT value FROM site_settings WHERE key = ? LIMIT 1');
         $stmt->execute([$key]);
         $val = $stmt->fetchColumn();
         if ($val === false || $val === null) return $default;
@@ -53,8 +53,8 @@ class SiteSetting
         if ($key === '') return false;
 
         $stmt = $pdo->prepare(
-            'INSERT INTO site_settings (`key`, value) VALUES (:k, :v)
-             ON DUPLICATE KEY UPDATE value = VALUES(value)'
+            'INSERT INTO site_settings (key, value) VALUES (:k, :v)
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value'
         );
         return $stmt->execute([
             ':k' => $key,

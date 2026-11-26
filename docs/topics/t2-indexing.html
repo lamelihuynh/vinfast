@@ -1,0 +1,1235 @@
+<title>T2 Indexing Tasks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky progress bar + milestone sections of task cards; status per task is shared via db */
+:root{
+  --bg:#f6f8fa; --surface:#ffffff; --fg:#17202a; --muted:#5a6773; --line:#dde3e9;
+  --accent:#1f5fbf; --accent-soft:#e7effb;
+  --pg:#2f5d8a; --pg-soft:#e4edf6; --mg:#1d7a46; --mg-soft:#e2f3e9;
+  --warn:#9a5b00; --warn-soft:#fdf1dc; --ok:#1d7a46; --ok-soft:#e2f3e9; --doing:#8a5a00; --doing-soft:#fdf1dc;
+  --code-bg:#eef2f6;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --surface:#161d23; --fg:#e3e9ee; --muted:#93a1ad; --line:#26313a;
+  --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
+  --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --surface:#161d23; --fg:#e3e9ee; --muted:#93a1ad; --line:#26313a;
+  --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
+  --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;margin:0;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:920px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+header.top{padding-block:36px 18px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.2;margin:6px 0 10px;text-wrap:balance}
+h2{font-size:21px;margin:0 0 12px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px}
+p{margin:0 0 10px;max-width:72ch}
+.lede{color:var(--muted);max-width:68ch}
+a{color:var(--accent);overflow-wrap:anywhere}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-left,0px))}
+.bar-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.meter{flex:1 1 220px;height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex;min-width:0}
+.meter .m-done{background:var(--ok)} .meter .m-doing{background:var(--doing)}
+.counts{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.counts b{color:var(--fg)}
+.filters{display:flex;gap:4px;flex-wrap:wrap}
+.filters button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:3px 10px;border-radius:99px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.sync{font-size:12px;color:var(--muted)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;margin-top:8px;scrollbar-width:thin}
+nav.toc a{flex:none;font-size:12.5px;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;white-space:nowrap}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent);outline:none}
+section{padding-top:36px;scroll-margin-top:110px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid>*{min-width:0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:4px;vertical-align:middle}
+.tag.pg{background:var(--pg-soft);color:var(--pg)} .tag.mg{background:var(--mg-soft);color:var(--mg)}
+.tag.ddl{background:var(--warn-soft);color:var(--warn)} .tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.ready{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+.tag.part{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;word-break:break-word}
+pre{background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:8px 0 12px;max-width:100%}
+pre code{background:none;padding:0;font-size:inherit;word-break:normal}
+ul,ol{margin:0 0 10px;padding-left:22px} li{margin:3px 0}
+.tbl{overflow-x:auto;margin:8px 0 14px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+.callout{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.info{border-color:var(--accent);background:var(--accent-soft)}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.milestone>h2 .wk{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:400;margin-right:6px}
+.tasks{display:grid;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.task[data-status="done"]{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.task[data-status="doing"]{border-color:color-mix(in srgb,var(--doing) 45%,var(--line))}
+.task-head{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:12px 16px;cursor:pointer}
+.task-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tid{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.task-head h3{min-width:0}
+.task-head .meta{grid-column:2/3;font-size:12.5px;color:var(--muted)}
+.status-slot{grid-row:1/3;grid-column:3}
+.status-slot select{font:inherit;font-size:12.5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.task[data-status="done"] .status-slot select{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.task[data-status="doing"] .status-slot select{background:var(--doing-soft);color:var(--doing);border-color:var(--doing)}
+.who{display:block;font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
+.task-body{padding:0 16px 14px;border-top:1px solid var(--line);min-width:0}
+.task:not(.open) .task-body{display:none}
+.task-body>p:first-child{margin-top:12px}
+.files li code{font-weight:600}
+.dod{list-style:none;padding-left:0}
+.dod li{padding-left:1.6em;text-indent:-1.6em}
+.dod li::before{content:"☐ ";color:var(--ok);font-weight:700}
+.qs li{margin:5px 0}
+dl.gloss{margin:0}
+dl.gloss dt{font-weight:600;margin-top:10px}
+dl.gloss dd{margin:2px 0 0 0;color:var(--fg);max-width:72ch}
+.links{font-size:13px;color:var(--muted)}
+@media (max-width:560px){.task-head{grid-template-columns:1fr auto}.tid{grid-column:1/2}.task-head h3{grid-column:1/3;grid-row:2}.task-head .meta{grid-column:1/3;grid-row:3}.status-slot{grid-row:1;grid-column:2}.card{padding:14px}}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Đồ án DBMS · VinFast hybrid · T2 Indexing</div>
+  <h1>T2 · Lập chỉ mục (Indexing) cho tìm kiếm, lọc và wishlist</h1>
+  <p class="lede">Trang này dành cho người làm topic T2. Phần chuyển DB (Phase 0/0.5) đã xong, nên nhiều task cũ giờ chỉ còn là "đọc hiểu". Phần việc thật của bạn là đo index bằng số liệu, sửa index cho đúng query của app, làm wishlist và viết chương report. Bấm vào từng task để xem mục tiêu, các bước, file và cách tự kiểm tra.</p>
+</header>
+
+<div class="bar" role="region" aria-label="Tiến độ">
+  <div class="bar-row">
+    <div class="meter" aria-hidden="true"><div class="m-done" id="m-done" style="width:0"></div><div class="m-doing" id="m-doing" style="width:0"></div></div>
+    <span class="counts" id="counts">0 task</span>
+    <div class="filters" role="group" aria-label="Lọc theo trạng thái">
+      <button type="button" data-filter="all" aria-pressed="true">Tất cả</button>
+      <button type="button" data-filter="todo" aria-pressed="false">Chưa làm</button>
+      <button type="button" data-filter="doing" aria-pressed="false">Đang làm</button>
+      <button type="button" data-filter="done" aria-pressed="false">Xong</button>
+    </div>
+    <span class="sync" id="sync">Đang kết nối…</span>
+  </div>
+  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#kien-thuc">Kiến thức</a><a href="#bat-dau">30 phút đầu</a><a href="#p0">Đã làm sẵn</a><a href="#p1">Khảo sát và sửa index</a><a href="#p2">Wishlist</a><a href="#p3">Thí nghiệm</a><a href="#p4">Report</a><a href="#thi-nghiem">Quy trình đo</a><a href="#report">Demo</a><a href="#phoi-hop">Phối hợp</a><a href="#dod">Definition of Done</a><a href="#thuat-ngu">Thuật ngữ</a></nav>
+</div>
+
+<section id="tong-quan">
+<h2>Topic này nói về gì</h2>
+<div class="card">
+<p>Index giống mục lục của một cuốn sách: thay vì lật từng trang, DB nhảy thẳng tới chỗ cần đọc. App VinFast có hai DB: PostgreSQL giữ đơn hàng, user, wishlist, tin tức; MongoDB giữ sản phẩm (<code>products</code>) và log hành vi (<code>userActivityLogs</code>). Trang <code>/products</code> lọc theo danh mục, giá, quãng đường và sắp xếp; mỗi bộ lọc là một query mà index có thể làm nhanh hoặc không giúp gì. T2 tìm hiểu index nào giúp query nào, đo bằng <code>EXPLAIN ANALYZE</code> (PG) và <code>explain('executionStats')</code> (Mongo), và chứng minh bằng số liệu ở 10k và 100k sản phẩm. Index không miễn phí: mỗi index làm thao tác ghi chậm hơn và tốn thêm dung lượng, nên T2 cũng đo cái giá đó.</p>
+</div>
+
+<h3 style="margin-top:18px">Sau topic này bạn trả lời được</h3>
+<ol class="qs">
+<li>Query lọc sản phẩm ở <code>/products</code> duyệt bao nhiêu document để trả về bao nhiêu kết quả, khi có và không có index? Chênh lệch thay đổi thế nào từ 10k lên 100k?</li>
+<li>Vì sao thứ tự cột trong index phức hợp quan trọng? Quy tắc ESR (Equality, Sort, Range) áp dụng thế nào cho <code>idx_cat_active_price</code>?</li>
+<li>Khi nào DB bỏ qua index dù có sẵn (bảng nhỏ, điều kiện trả về quá nhiều dòng, sort không khớp index)?</li>
+<li>Tìm theo tên bằng regex, <code>$text</code>, <code>ILIKE</code> + <code>pg_trgm</code>, <code>tsvector</code> khác nhau ra sao về tốc độ và về kết quả trả về?</li>
+<li>Index-only scan cần điều kiện gì (INCLUDE, visibility map, VACUUM)?</li>
+<li>Mỗi index thêm vào làm insert chậm đi bao nhiêu và tốn bao nhiêu MB?</li>
+<li>Unique index chặn được hai request "thêm vào wishlist" gửi cùng lúc như thế nào?</li>
+</ol>
+
+<div class="grid" style="margin-top:14px">
+<div class="card">
+<h3>Đầu ra cuối cùng</h3>
+<ul>
+<li>Index: <code>database/postgres/002_indexes.sql</code>, <code>database/mongo/002_indexes.js</code> đã chỉnh theo số đo (mỗi thay đổi có lý do).</li>
+<li>Code: wishlist (<code>Wishlist.php</code>, <code>WishlistController.php</code>, view, nút tim), chế độ tìm <code>$text</code>.</li>
+<li>Thí nghiệm: script trong <code>bench/t2/</code>, CSV <code>bench/results/t2_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code>, biểu đồ.</li>
+<li>Report: chương Indexing và kịch bản demo 10 phút.</li>
+</ul>
+<p>Người phụ trách: (điền)</p>
+</div>
+<div class="card">
+<h3>Phạm vi</h3>
+<p><b>Trong phạm vi:</b> index hai DB; đọc và so sánh plan; tìm kiếm text; wishlist cá nhân; thí nghiệm ở 10k và 100k (wishlist có thể nâng lên ~1M dòng).</p>
+<p><b>Ngoài phạm vi:</b> viết lại <code>Product.php</code> (T1); validator và <code>001_*</code>; seed (T5); schema <code>bench.products_sql</code> (T1-18); wishlist công khai, thông báo giảm giá.</p>
+</div>
+</div>
+<div class="callout info"><b>Đọc nhãn:</b> <span class="tag ready">ĐÃ LÀM SẴN</span> = code đã có trong repo, bạn chỉ đọc hiểu và tự trả lời câu hỏi, xong thì tự chọn "Xong". <span class="tag part">MỘT PHẦN</span> = đã làm một phần, task chỉ còn phần ghi trong mục "Còn lại". <span class="tag new">MỚI</span> = task thêm sau Phase 0. Độ khó: Dễ / Vừa / Khó.</div>
+</section>
+
+<section id="kien-thuc">
+<h2>Kiến thức cần nắm trước</h2>
+<p>Đọc lướt phần này trước khi làm task. Mỗi mục có ví dụ lấy từ chính dữ liệu VinFast và link tài liệu chính thức.</p>
+
+<div class="tbl"><table>
+<thead><tr><th>Khái niệm</th><th>Giải thích ngắn</th><th>Ví dụ trong VinFast</th></tr></thead>
+<tbody>
+<tr><td><b>B-tree index</b> (PG, Mongo)</td><td>Cây đã sắp xếp theo giá trị cột. Tìm bằng, tìm khoảng (<code>&gt;</code>, <code>BETWEEN</code>) và lấy theo thứ tự (<code>ORDER BY</code>) đều nhanh. Đây là loại index mặc định của cả PG và Mongo.<br><span class="links"><a href="https://www.postgresql.org/docs/16/indexes-types.html">PG: Index Types</a> · <a href="https://www.mongodb.com/docs/manual/indexes/">Mongo: Indexes</a></span></td><td><code>idx_order_items_order ON order_items (order_id)</code>: mở chi tiết 1 đơn không phải đọc cả 150k dòng <code>order_items</code>. PG <b>không</b> tự tạo index cho cột khóa ngoại, nên phải tạo tay.</td></tr>
+<tr><td><b>Index phức hợp</b> (composite / compound) và thứ tự cột</td><td>Index trên nhiều cột, sắp theo cột 1, rồi cột 2... Dùng được khi query có điều kiện trên các cột <b>đầu</b> (tiền tố). Không có cột đầu thì index gần như vô dụng.<br><span class="links"><a href="https://www.postgresql.org/docs/16/indexes-multicolumn.html">PG: Multicolumn Indexes</a> · <a href="https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/">Mongo: Compound Indexes</a></span></td><td><code>idx_orders_user_created ON orders (user_id, created_at DESC)</code> phục vụ "10 đơn mới nhất của user 2" mà không cần sort. Query chỉ có <code>WHERE created_at &gt; ...</code> thì không dùng tốt index này.</td></tr>
+<tr><td><b>Quy tắc ESR</b> (Mongo)</td><td>Xếp cột trong index phức hợp theo: <b>E</b>quality (so bằng) trước, rồi <b>S</b>ort (cột sắp xếp), rồi <b>R</b>ange (khoảng). Đúng thứ tự thì DB vừa lọc vừa lấy sẵn thứ tự, không phải sort trong RAM.<br><span class="links"><a href="https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-rule/">Mongo: The ESR Guideline</a></span></td><td>Lọc ô tô điện (<code>categoryID: 2</code>, <code>isActive: true</code> là E) giá 500 triệu–1 tỷ, sắp theo giá: <code>basePrice</code> vừa là S vừa là R, nên <code>idx_cat_active_price {categoryID, isActive, basePrice}</code> hợp lý.</td></tr>
+<tr><td><b>Partial index</b></td><td>Index chỉ chứa các dòng thỏa một điều kiện. Nhỏ hơn, ghi rẻ hơn. Query phải có điều kiện khớp thì mới dùng được.<br><span class="links"><a href="https://www.postgresql.org/docs/16/indexes-partial.html">PG: Partial Indexes</a> · <a href="https://www.mongodb.com/docs/manual/core/index-partial/">Mongo: Partial Indexes</a></span></td><td>PG: <code>idx_reviews_pending ON product_reviews (created_at) WHERE NOT is_approved</code> (hàng chờ duyệt chỉ ~10% review). Mongo: <code>idx_search_keyword</code> chỉ index log có <code>actionType: 'search'</code>.</td></tr>
+<tr><td><b>Expression index</b></td><td>Index trên kết quả một biểu thức, không phải cột thô.<br><span class="links"><a href="https://www.postgresql.org/docs/16/indexes-expressional.html">PG: Indexes on Expressions</a></span></td><td><code>uq_users_email_lower ON users (lower(email))</code>: đăng nhập không phân biệt hoa thường, và chặn trùng email kiểu <code>A@x.vn</code> / <code>a@x.vn</code>.</td></tr>
+<tr><td><b>Covering index</b> (<code>INCLUDE</code>) và <b>index-only scan</b></td><td>Nếu index chứa đủ mọi cột query cần, PG trả kết quả chỉ từ index, không đọc bảng (heap). <code>INCLUDE</code> thêm cột "đi kèm" vào lá của index mà không dùng để sắp. PG còn phải biết trang dữ liệu đã "sạch" (visibility map, cập nhật bởi <code>VACUUM</code>).<br><span class="links"><a href="https://www.postgresql.org/docs/16/indexes-index-only-scans.html">PG: Index-Only Scans and Covering Indexes</a></span></td><td>Trang "wishlist của tôi" cần <code>product_id, variant_id, created_at</code> theo <code>wishlist_id</code>: index <code>(wishlist_id, created_at DESC) INCLUDE (product_id, variant_id)</code> (T2-20).</td></tr>
+<tr><td><b>GIN</b> (jsonb, full-text, pg_trgm)</td><td>Index "đảo ngược": mỗi phần tử (key jsonb, từ, cụm 3 ký tự) trỏ về các dòng chứa nó. Dùng cho <code>@&gt;</code> trên jsonb, <code>@@</code> trên <code>tsvector</code>, và <code>ILIKE '%vf%'</code> khi có extension <code>pg_trgm</code>. Ghi chậm hơn B-tree.<br><span class="links"><a href="https://www.postgresql.org/docs/16/gin.html">PG: GIN</a> · <a href="https://www.postgresql.org/docs/16/pgtrgm.html">PG: pg_trgm</a> · <a href="https://www.postgresql.org/docs/16/textsearch-indexes.html">PG: Text Search Indexes</a> · <a href="https://www.postgresql.org/docs/16/datatype-json.html#JSON-INDEXING">PG: jsonb Indexing</a></span></td><td>Baseline hiện <b>chưa</b> có GIN nào. Ứng viên: <code>News</code> và admin user/đơn tìm bằng <code>ILIKE '%...%'</code>; <code>orders.note</code> (jsonb, có <code>province</code>, <code>pay_method</code>). T2-25 đo xem có đáng không.</td></tr>
+<tr><td><b>Multikey index</b> (Mongo)</td><td>Index trên field nằm trong mảng: mỗi phần tử mảng là một khóa riêng. Mongo tự bật multikey khi gặp mảng.<br><span class="links"><a href="https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/">Mongo: Multikey Indexes</a></span></td><td><code>uq_variantId {'variants.variantId': 1}</code>, unique: một sản phẩm có 1–3 phiên bản (<code>"165-STD"</code>, <code>"165-PLUS"</code>), và không có 2 sản phẩm dùng chung một <code>variantId</code>. Giỏ hàng tra giá theo variantId sẽ dùng index này.</td></tr>
+<tr><td><b>Text index</b> (Mongo)</td><td>Tách chuỗi thành từ, tìm bằng <code>$text: {$search: "..."}</code>, có điểm liên quan (<code>textScore</code>). Mỗi collection chỉ có 1 text index. Tìm theo <b>từ</b>, không tìm chuỗi con.<br><span class="links"><a href="https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/">Mongo: Text Indexes</a></span></td><td><code>txt_name_description</code> trên <code>name</code> (trọng số 10) và <code>description</code> (1), <code>default_language: 'none'</code> để không áp quy tắc tiếng Anh lên tên tiếng Việt. App hiện <b>chưa</b> dùng index này (tìm bằng regex).</td></tr>
+<tr><td><b>Sparse index</b> (Mongo)</td><td>Bỏ qua document không có field đó.<br><span class="links"><a href="https://www.mongodb.com/docs/manual/core/index-sparse/">Mongo: Sparse Indexes</a></span></td><td><code>idx_rangeKm</code> sparse: chỉ xe có <code>attributes.rangeKm</code>; ~75% sản phẩm là phụ kiện, không có field này.</td></tr>
+<tr><td><b>Đọc plan PG</b>: <code>EXPLAIN ANALYZE</code></td><td>In cây thao tác planner chọn, kèm thời gian và số dòng thật. <code>Seq Scan</code> = đọc cả bảng. <code>Index Scan</code> = đi theo index rồi đọc bảng. <code>Index Only Scan</code> = chỉ đọc index. <code>Bitmap Heap Scan</code> = gom vị trí từ index rồi đọc bảng theo khối. <code>Sort</code> = phải sắp trong bộ nhớ.<br><span class="links"><a href="https://www.postgresql.org/docs/16/using-explain.html">PG: Using EXPLAIN</a></span></td><td>Xem mục "Bắt đầu trong 30 phút".</td></tr>
+<tr><td><b>Đọc plan Mongo</b>: <code>explain('executionStats')</code></td><td><code>COLLSCAN</code> = đọc cả collection. <code>IXSCAN</code> = quét index. <code>FETCH</code> = đọc document từ index. <code>SORT</code> = sắp trong RAM (chặn: phải đọc hết mới trả dòng đầu). So 3 số: <code>totalKeysExamined</code>, <code>totalDocsExamined</code>, <code>nReturned</code>. Lý tưởng: docs examined ≈ nReturned.<br><span class="links"><a href="https://www.mongodb.com/docs/manual/reference/explain-results/">Mongo: Explain Results</a> · <a href="https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/">Mongo: Analyze Query Performance</a></span></td><td>Xem mục "Bắt đầu trong 30 phút".</td></tr>
+<tr><td><b>Chi phí ghi</b> (write amplification)</td><td>Mỗi lần INSERT/UPDATE phải cập nhật bảng <b>và</b> mọi index liên quan. 5 index = 6 chỗ phải ghi. Index còn chiếm RAM cache.</td><td><code>products</code> hiện có 9 index (kể cả <code>_id_</code>). Seed 100k sẽ chậm hơn nếu thêm index trước khi nạp (T2-21 đo).</td></tr>
+</tbody>
+</table></div>
+<div class="callout">Planner có thể <b>không</b> dùng index trên dữ liệu nhỏ. Seed cơ bản chỉ có 60 sản phẩm (16 xe, 44 phụ kiện), 92 dòng <code>inventory</code> và vài đơn hàng, nên đọc cả bảng còn rẻ hơn đi qua index. Thấy <code>Seq Scan</code> trên seed nhỏ là bình thường; muốn kết luận phải đo ở 10k và 100k.</div>
+</section>
+
+<section id="bat-dau">
+<h2>Bắt đầu trong 30 phút</h2>
+<ol>
+<li><b>Chạy app</b> (chi tiết ở README.md, mục "Cài đặt và chạy trên máy local"):
+<pre><code>git checkout develop-hybrid
+docker compose up -d --build
+docker compose ps        # postgres, mongo, app: running/healthy; mongo-init, seed: exited (0)</code></pre>
+Mở <a href="http://localhost:8080">http://localhost:8080</a>, đăng nhập <code>member@vinfast.vn</code> / <code>Member@123</code> (admin: <code>admin@vinfast.vn</code> / <code>Admin@123</code>). Thử <code>/products</code> với vài bộ lọc.</li>
+
+<li><b>Mở psql và xem index</b>:
+<pre><code>docker compose exec postgres psql -U vinfast -d vinfast
+\di            -- liệt kê index
+\d orders      -- cột, index, ràng buộc của bảng orders</code></pre></li>
+
+<li><b>Chạy EXPLAIN ANALYZE đầu tiên</b> (vẫn trong psql):
+<pre><code>EXPLAIN (ANALYZE, BUFFERS)
+SELECT id, status, created_at FROM orders
+ WHERE user_id = 2 ORDER BY created_at DESC LIMIT 10;</code></pre>
+Cách đọc: mỗi dòng có <code>-&gt;</code> là một bước, đọc từ trong ra ngoài (dòng thụt sâu nhất chạy trước). <code>cost=a..b</code> là ước lượng của planner; <code>actual time=x..y rows=n loops=k</code> là số đo thật. Tìm tên node: <code>Seq Scan on orders</code> hay <code>Index Scan using idx_orders_user_created</code>. Có node <code>Sort</code> nghĩa là index không phục vụ phần <code>ORDER BY</code>. Dòng cuối <code>Execution Time</code> là tổng thời gian. Trên seed nhỏ, nếu thấy <code>Seq Scan</code>, thử thêm <code>SET enable_seqscan = off;</code> rồi chạy lại để xem plan có index (chỉ để học, không dùng khi đo).</li>
+
+<li><b>Mở mongosh và chạy explain</b>:
+<pre><code>docker compose exec mongo mongosh vinfast
+db.products.getIndexes().map(i =&gt; i.name)
+const e = db.products.find({ categoryID: 2, isActive: true })
+                     .sort({ createdAt: -1, productID: 1 }).limit(6)
+                     .explain('executionStats');
+JSON.stringify(e.queryPlanner.winningPlan)        // cây stage: LIMIT/SORT/FETCH/IXSCAN...
+e.executionStats.nReturned
+e.executionStats.totalKeysExamined
+e.executionStats.totalDocsExamined
+e.executionStats.executionTimeMillis</code></pre>
+Cách đọc: tìm <code>COLLSCAN</code> (đọc hết) hay <code>IXSCAN</code> kèm <code>indexName</code>. Có stage <code>SORT</code> nghĩa là phải sắp trong RAM. So <code>totalDocsExamined</code> với <code>nReturned</code>: càng gần nhau càng tốt. Sort ở trên chính là sort mặc định của app (<code>Product::catalogSort</code>), hãy để ý xem có stage <code>SORT</code> không và tự giải thích (gợi ý: index <code>idx_cat_active_created</code> có <code>productID</code> không?).</li>
+
+<li><b>Đọc 5 file theo thứ tự</b>:
+<ol>
+<li><code>database/postgres/002_indexes.sql</code>: index baseline phía PG, phần comment đầu file ghi index nào đã có nhờ UNIQUE.</li>
+<li><code>database/mongo/002_indexes.js</code>: index baseline phía Mongo, có ghi chú ESR.</li>
+<li><code>app/models/Product.php</code>: <code>buildCatalogFilters()</code>, <code>catalogSort()</code>, <code>filterPaginated()</code>, <code>countFiltered()</code>. Đây là các query T2 cần tối ưu.</li>
+<li><code>app/controllers/frontend/ProductController.php</code> <code>index()</code>: tham số URL (<code>cat</code>, <code>price</code>, <code>range</code>, <code>sort</code>, <code>q</code>, <code>page</code>) được đổi thành filter thế nào; log từ khóa tìm kiếm ở đâu.</li>
+<li><code>database/seed/README.md</code> và <code>bench/README.md</code>: kích thước dữ liệu small/10k/100k, cách tạo DB riêng <code>vinfast_bench</code>.</li>
+</ol></li>
+</ol>
+<div class="callout info"><b>Dùng PowerShell trên Windows?</b> Dấu <code>&lt;</code> để đẩy file vào lệnh không chạy. Dùng Git Bash, hoặc viết: <code>Get-Content bench/t2/x.sql -Raw | docker compose exec -T postgres psql -U vinfast -d vinfast_bench</code>.</div>
+</section>
+
+<section class="milestone" id="p0">
+<h2><span class="wk">Phần 0</span>Đã làm sẵn ở Phase 0/0.5: đọc hiểu</h2>
+<p>Các task dưới đây có code trong repo rồi. Việc của bạn: đọc file, chạy thử lệnh kiểm tra, trả lời câu hỏi (ghi câu trả lời vào nháp report). Xong thì tự chọn "Xong".</p>
+<div class="tasks">
+
+<article class="task" data-task="t2-01">
+<div class="task-head">
+<span class="tid">T2-01</span>
+<h3>Đọc DDL: bảng, cột và UNIQUE mà T2 dùng</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~1h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> biết tên bảng, cột, field và các index đã có sẵn nhờ PK/UNIQUE, để không tạo index trùng.</p>
+<p><b>Vì sao cần:</b> PK và UNIQUE tự sinh index. Tạo thêm index cùng cột là tốn chỗ và làm ghi chậm mà không được gì.</p>
+<h4>File cần đọc</h4><ul class="files">
+<li><code>database/postgres/001_schema.sql</code>: <code>news</code>, <code>news_tags</code>, <code>comments</code>, <code>email_subscriptions</code>, <code>inventory</code>, <code>wishlists</code>, <code>wishlist_items</code>, <code>orders</code>, <code>order_items</code>.</li>
+<li><code>database/postgres/002_indexes.sql</code>: comment đầu file liệt kê index có sẵn nhờ UNIQUE.</li>
+<li><code>database/mongo/001_collections.js</code>: validator <code>products</code> (<code>productID</code> là chuỗi, <code>categoryID</code> là số, <code>variants[].variantId</code>, <code>attributes</code>).</li>
+</ul>
+<h4>Tự trả lời</h4><ol>
+<li><code>wishlist_items</code> có ràng buộc <code>uq_wishlist_item UNIQUE NULLS NOT DISTINCT (wishlist_id, product_id, variant_id)</code>. <code>NULLS NOT DISTINCT</code> đổi hành vi gì khi <code>variant_id</code> là NULL?</li>
+<li><code>wishlists</code> có UNIQUE trên cột nào? (Gợi ý: không phải chỉ <code>user_id</code>.) Điều đó ảnh hưởng câu <code>ON CONFLICT</code> ở T2-13 thế nào?</li>
+<li>Vì sao <code>002_indexes.sql</code> không tạo index cho <code>inventory(product_id, variant_id)</code>?</li>
+<li><code>product_id</code> bên PG là <code>VARCHAR(32)</code>. Nếu bind số nguyên thay vì chuỗi khi so sánh thì sao?</li>
+</ol>
+<h4>Kiểm tra nhanh</h4>
+<pre><code>docker compose exec postgres psql -U vinfast -d vinfast -c "\d wishlist_items"</code></pre>
+</div>
+</article>
+
+<article class="task" data-task="t2-02">
+<div class="task-head">
+<span class="tid">T2-02</span>
+<h3>News.php phần đọc: EXISTS thay JOIN + DISTINCT, ILIKE</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~1h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu vì sao bản PG dùng <code>EXISTS</code> và hai bước "lấy id rồi lấy dữ liệu".</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>app/models/News.php</code>: <code>buildWhere()</code>, <code>count()</code>, <code>getAll()</code></li></ul>
+<h4>Tự trả lời</h4><ol>
+<li>PG báo lỗi gì với <code>SELECT DISTINCT n.id ... ORDER BY n.views</code>? <code>EXISTS</code> tránh lỗi đó thế nào?</li>
+<li>Vì sao <code>ORDER BY</code> luôn kèm <code>n.id DESC</code> ở cuối?</li>
+<li>Index nào trong <code>002_indexes.sql</code> phục vụ <code>/news?sort=popular</code>? <code>title ILIKE '%vf%'</code> có dùng được B-tree không? (Đây là đầu vào cho T2-25.)</li>
+</ol>
+<h4>Kiểm tra nhanh</h4><ul><li><code>/news?sort=popular</code>, <code>/news?q=vf</code> và <code>/news?q=VF</code> trả cùng số bài, không lỗi trong <code>docker compose logs app</code>.</li></ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-03">
+<div class="task-head">
+<span class="tid">T2-03</span>
+<h3>News.php phần ghi: RETURNING id, ON CONFLICT DO NOTHING</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~1h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu cách PG trả id mới và bỏ qua bản ghi trùng nhờ PK.</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>app/models/News.php</code>: <code>create()</code>, <code>update()</code>, <code>delete()</code>, <code>syncTags()</code></li></ul>
+<h4>Tự trả lời</h4><ol>
+<li><code>news_tags</code> có PK <code>(news_id, tags)</code>. <code>ON CONFLICT DO NOTHING</code> dựa vào index nào để biết là trùng?</li>
+<li>Tag <code>vf8</code> và <code>VF8</code> có bị coi là trùng không? Vì sao?</li>
+</ol>
+<p><b>Tùy chọn (chưa làm):</b> <code>create()</code> chưa bọc INSERT news + <code>syncTags</code> + <code>syncImages</code> trong <code>Db::transaction()</code>. Lỗi giữa chừng có thể để lại bài thiếu tag. Có thể làm thêm nếu còn thời gian; báo T4 vì T4 phụ trách chủ đề transaction.</p>
+</div>
+</article>
+
+<article class="task" data-task="t2-04">
+<div class="task-head">
+<span class="tid">T2-04</span>
+<h3>Comment.php (boolean, FILTER) và bảng email_subscriptions</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~45 phút · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu boolean thật của PG, <code>COUNT(*) FILTER</code>, và <code>ON CONFLICT</code> trên expression index.</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>app/models/Comment.php</code></li><li><code>app/controllers/frontend/NewsController.php</code> <code>subscribe()</code></li></ul>
+<h4>Tự trả lời</h4><ol>
+<li><code>subscribe()</code> dùng <code>ON CONFLICT ((lower(email))) DO NOTHING</code>. Index nào làm việc đó được? (Gợi ý: <code>uq_email_subscriptions_lower</code>.)</li>
+<li>Index <code>idx_comments_news (news_id, is_approved, created_at DESC)</code> phục vụ câu nào trong <code>Comment.php</code>? Nếu viết lại thành partial index <code>WHERE is_approved</code> thì lợi và hại gì?</li>
+</ol>
+</div>
+</article>
+
+<article class="task" data-task="t2-06">
+<div class="task-head">
+<span class="tid">T2-06</span>
+<h3>database/postgres/002_indexes.sql (baseline PG)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~2h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> giải thích được từng index trong file: phục vụ query nào, loại gì (B-tree thường, phức hợp, partial).</p>
+<p><b>Vì sao cần:</b> đây là file T2 sở hữu. Mọi thay đổi sau này phải bắt đầu từ việc hiểu bản hiện tại.</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>database/postgres/002_indexes.sql</code></li><li><code>database/seed/seed.php</code> <code>applySchema()</code>: chạy <code>001</code>, <code>002</code>, <code>004</code> theo thứ tự khi DB trống.</li></ul>
+<h4>Tự trả lời</h4><ol>
+<li>Kể tên các partial index trong file (có 3) và điều kiện <code>WHERE</code> của chúng.</li>
+<li><code>idx_orders_user_created</code> và <code>idx_orders_created</code> đều có <code>created_at</code>. Mỗi cái phục vụ query nào? Có thừa không?</li>
+<li>File bọc trong <code>BEGIN; ... COMMIT;</code> và <b>không</b> dùng <code>IF NOT EXISTS</code>. Chạy lại file trên DB đã có index thì chuyện gì xảy ra? Vì sao seed vẫn chạy ổn? (Gợi ý: <code>001_schema.sql</code> làm gì đầu tiên.)</li>
+<li>Vì sao <code>idx_order_items_product</code> là <code>(product_id, variant_id)</code> chứ không chỉ <code>product_id</code>?</li>
+</ol>
+<h4>Kiểm tra nhanh</h4>
+<pre><code>docker compose exec postgres psql -U vinfast -d vinfast -c "\di+ idx_*"</code></pre>
+</div>
+</article>
+
+<article class="task" data-task="t2-07">
+<div class="task-head">
+<span class="tid">T2-07</span>
+<h3>database/mongo/002_indexes.js (baseline Mongo)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~2h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu 8 index T2 tạo trên <code>products</code> (cộng <code>_id_</code> là 9), 2 trên <code>categories</code>, 3 trên <code>userActivityLogs</code>.</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>database/mongo/002_indexes.js</code></li><li><code>database/docker/mongo-init.sh</code>: chạy mọi file <code>database/mongo/*.js</code> theo thứ tự tên.</li></ul>
+<h4>Tự trả lời</h4><ol>
+<li>Trong <code>idx_cat_active_price {categoryID, isActive, basePrice}</code>, cột nào là E, S, R với query "ô tô điện giá 500tr–1 tỷ, sắp theo giá"?</li>
+<li><code>uq_variantId</code> vừa unique vừa multikey. Unique ở đây chặn điều gì?</li>
+<li>Vì sao text index dùng <code>default_language: 'none'</code>?</li>
+<li><code>idx_search_keyword</code> có <code>partialFilterExpression: {actionType: 'search'}</code>. Query của T3 phải viết thế nào để Mongo dùng được index này?</li>
+<li>Tại sao chạy lại file này không lỗi, khác với <code>002_indexes.sql</code>?</li>
+</ol>
+<h4>Kiểm tra nhanh</h4>
+<pre><code>docker compose exec mongo mongosh vinfast --quiet --eval "db.products.getIndexes().map(i =&gt; i.name)"
+# kỳ vọng 9 tên: _id_, uq_productID, uq_product_slug, uq_variantId, idx_cat_active_created,
+# idx_cat_active_price, idx_active_bestseller, idx_rangeKm, txt_name_description</code></pre>
+</div>
+</article>
+
+<article class="task" data-task="t2-08">
+<div class="task-head">
+<span class="tid">T2-08</span>
+<h3>Bộ lọc catalog trên Mongo: buildCatalogFilters + catalogSort</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~1.5h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> nắm chính xác filter và sort mà app gửi xuống Mongo. Đây là "đề bài" cho mọi thí nghiệm của T2.</p>
+<p>Kế hoạch cũ định viết <code>ProductSearch.php</code> riêng. Thực tế T1 đã chuyển luôn trong <code>Product.php</code>, nên không cần file mới.</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>app/models/Product.php</code>: <code>regex()</code>, <code>buildCatalogFilters()</code>, <code>catalogSort()</code></li><li><code>app/controllers/frontend/ProductController.php</code> <code>index()</code>: đổi <code>price=500-1000</code> thành <code>price_min</code>/<code>price_max</code></li></ul>
+<h4>Tự trả lời</h4><ol>
+<li>Tìm theo tên dùng <code>new Regex(preg_quote($q), 'i')</code>, không neo <code>^</code>. Mongo có dùng index nào để lọc <code>name</code> không?</li>
+<li>Khi chọn loại "phụ kiện" (không chọn danh mục), filter có <code>categoryID: {$in: [3,4,5]}</code>. <code>$in</code> nhiều giá trị ảnh hưởng thế nào tới việc dùng index cho sort?</li>
+<li>Sort mặc định là <code>{createdAt: -1, productID: 1}</code>. Index <code>idx_cat_active_created</code> có phục vụ trọn sort này không? (Đây là đầu vào cho T2-24.)</li>
+</ol>
+</div>
+</article>
+
+<article class="task" data-task="t2-09">
+<div class="task-head">
+<span class="tid">T2-09</span>
+<h3>filterPaginated / filterAll / countFiltered trên Mongo</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~1h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> hiểu một lần mở <code>/products</code> gửi mấy query xuống Mongo và phân trang bằng <code>skip</code> tốn gì.</p>
+<h4>File cần đọc</h4><ul class="files"><li><code>app/models/Product.php</code>: <code>filterPaginated()</code>, <code>filterAll()</code>, <code>countFiltered()</code>, <code>formatMany()</code></li></ul>
+<h4>Tự trả lời</h4><ol>
+<li>Trang 50 với 12 sản phẩm/trang: <code>skip</code> bằng bao nhiêu? Mongo phải duyệt bao nhiêu key/document để bỏ qua chúng?</li>
+<li><code>countDocuments()</code> có cần sort không? Index nào giúp nó?</li>
+<li>Phân trang kiểu "keyset" (<code>createdAt &lt; lần cuối</code>) khác <code>skip</code> ở điểm nào? (Chỉ cần ý tưởng, dùng cho report.)</li>
+</ol>
+</div>
+</article>
+
+</div>
+</section>
+
+<section class="milestone" id="p1">
+<h2><span class="wk">Phần 1 · Tuần 2–3</span>Khảo sát và sửa index cho query thật</h2>
+<div class="tasks">
+
+<article class="task" data-task="t2-23">
+<div class="task-head">
+<span class="tid">T2-23</span>
+<h3>Kiểm kê index và plan của các query chính</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · <span class="tag new">MỚI</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> có một bảng "query → index dùng → stage → keys/docs examined" cho khoảng 10 query quan trọng của app, đo trên 10k.</p>
+<p><b>Vì sao cần:</b> không đoán. Mọi thay đổi index sau này phải chỉ ra query nào đang chậm và vì sao.</p>
+<h4>Các bước</h4><ol>
+<li>Tạo DB benchmark 10k theo <code>bench/README.md</code>:
+<pre><code>docker compose exec -T postgres createdb -U vinfast vinfast_bench
+docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php database/seed/seed.php --force --size=10k</code></pre></li>
+<li>Chọn query: 5 query catalog Q1–Q5 (bảng ở mục Quy trình đo), "đơn của tôi" (<code>orders</code> theo <code>user_id</code>), admin lọc đơn theo <code>status</code>, chi tiết đơn (<code>order_items</code> theo <code>order_id</code>), <code>/news?q=vf</code>, top từ khóa tìm kiếm trên <code>userActivityLogs</code>.</li>
+<li>Mỗi query chạy <code>EXPLAIN (ANALYZE, BUFFERS)</code> hoặc <code>explain('executionStats')</code> trên <code>vinfast_bench</code>, ghi kết quả vào bảng.</li>
+<li>Đánh dấu query có <code>COLLSCAN</code>/<code>Seq Scan</code> trên bảng lớn, có stage <code>SORT</code> chặn, hoặc <code>totalDocsExamined</code> lớn hơn nhiều so với <code>nReturned</code>.</li>
+<li>Liệt kê index không query nào dùng (ứng viên xóa). Gợi ý: <code>db.products.aggregate([{$indexStats:{}}])</code> và <code>SELECT indexrelname, idx_scan FROM pg_stat_user_indexes ORDER BY idx_scan</code> sau khi bấm thử app một lúc.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/inventory.md</code> MỚI: bảng kiểm kê (dán plan rút gọn)</li><li><code>bench/t2/explain_queries.js</code>, <code>bench/t2/explain_queries.sql</code> MỚI: các query ở trên, chạy lại được</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Bảng có đủ 10 query, mỗi dòng có tên index (hoặc "không có"), stage, 3 con số examined/returned, thời gian.</li>
+<li>Có ít nhất 2 "phát hiện" cụ thể để đưa sang T2-24, T2-25.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul>
+<li>Quên đổi DB: mongosh phải gọi <code>mongosh vinfast_bench</code>, psql phải có <code>-d vinfast_bench</code>.</li>
+<li>Lần chạy đầu chậm vì dữ liệu chưa nằm trong cache; chạy 2–3 lần rồi mới ghi số.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-24">
+<div class="task-head">
+<span class="tid">T2-24</span>
+<h3>Cho index phục vụ trọn sort của catalog (ESR + khóa phụ productID)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-23 · <span class="tag new">MỚI</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> query <code>/products</code> mặc định và sắp theo giá không còn stage <code>SORT</code> trong RAM, hoặc có lý do rõ ràng để giữ.</p>
+<p><b>Vì sao cần:</b> <code>catalogSort()</code> sắp theo <code>{createdAt: -1, productID: 1}</code> hoặc <code>{basePrice: ±1, productID: 1}</code>, nhưng hai index ESR hiện tại không có <code>productID</code>. Trên seed cơ bản, explain của Q4 cho thấy <code>SORT</code> (sortPattern <code>{createdAt:-1, productID:1}</code>) nằm trên <code>FETCH</code> ← <code>IXSCAN idx_cat_active_created</code>: Mongo quét index rồi vẫn phải sắp lại. Hãy tự chạy lại và kiểm tra Q1 tương tự.</p>
+<h4>Các bước</h4><ol>
+<li>Chạy explain Q1 và Q4 trên <code>vinfast_bench</code> (10k), ghi lại cây stage và 3 con số.</li>
+<li>Thử phương án A: thêm <code>productID</code> vào cuối index, ví dụ:
+<pre><code>db.products.createIndex({ categoryID: 1, isActive: 1, createdAt: -1, productID: 1 },
+                        { name: 'idx_cat_active_created_pid' })</code></pre>
+Chú ý chiều sort: index đọc ngược được, nên <code>{basePrice: -1, productID: 1}</code> cần index có chiều khớp hoặc khớp khi đảo ngược toàn bộ.</li>
+<li>Phương án B: đổi sort trong <code>catalogSort()</code> cho khớp index sẵn có (ví dụ bỏ khóa phụ <code>productID</code>). Cái giá: sản phẩm trùng <code>createdAt</code>/<code>basePrice</code> có thể đổi thứ tự giữa 2 lần tải, phân trang có thể lặp hoặc sót. Phương án B sửa <code>Product.php</code> của T1, nên phải bàn với T1 trước.</li>
+<li>So sánh explain trước/sau, xóa index cũ không còn dùng. Cập nhật <code>database/mongo/002_indexes.js</code> (giữ ghi chú ESR) và ghi lý do trong comment.</li>
+<li>Kiểm tra trường hợp <code>categoryID: {$in: [...]}</code> (lọc theo loại): có <code>SORT_MERGE</code> hay <code>SORT</code>?</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>database/mongo/002_indexes.js</code> (T2 sở hữu)</li><li><code>app/models/Product.php</code> chỉ nếu chọn phương án B, PR chung với T1</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Explain Q1, Q4 không còn stage <code>SORT</code> (hoặc report giải thích vì sao chấp nhận).</li>
+<li><code>docker compose down -v; docker compose up -d --build</code> chạy sạch, <code>getIndexes()</code> có index mới.</li>
+<li>Thứ tự sản phẩm trên <code>/products</code> không đổi so với trước.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul>
+<li>Đổi key của index nhưng giữ tên cũ: <code>createIndex</code> báo lỗi "Index with name ... already exists with different options". Đặt tên mới hoặc <code>dropIndex</code> trước.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-05">
+<div class="task-head">
+<span class="tid">T2-05</span>
+<h3>Đưa truy vấn tin tức ra khỏi view</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~2h · <span class="tag part">MỘT PHẦN</span> <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Đã làm:</b> view không còn tự mở <code>new PDO</code> MySQL; truy vấn đã viết cho PG (<code>GROUP BY n.id</code>, <code>MIN(i.img_link)</code>).</p>
+<p><b>Còn lại · Mục tiêu:</b> <code>app/views/frontend/news/index.php</code> vẫn dùng <code>global $pdo</code> và chạy 2 câu SQL trong view. Chuyển vào model để view chỉ hiển thị.</p>
+<p><b>Vì sao cần:</b> SQL nằm trong view thì không thấy khi rà index, không tái dùng được.</p>
+<h4>Các bước</h4><ol>
+<li>Thêm <code>News::listVisible(): array</code> chứa câu SQL đầu (giữ điều kiện, <code>ORDER BY n.created_at DESC, n.id DESC</code>).</li>
+<li>Thêm <code>News::tagCloud(int $limit = 15): array</code> cho câu <code>SELECT DISTINCT tags FROM news_tags LIMIT 15</code>.</li>
+<li>Trong view: thay 2 câu SQL bằng 2 lời gọi; giữ nguyên phần dựng <code>$newsArray</code> và HTML.</li>
+<li>Ghi chú: điều kiện <code>news_state NOT LIKE '%Ẩn%'</code> có dùng được <code>idx_news_state_catalog_created</code> không? Nếu đổi thành <code>news_state = 'Hiển thị'</code> thì sao? (CHECK chỉ cho 2 giá trị.)</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>app/views/frontend/news/index.php</code></li><li><code>app/models/News.php</code> thêm 2 hàm</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li><code>grep -n "\$pdo" app/views/frontend/news/index.php</code> không còn kết quả.</li>
+<li><code>/news</code> hiển thị y như trước (thumbnail, tag).</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-10">
+<div class="task-head">
+<span class="tid">T2-10</span>
+<h3>Kiểm tra đúng kết quả của bộ lọc (parity)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> một script chứng minh bộ lọc catalog trả đúng kết quả, chạy lại được sau mỗi lần đổi index hoặc sort.</p>
+<p><b>Vì sao cần:</b> đổi index không được làm sai kết quả. Đổi sort (T2-24) có thể làm thay đổi thứ tự. Script này là lưới an toàn.</p>
+<h4>Các bước</h4><ol>
+<li>Cách làm "đáp án tham chiếu": lấy <b>toàn bộ</b> sản phẩm đang bán bằng 1 query đơn giản, rồi lọc và sắp bằng PHP thuần (vòng lặp, <code>usort</code>). Kết quả này là đáp án đúng vì không phụ thuộc index.</li>
+<li>Duyệt tổ hợp: <code>q</code> ∈ {"", "vf", "VF 8", "sạc"} × <code>category_id</code> × 3 mức giá × <code>range</code> × <code>sort</code> × trang 1–2.</li>
+<li>Với mỗi tổ hợp so: <code>countFiltered()</code> bằng số của đáp án; danh sách id của <code>filterPaginated()</code> bằng đúng đoạn tương ứng của đáp án.</li>
+<li>In <code>PASS n/n</code> hoặc liệt kê tổ hợp sai, thoát mã 1 nếu có lỗi.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/parity.php</code> MỚI</li></ul>
+<pre><code>docker compose exec app php bench/t2/parity.php
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t2/parity.php</code></pre>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>PASS trên seed cơ bản và trên 10k.</li>
+<li>Cố tình sửa sai một điều kiện (ví dụ <code>$gt</code> thành <code>$gte</code>) thì script phải báo FAIL.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul>
+<li>So chuỗi hoa thường trong PHP phải dùng <code>mb_stripos</code> (tên tiếng Việt), không dùng <code>stripos</code>.</li>
+<li>Regex <code>i</code> của Mongo không bỏ dấu: "o to" không khớp "ô tô". Đáp án PHP cũng không được bỏ dấu.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-11">
+<div class="task-head">
+<span class="tid">T2-11</span>
+<h3>Chế độ tìm bằng text index ($text)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~3h · Phụ thuộc: T2-10 · <span class="tag part">MỘT PHẦN</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Đã làm:</b> log từ khóa. <code>ProductController::index()</code> gọi <code>ActivityLog::record('search', null, ['keyword' =&gt; $q, ...])</code> ở trang 1; <code>record()</code> tự nuốt lỗi.</p>
+<p><b>Còn lại · Mục tiêu:</b> thêm chế độ tìm <code>$text</code> dùng <code>txt_name_description</code>, chọn bằng biến môi trường, để so sánh với regex.</p>
+<p><b>Vì sao cần:</b> regex không neo không dùng được index để thu hẹp; text index có nhưng app chưa dùng.</p>
+<h4>Các bước</h4><ol>
+<li>Trong <code>buildCatalogFilters()</code>: nếu <code>Db::env('SEARCH_MODE', 'regex') === 'text'</code> thì dùng <code>['$text' =&gt; ['$search' =&gt; $q]]</code> thay cho regex trên <code>name</code>.</li>
+<li>Khi ở chế độ text và sort mặc định: thêm projection <code>score: {$meta: 'textScore'}</code> và sort theo điểm trước.</li>
+<li>Ghi nhận khác biệt kết quả: text tách theo từ, nên <code>vf8</code> không khớp "VF 8"; regex khớp chuỗi con.</li>
+<li>Thêm <code>SEARCH_MODE=regex</code> vào <code>.env.example</code> và <code>x-db-env</code> của <code>docker-compose.yml</code> (file chung, báo nhóm).</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>app/models/Product.php</code> (của T1, sửa nhỏ, báo T1)</li><li><code>.env.example</code>, <code>docker-compose.yml</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Với <code>SEARCH_MODE=text</code>, <code>/products?q=vf</code> có kết quả; explain có stage <code>TEXT_MATCH</code> (hoặc <code>TEXT_OR</code>).</li>
+<li>Với <code>SEARCH_MODE=regex</code>, <code>parity.php</code> vẫn PASS.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul>
+<li><code>$text</code> không đi chung với một số toán tử khác trong <code>$or</code> nếu nhánh còn lại không có index; đọc phần giới hạn ở tài liệu text index.</li>
+<li>Sort theo <code>textScore</code> nhưng quên projection <code>$meta</code> thì Mongo báo lỗi (tùy phiên bản).</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-12">
+<div class="task-head">
+<span class="tid">T2-12</span>
+<h3>Lọc theo thuộc tính động (stretch)</h3>
+<span class="status-slot"></span>
+<span class="meta">Khó · ~4h · Phụ thuộc: T2-10 · <span class="tag mg">MONGO</span> <span class="tag new">STRETCH</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> khi đã chọn danh mục, cho lọc theo <code>attributes.&lt;key&gt;</code> của các thuộc tính có <code>filterable: true</code> trong <code>categories.dynamicAttributes</code>.</p>
+<p><b>Vì sao cần:</b> cho thấy giới hạn của index với schema động: không thể tạo sẵn index cho mọi key.</p>
+<h4>Các bước</h4><ol>
+<li><code>ProductController::index()</code>: đọc <code>$_GET['attr']</code>, chỉ nhận key nằm trong danh sách filterable của category (whitelist, chặn chèn <code>$where</code>, <code>$gt</code>).</li>
+<li>Thêm điều kiện <code>attributes.&lt;key&gt;</code> vào filter, ép kiểu theo <code>type</code> của thuộc tính.</li>
+<li>Thêm nhóm lọc trong <code>app/views/frontend/products/partials/filter.php</code>.</li>
+<li>Report: đo một key không có index (COLLSCAN trong category), rồi nêu Attribute Pattern <code>attrs: [{k, v}]</code> + index <code>{'attrs.k': 1, 'attrs.v': 1}</code> như hướng giải quyết.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>app/controllers/frontend/ProductController.php</code>, <code>app/models/Product.php</code> (T1, báo trước)</li><li><code>app/views/frontend/products/partials/filter.php</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li><code>/products?cat=2&amp;attr[...]=...</code> lọc đúng; <code>/products?attr[$where]=1</code> bị bỏ qua, không lỗi.</li>
+<li><code>parity.php</code> vẫn PASS.</li>
+</ul>
+</div>
+</article>
+
+</div>
+</section>
+
+<section class="milestone" id="p2">
+<h2><span class="wk">Phần 2 · Tuần 4</span>Wishlist</h2>
+<div class="tasks">
+
+<article class="task" data-task="t2-13">
+<div class="task-head">
+<span class="tid">T2-13</span>
+<h3>Model Wishlist: thêm/bỏ idempotent bằng unique index</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-01 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> <code>app/models/Wishlist.php</code> chỉ chạm PostgreSQL; gửi lặp lại cùng thao tác bao nhiêu lần cũng ra cùng kết quả.</p>
+<p><b>Vì sao cần:</b> người dùng bấm tim 2 lần rất nhanh. Kiểm tra "đã có chưa" rồi mới INSERT trong PHP không an toàn; unique index + <code>ON CONFLICT</code> thì an toàn.</p>
+<h4>Các bước</h4><ol>
+<li><code>ensureWishlistId(int $userId): int</code>: wishlist mặc định tên <code>'Yêu thích'</code>, UNIQUE là <code>(user_id, name)</code>:
+<pre><code>INSERT INTO wishlists (user_id) VALUES (:u)
+ON CONFLICT (user_id, name) DO UPDATE SET name = EXCLUDED.name
+RETURNING id;   -- luôn trả id, kể cả khi đã có</code></pre></li>
+<li><code>set(int $userId, string $productId, ?string $variantId, bool $on): bool</code>: <code>on</code> → INSERT <code>ON CONFLICT ON CONSTRAINT uq_wishlist_item DO NOTHING</code>; <code>off</code> → DELETE.</li>
+<li><code>has(...)</code>: tách 2 nhánh <code>variant_id = :v</code> và <code>variant_id IS NULL</code>. Xem ở <code>EXPLAIN</code> vì sao: <code>IS NOT DISTINCT FROM</code> không dùng được làm điều kiện index, nên chỉ 2 cột đầu nằm trong <code>Index Cond</code>.</li>
+<li><code>productIdsOf(int $userId): array</code> (tô tim cả trang bằng 1 query) và <code>listOf(int $userId): array</code> (mới nhất trước).</li>
+<li>Bind <code>product_id</code>, <code>variant_id</code> dạng chuỗi.</li>
+</ol>
+<pre><code>public static function set(int $userId, string $productId, ?string $variantId, bool $on): bool
+{
+    $pdo = Db::pg();
+    $wid = self::ensureWishlistId($userId);
+    if ($on) {
+        $pdo-&gt;prepare('INSERT INTO wishlist_items (wishlist_id, product_id, variant_id)
+                       VALUES (:w, :p, :v)
+                       ON CONFLICT ON CONSTRAINT uq_wishlist_item DO NOTHING')
+            -&gt;execute([':w' =&gt; $wid, ':p' =&gt; $productId, ':v' =&gt; $variantId]);
+    } else {
+        $sql = 'DELETE FROM wishlist_items WHERE wishlist_id = :w AND product_id = :p AND '
+             . ($variantId === null ? 'variant_id IS NULL' : 'variant_id = :v');
+        $params = [':w' =&gt; $wid, ':p' =&gt; $productId] + ($variantId === null ? [] : [':v' =&gt; $variantId]);
+        $pdo-&gt;prepare($sql)-&gt;execute($params);
+    }
+    return $on;
+}</code></pre>
+<h4>File</h4><ul class="files"><li><code>app/models/Wishlist.php</code> MỚI</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Gọi <code>set(2, '165', null, true)</code> 3 lần → đúng 1 dòng trong <code>wishlist_items</code> của user 2.</li>
+<li><code>set(..., false)</code> 2 lần → 0 dòng, không lỗi.</li>
+<li><code>EXPLAIN</code> câu <code>has()</code> dùng <code>uq_wishlist_item</code>.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul>
+<li><code>ON CONFLICT (user_id)</code> báo lỗi "there is no unique or exclusion constraint matching": UNIQUE là <code>(user_id, name)</code>.</li>
+<li>Dùng lại một tên placeholder 2 lần trong 1 câu: pdo_pgsql dùng prepare thật nên lỗi. Mỗi chỗ một tên.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-14">
+<div class="task-head">
+<span class="tid">T2-14</span>
+<h3>WishlistController: index, toggle, remove</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-13 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> 3 action; router <code>index.php</code> đã tự map <code>/wishlist/toggle</code> → <code>WishlistController::toggle</code>, không cần sửa router.</p>
+<p><b>Vì sao cần:</b> trang wishlist ghép dữ liệu 2 DB: danh sách id từ PG, thông tin sản phẩm từ Mongo. Phải lấy theo lô, không N+1.</p>
+<h4>Các bước</h4><ol>
+<li><code>index()</code>: <code>Auth::requireLogin()</code>; <code>Wishlist::listOf()</code>; lấy sản phẩm bằng 1 query Mongo <code>{productID: {$in: [...]}}</code> (dùng <code>uq_productID</code>). Sản phẩm đã ẩn hiện nhãn "Ngừng bán".</li>
+<li><code>toggle()</code>: chỉ POST, <code>Auth::verifyCsrf()</code>; nhận <code>product_id</code>, <code>variant_id</code> (có thể rỗng), <code>state</code> = <code>on|off</code>; kiểm tra sản phẩm tồn tại; trả JSON <code>{"status":"ok","state":"on"}</code>. Chưa đăng nhập → 401 JSON có <code>login_url</code>.</li>
+<li><code>remove()</code>: form POST từ trang wishlist, gọi <code>set(..., false)</code>, redirect về <code>/wishlist</code>.</li>
+<li>Log <code>ActivityLog::record('add_to_wishlist' | 'remove_from_wishlist', $productId)</code> (đúng tên trong enum của validator).</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>app/controllers/frontend/WishlistController.php</code> MỚI</li><li>Đọc: <code>app/helpers/Auth.php</code> (<code>requireLogin</code>, <code>csrfToken</code>, <code>verifyCsrf</code>)</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li><code>curl -X POST http://localhost:8080/wishlist/toggle</code> không cookie → 401.</li>
+<li>Thiếu CSRF token → bị từ chối theo hành vi của <code>Auth::verifyCsrf()</code>.</li>
+<li>Trang <code>/wishlist</code> với 20 sản phẩm: bật profiler Mongo (<code>db.setProfilingLevel(2)</code>) thấy đúng 1 lệnh <code>find</code> trên <code>products</code>. Nhớ tắt lại (<code>db.setProfilingLevel(0)</code>).</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-15">
+<div class="task-head">
+<span class="tid">T2-15</span>
+<h3>View wishlist, nút tim trên card và trang chi tiết, link navbar</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~5h · Phụ thuộc: T2-14</span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> người dùng thêm/bỏ yêu thích từ danh sách và trang chi tiết, xem ở <code>/wishlist</code>.</p>
+<p><b>Vì sao cần:</b> <code>public/js/frontend/products.js</code> đã có xử lý nút <code>#vfPdWishlistBtn</code> nhưng chỉ đổi class trên trình duyệt, chưa lưu.</p>
+<h4>Các bước</h4><ol>
+<li><code>app/views/frontend/wishlist/index.php</code>: lưới card dùng lại <code>products/partials/card.php</code>, nút "Bỏ" (form POST <code>/wishlist/remove</code>), trạng thái rỗng có link về <code>/products</code>.</li>
+<li><code>card.php</code>: nút tim nằm ngoài thẻ <code>&lt;a&gt;</code> để bấm không chuyển trang; thuộc tính <code>data-wishlist-product</code>, <code>aria-pressed</code>. <code>ProductController::index()</code> truyền <code>$wishlistIds</code> (từ <code>Wishlist::productIdsOf</code>, 1 query) để tô sẵn.</li>
+<li>Trang chi tiết: thêm nút <code>id="vfPdWishlistBtn"</code> vào <code>products/partials/detail/summary.php</code>.</li>
+<li><code>products.js</code>: <code>fetch POST /wishlist/toggle</code> với <code>state</code> mong muốn; khóa nút khi đang gửi; lỗi thì trả lại trạng thái cũ; 401 thì chuyển tới trang đăng nhập.</li>
+<li>Navbar: thêm mục "Sản phẩm yêu thích" trong menu user (<code>partials/navbar/mainbar.php</code>, <code>mobile.php</code>).</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>app/views/frontend/wishlist/index.php</code> MỚI</li><li><code>app/views/frontend/products/partials/card.php</code>, <code>detail/summary.php</code> (chung với T1, T4: báo trước)</li><li><code>public/js/frontend/products.js</code></li><li><code>app/views/frontend/partials/navbar/mainbar.php</code>, <code>mobile.php</code></li><li><code>app/controllers/frontend/ProductController.php</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Bấm tim ở <code>/products</code>, tải lại trang: tim vẫn đỏ; sản phẩm có trong <code>/wishlist</code>.</li>
+<li>Bỏ ở <code>/wishlist</code>: tim trên trang chi tiết chuyển rỗng.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-16">
+<div class="task-head">
+<span class="tid">T2-16</span>
+<h3>Test bấm nhanh song song, smoke test, mở PR</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~3h · Phụ thuộc: T2-15 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> chứng minh "20 request thêm cùng lúc vẫn chỉ 1 dòng" bằng request song song thật.</p>
+<p><b>Vì sao cần:</b> đây là bằng chứng cho mục "unique index làm ràng buộc nghiệp vụ" trong report.</p>
+<h4>Các bước</h4><ol>
+<li><code>bench/t2/wishlist_race.sh</code>: đăng nhập lấy cookie và CSRF token, gửi 20 request <code>state=on</code> song song (<code>seq 20 | xargs -P 20 curl -b jar.txt -X POST ...</code>), rồi đếm dòng bằng psql. Chạy bằng Git Bash.</li>
+<li>Lặp lại với 20 request <code>off</code>, rồi trộn 10 on + 10 off: kết thúc với 0 hoặc 1 dòng, không lỗi 500.</li>
+<li>Smoke test <code>/products</code>, chi tiết, <code>/news</code>, comment; mở PR vào <code>develop-hybrid</code>.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/wishlist_race.sh</code> MỚI</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Sau 20 request on: <code>SELECT count(*) FROM wishlist_items WHERE product_id = '165'</code> của user test = 1.</li>
+<li><code>docker compose logs app</code> không có <code>23505</code> (unique violation).</li>
+<li><code>parity.php</code> PASS trên nhánh PR.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul><li>Script có ký tự xuống dòng CRLF chạy lỗi trong bash: lưu file với LF (repo đã có <code>.gitattributes</code> cho script container).</li></ul>
+</div>
+</article>
+
+</div>
+</section>
+
+<section class="milestone" id="p3">
+<h2><span class="wk">Phần 3 · Tuần 5</span>Thí nghiệm index</h2>
+<p>Mọi thí nghiệm chạy trên DB riêng <code>vinfast_bench</code>, không đụng DB dev. Quy trình chung ở mục <a href="#thi-nghiem">Quy trình đo</a>.</p>
+<div class="tasks">
+
+<article class="task" data-task="t2-17">
+<div class="task-head">
+<span class="tid">T2-17</span>
+<h3>Dữ liệu benchmark 10k và 100k (+ wishlist lớn)</h3>
+<span class="status-slot"></span>
+<span class="meta">Dễ · ~3h · Phụ thuộc: seed của T5 (đã có) · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> dữ liệu cố định, sinh lại được, và bảng kích thước bảng/index cho từng size.</p>
+<p><b>Vì sao cần:</b> mọi so sánh trước/sau phải chạy trên cùng dữ liệu. Seed đã tất định (<code>mt_srand(20261121)</code>).</p>
+<h4>Các bước</h4><ol>
+<li>Nạp size bằng lệnh ở <code>bench/README.md</code> (đổi <code>--size=10k</code> hoặc <code>--size=100k</code>). Bảng kích thước trong <code>database/seed/README.md</code> cho biết số dòng từng bảng (100k: 100 000 sản phẩm, khoảng 100k đơn, wishlist_items khoảng N/2). Sau khi nạp, tự đếm lại và ghi số thật vào report, vì seed có thể đã đổi.</li>
+<li>Wishlist mặc định chỉ ~N/2 dòng, chưa đủ lớn để thấy khác biệt index-only scan. Tùy chọn: <code>bench/t2/seed_wishlist.sql</code> thêm item cho các wishlist sẵn có đến ~1M dòng (ví dụ ~50 item/wishlist), dùng <code>setseed()</code> để lặp lại được.
+<pre><code>SELECT setseed(0.42);
+WITH p AS (SELECT row_number() OVER (ORDER BY variant_id) AS rn, product_id, variant_id FROM inventory),
+     n AS (SELECT count(*) AS c FROM p)
+INSERT INTO wishlist_items (wishlist_id, product_id, variant_id, created_at)
+SELECT w.id, p.product_id,
+       CASE WHEN random() &lt; 0.1 THEN NULL ELSE p.variant_id END,
+       now() - random() * interval '365 days'
+  FROM wishlists w
+  CROSS JOIN LATERAL (SELECT 1 + floor(random() * (SELECT c FROM n))::int AS rn
+                        FROM generate_series(1, 50) WHERE w.id IS NOT NULL) r
+  JOIN p USING (rn)
+ON CONFLICT DO NOTHING;</code></pre>
+Đây là khung gợi ý; tự kiểm tra số dòng sau khi chạy.</li>
+<li>Sau khi nạp: <code>VACUUM (ANALYZE);</code> bên PG.</li>
+<li>Ghi kích thước: PG <code>pg_relation_size</code>, <code>pg_indexes_size</code>; Mongo <code>db.runCommand({collStats: 'products'}).indexSizes</code>. Lưu <code>bench/results/t2_sizes_10k.csv</code>, <code>t2_sizes_100k.csv</code>.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/seed_wishlist.sql</code> MỚI (tùy chọn)</li><li><code>bench/t2/sizes.php</code> MỚI</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li><code>db.products.estimatedDocumentCount()</code> trên <code>vinfast_bench</code> bằng 10000 hoặc 100000.</li>
+<li>Chạy lại seed cùng size cho cùng số dòng mọi bảng.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul><li>Quên <code>--force</code>: seed thấy DB đã có dữ liệu thì bỏ qua và in thông báo.</li></ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-18">
+<div class="task-head">
+<span class="tid">T2-18</span>
+<h3>Thí nghiệm chính: 5 query catalog và query PG trước/sau index</h3>
+<span class="status-slot"></span>
+<span class="meta">Khó · ~6h · Phụ thuộc: T2-17, T2-24 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> đo Q1–Q5 (Mongo) và 3 query PG ở 2 trạng thái: không index phụ và đủ index, trên 10k và 100k.</p>
+<p><b>Vì sao cần:</b> đây là số liệu trung tâm của chương report.</p>
+<h4>Các bước</h4><ol>
+<li>Cố định query (bảng ở mục Quy trình đo). Mongo gọi đúng filter/sort mà app dùng (gọi <code>Product::filterPaginated</code> hoặc dựng lại giống <code>buildCatalogFilters</code>).</li>
+<li>PG: dùng bảng thật trên <code>vinfast_bench</code>: "đơn của tôi" (<code>idx_orders_user_created</code>), admin lọc theo <code>status</code> (<code>idx_orders_status_created</code>), chi tiết đơn (<code>idx_order_items_order</code>). Nếu T1 đã có <code>bench.products_sql</code> (T1-18), thêm bản SQL của Q1–Q4 trên bảng đó (xác nhận tên cột với T1).</li>
+<li><code>--state=none</code>: xóa index phụ (Mongo: <code>dropIndex</code> theo tên, giữ <code>_id_</code>; PG: <code>DROP INDEX</code>). <code>--state=full</code>: tạo lại (Mongo: <code>docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init</code>; PG: chạy lại từng <code>CREATE INDEX</code> vì <code>002_indexes.sql</code> không có <code>IF NOT EXISTS</code>).</li>
+<li>Mỗi query: 5 lần khởi động + 30 lần đo, ghi thời gian bằng <code>hrtime(true)</code>. Lấy 1 lần explain để ghi stage, index, keys/docs examined, nReturned (PG: <code>shared hit/read</code>).</li>
+<li>Tỷ lệ docs examined / nReturned đo trên bản không limit (giống <code>filterAll</code>), vì <code>skip</code> luôn duyệt thêm.</li>
+</ol>
+<pre><code>docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app \
+  php bench/t2/catalog.php --state=none --size=10k --runs=30 --warmup=5
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app \
+  php bench/t2/catalog.php --state=full --size=10k --runs=30 --warmup=5</code></pre>
+<h4>File</h4><ul class="files"><li><code>bench/t2/catalog.php</code>, <code>bench/t2/lib.php</code> MỚI (đo, p50/p95, ghi CSV)</li><li><code>bench/results/t2_catalog_10k.csv</code>, <code>t2_catalog_100k.csv</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li><code>state=none</code>: Mongo Q1–Q4 là <code>COLLSCAN</code>; PG là <code>Seq Scan</code> trên bảng lớn.</li>
+<li><code>state=full</code>: không còn <code>COLLSCAN</code>/<code>Seq Scan</code> ở 100k; ghi lại tỷ lệ docs examined / nReturned (mục tiêu ≤ 1.5, nếu không đạt thì giải thích).</li>
+<li>Số liệu chỉ ghi từ lần chạy thật; không ước lượng.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul>
+<li>Quên chạy <code>ANALYZE</code> sau khi tạo lại index PG: planner dùng thống kê cũ.</li>
+<li>Xóa nhầm <code>uq_*</code> trên DB dev. Chỉ thao tác trên <code>vinfast_bench</code>.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-19">
+<div class="task-head">
+<span class="tid">T2-19</span>
+<h3>Regex vs text search (Mongo và PG)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-18, T2-25 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> so sánh các cách tìm theo tên sản phẩm về tốc độ và về <b>số kết quả</b>.</p>
+<p><b>Vì sao cần:</b> nhanh hơn chưa chắc đúng hơn. Text index tìm theo từ, regex tìm chuỗi con.</p>
+<h4>Các bước</h4><ol>
+<li>Phương án Mongo: regex không neo (như app), regex neo đầu <code>^VF</code>, <code>$text</code>. Phương án PG (nếu có <code>bench.products_sql</code>): <code>ILIKE</code> không index, <code>ILIKE</code> + GIN <code>pg_trgm</code>, <code>to_tsvector('simple', ...)</code> + GIN.</li>
+<li>Từ khóa lấy từ log thật: <code>db.userActivityLogs.aggregate([{$match:{actionType:'search'}},{$group:{_id:'$metadata.keyword',n:{$sum:1}}},{$sort:{n:-1}},{$limit:10}])</code>. Chọn 1 phổ biến, 1 hiếm, 1 không có, 1 hai từ, 1 có dấu.</li>
+<li>Đo 5 + 30 lần mỗi cặp (từ khóa, phương án), ghi số kết quả và stage.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/text_vs_regex.php</code> MỚI</li><li><code>bench/results/t2_text_100k.csv</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Explain <code>$text</code> có <code>TEXT_MATCH</code>; PG có <code>Bitmap Index Scan</code> trên index GIN.</li>
+<li>Bảng chỉ rõ từ khóa nào cho số kết quả khác nhau giữa các phương án, kèm lý do.</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-20">
+<div class="task-head">
+<span class="tid">T2-20</span>
+<h3>Wishlist: Index Scan vs Index Only Scan (INCLUDE, VACUUM)</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-17 · <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> cho thấy khi nào PG đọc bảng (heap) và khi nào chỉ đọc index.</p>
+<p><b>Vì sao cần:</b> đây là ví dụ rõ nhất về covering index và visibility map.</p>
+<h4>Các bước</h4><ol>
+<li>Cấu hình A: tạm bỏ <code>uq_wishlist_item</code> (trên <code>vinfast_bench</code>: <code>ALTER TABLE wishlist_items DROP CONSTRAINT uq_wishlist_item</code>). B: có <code>uq_wishlist_item</code> (mặc định). C: B + <code>CREATE INDEX ix_wishlist_items_list ON wishlist_items (wishlist_id, created_at DESC) INCLUDE (product_id, variant_id)</code>.</li>
+<li>Hai query: "đã có chưa" và "danh sách của tôi" (dưới). Mỗi cấu hình 5 + 30 lần; ghi <code>Heap Fetches</code>, <code>Buffers</code>.</li>
+<li>Đo C hai lần: ngay sau khi <code>UPDATE</code> 10% dòng (visibility map chưa sạch) và sau <code>VACUUM</code>.</li>
+<li>Ghi kích thước từng index (<code>pg_relation_size</code>). Xong thì khôi phục constraint.</li>
+</ol>
+<pre><code>EXPLAIN (ANALYZE, BUFFERS)
+SELECT 1 FROM wishlist_items
+ WHERE wishlist_id = 42 AND product_id = '165' AND variant_id = '165-STD';
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT product_id, variant_id, created_at FROM wishlist_items
+ WHERE wishlist_id = 42 ORDER BY created_at DESC LIMIT 20;</code></pre>
+<h4>File</h4><ul class="files"><li><code>bench/t2/wishlist_scan.php</code> MỚI</li><li><code>bench/results/t2_wishlist_100k.csv</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>A: <code>Seq Scan</code>. B: <code>Index Scan</code> hoặc <code>Index Only Scan</code> cho câu "đã có chưa". C sau VACUUM: <code>Index Only Scan</code>, <code>Heap Fetches: 0</code> cho câu danh sách.</li>
+<li>Chọn <code>wishlist_id</code> có thật và có nhiều item (<code>SELECT wishlist_id, count(*) ... GROUP BY 1 ORDER BY 2 DESC LIMIT 5</code>).</li>
+</ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-21">
+<div class="task-head">
+<span class="tid">T2-21</span>
+<h3>Chi phí ghi: 10k insert với 0, 1, 3 index</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-17 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> đo mỗi index phụ làm insert chậm đi bao nhiêu và tốn thêm bao nhiêu dung lượng.</p>
+<p><b>Vì sao cần:</b> để có lý do khi đề xuất xóa index không ai dùng (T2-23).</p>
+<h4>Các bước</h4><ol>
+<li>Mỗi lần đo tạo lại bảng/collection rỗng: PG <code>bench_products_w</code> (bảng tạm, cột giống field Mongo cần lọc), Mongo <code>products_w</code>.</li>
+<li>"0 index" = chỉ PK/<code>_id</code>. "1 index" = ESR <code>(category_id, is_active, price)</code>. "3 index" = ESR + range + text (PG: B-tree + GIN <code>tsvector</code> + GIN <code>pg_trgm</code>; Mongo: ESR + <code>attributes.rangeKm</code> + text).</li>
+<li>Chèn 10k bản ghi theo lô 500 và theo từng dòng; ghi tổng thời gian và kích thước index.</li>
+<li>Lặp 10 lần mỗi cấu hình.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/write_overhead.php</code> MỚI</li><li><code>bench/results/t2_write_10k.csv</code></li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul><li>CSV có 2 DB × 3 cấu hình × 2 kiểu chèn × 10 lần = 120 dòng đo.</li></ul>
+</div>
+</article>
+
+<article class="task" data-task="t2-25">
+<div class="task-head">
+<span class="tid">T2-25</span>
+<h3>GIN trên PG: pg_trgm cho ILIKE, jsonb cho orders.note</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~4h · Phụ thuộc: T2-23 · <span class="tag new">MỚI</span> <span class="tag pg">PG</span></span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> quyết định bằng số đo có nên thêm index GIN vào baseline cho các chỗ tìm <code>ILIKE '%...%'</code> không.</p>
+<p><b>Vì sao cần:</b> B-tree không giúp <code>ILIKE '%vf%'</code> (ký tự đại diện ở đầu). App có ít nhất 3 chỗ như vậy: <code>News::buildWhere()</code> (<code>title</code>, <code>news_tags.tags</code>), <code>User</code> admin (<code>name</code>, <code>email</code>), <code>Order</code> admin (<code>u.name</code>, <code>u.email</code>, <code>product_name</code>).</p>
+<h4>Các bước</h4><ol>
+<li>Trên <code>vinfast_bench</code> (100k: 20k user, 100k đơn), đo <code>EXPLAIN (ANALYZE, BUFFERS)</code> câu tìm user của admin khi chưa có index.</li>
+<li>Bật extension và tạo index:
+<pre><code>CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX gx_users_name_trgm  ON users USING gin (name gin_trgm_ops);
+CREATE INDEX gx_users_email_trgm ON users USING gin (email gin_trgm_ops);
+ANALYZE users;</code></pre>
+Đo lại. Thử từ khóa 1–2 ký tự: trigram cần ít nhất 3 ký tự để lọc hiệu quả.</li>
+<li>jsonb: xem các key thật bằng <code>SELECT note-&gt;&gt;'province', count(*) FROM orders GROUP BY 1 ORDER BY 2 DESC LIMIT 5</code>. Đo <code>WHERE note @&gt; '{"province": "&lt;giá trị có thật&gt;"}'</code> trước/sau <code>CREATE INDEX gx_orders_note ON orders USING gin (note jsonb_path_ops)</code>. So với B-tree expression index <code>((note-&gt;&gt;'province'))</code>.</li>
+<li>Ghi chi phí: kích thước index, thời gian <code>CREATE INDEX</code>.</li>
+<li>Kết luận: index nào đưa vào <code>002_indexes.sql</code>, index nào chỉ để trong báo cáo. Nếu thêm extension vào baseline, đặt <code>CREATE EXTENSION</code> trong <code>002_indexes.sql</code> và báo cả nhóm.</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/gin_trgm.sql</code> MỚI</li><li><code>bench/results/t2_gin_100k.csv</code></li><li><code>database/postgres/002_indexes.sql</code> (nếu quyết định thêm)</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Plan sau index có <code>Bitmap Index Scan on gx_...</code>.</li>
+<li>Có bảng so sánh thời gian và dung lượng, có quyết định rõ ràng.</li>
+</ul>
+<h4>Lỗi hay gặp</h4><ul><li><code>operator class "gin_trgm_ops" does not exist</code>: chưa chạy <code>CREATE EXTENSION pg_trgm</code> trên đúng DB (extension tạo theo từng DB).</li></ul>
+</div>
+</article>
+
+</div>
+</section>
+
+<section class="milestone" id="p4">
+<h2><span class="wk">Phần 4 · Tuần 6</span>Biểu đồ, report, demo</h2>
+<div class="tasks">
+
+<article class="task" data-task="t2-22">
+<div class="task-head">
+<span class="tid">T2-22</span>
+<h3>Biểu đồ, chương report, tổng duyệt demo</h3>
+<span class="status-slot"></span>
+<span class="meta">Vừa · ~8h · Phụ thuộc: T2-18..21, T2-25</span>
+</div>
+<div class="task-body">
+<p><b>Mục tiêu:</b> biến CSV thành biểu đồ, viết chương Indexing theo dàn ý ở mục Demo, tổng duyệt demo 10 phút.</p>
+<h4>Các bước</h4><ol>
+<li><code>bench/t2/plot.py</code> (hoặc notebook) đọc các file <code>bench/results/t2_*.csv</code>, lưu PNG vào <code>bench/results/t2_*.png</code>.</li>
+<li>Viết chương: mỗi khẳng định kèm một số liệu hoặc một đoạn explain; ghi câu trả lời cho các câu hỏi ở Phần 0.</li>
+<li>Ghi giới hạn: một máy, Docker Desktop, dữ liệu sinh ngẫu nhiên; ghi cấu hình máy.</li>
+<li><code>bench/t2/demo.sh</code>: lệnh theo kịch bản demo; reset DB bench, nạp 100k, chạy trọn kịch bản 2 lần, bấm giờ.</li>
+<li>Bổ sung phần T2 vào <code>bench/README.md</code> (file chung, chỉ sửa phần T2).</li>
+</ol>
+<h4>File</h4><ul class="files"><li><code>bench/t2/plot.py</code>, <code>bench/t2/demo.sh</code> MỚI</li><li><code>bench/results/t2_*.png</code></li><li><code>bench/README.md</code> phần T2</li></ul>
+<h4>Kết quả mong đợi / tự kiểm tra</h4><ul>
+<li>Người khác trong nhóm chạy lại theo <code>bench/README.md</code> ra số cùng bậc độ lớn.</li>
+<li>Mọi biểu đồ có tiêu đề, đơn vị trục, size dữ liệu và số lần chạy.</li>
+<li>Demo chạy trọn dưới 10 phút từ DB vừa reset, không lệnh nào lỗi.</li>
+</ul>
+</div>
+</article>
+
+</div>
+</section>
+
+<section id="thi-nghiem">
+<h2>Quy trình đo</h2>
+<h3>Dữ liệu và điều kiện</h3>
+<ul>
+<li>DB riêng <code>vinfast_bench</code> (PG và Mongo), nạp bằng <code>seed.php --force --size=10k</code> hoặc <code>--size=100k</code>. Số dòng từng bảng xem <code>database/seed/README.md</code>.</li>
+<li>Cùng máy, không chạy việc nặng khác. Ghi cấu hình máy (CPU, RAM, Docker Desktop/WSL2) vào report.</li>
+<li>Mỗi phép đo: 5 lần khởi động (không tính) + 30 lần đo; báo cáo p50 và p95. Riêng chi phí ghi: 10 lần.</li>
+<li>Trước mỗi cấu hình index chạy <code>ANALYZE</code> (PG).</li>
+<li>Kết quả: <code>bench/results/t2_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code>, ví dụ <code>t2_catalog_100k.csv</code>.</li>
+</ul>
+
+<h3>5 query catalog (Mongo)</h3>
+<div class="tbl"><table>
+<thead><tr><th>ID</th><th>Ý nghĩa</th><th>Filter / sort (giống app)</th><th>Index dự kiến</th></tr></thead>
+<tbody>
+<tr><td>Q1</td><td>Ô tô điện, giá 500 triệu–1 tỷ, sắp theo giá tăng</td><td><code>{categoryID:2, isActive:true, basePrice:{$gte:5e8,$lte:1e9}}</code> sort <code>{basePrice:1, productID:1}</code></td><td><code>idx_cat_active_price</code> (ESR); xem T2-24 về <code>productID</code></td></tr>
+<tr><td>Q2</td><td>Quãng đường trên 400 km</td><td><code>{isActive:true, 'attributes.rangeKm':{$gt:400}}</code></td><td><code>idx_rangeKm</code> (sparse)</td></tr>
+<tr><td>Q3</td><td>Tìm theo tên "vf"</td><td>App: <code>{isActive:true, name:/vf/i}</code>; text: <code>{$text:{$search:"vf"}, isActive:true}</code></td><td>regex: không có index hợp; text: <code>txt_name_description</code></td></tr>
+<tr><td>Q4</td><td>Danh mục mặc định, mới nhất trước, trang 1</td><td><code>{categoryID:2, isActive:true}</code> sort <code>{createdAt:-1, productID:1}</code> limit 12</td><td><code>idx_cat_active_created</code>; xem T2-24</td></tr>
+<tr><td>Q5</td><td>Tra 20 variant cho giỏ hàng</td><td><code>{'variants.variantId':{$in:[...20 id]}}</code></td><td><code>uq_variantId</code> (multikey)</td></tr>
+</tbody>
+</table></div>
+
+<h3>Lệnh mẫu</h3>
+<pre><code># nạp dữ liệu (xem bench/README.md)
+docker compose exec -T postgres createdb -U vinfast vinfast_bench
+docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed \
+  php database/seed/seed.php --force --size=100k
+
+# chạy script PHP của T2 trên DB bench
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t2/catalog.php --state=full --size=100k
+
+# chạy file SQL / JS (Git Bash)
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -f /dev/stdin &lt; bench/t2/gin_trgm.sql
+docker compose exec -T mongo mongosh vinfast_bench --quiet --file /dev/stdin &lt; bench/t2/explain_queries.js
+
+# xem plan bằng tay
+docker compose exec mongo mongosh vinfast_bench --quiet --eval \
+  "printjson(db.products.find({categoryID:2,isActive:true,basePrice:{\$gte:5e8,\$lte:1e9}}).sort({basePrice:1,productID:1}).explain('executionStats').executionStats)"
+docker compose exec postgres psql -U vinfast -d vinfast_bench -c \
+  "EXPLAIN (ANALYZE, BUFFERS) SELECT id FROM orders WHERE user_id = 2 ORDER BY created_at DESC LIMIT 10"</code></pre>
+
+<h3>Cột CSV</h3>
+<div class="tbl"><table>
+<thead><tr><th>File</th><th>Cột</th></tr></thead>
+<tbody>
+<tr><td>Chung cho mọi file</td><td><code>run_id, ts, db (pg|mongo), size (10k|100k), experiment, variant, phase (warmup|measure), iter, latency_ms</code></td></tr>
+<tr><td><code>t2_catalog_&lt;size&gt;.csv</code></td><td>+ <code>query_id, index_state (none|full), plan_stage, index_name, keys_examined, docs_examined, n_returned, shared_hit, shared_read</code></td></tr>
+<tr><td><code>t2_text_&lt;size&gt;.csv</code></td><td>+ <code>method (mongo_regex|mongo_regex_anchored|mongo_text|pg_ilike|pg_trgm|pg_fts), keyword, n_returned, plan_stage</code></td></tr>
+<tr><td><code>t2_wishlist_&lt;size&gt;.csv</code></td><td>+ <code>config (A|B|C), query (exists|list), vacuumed (0|1), plan_stage, heap_fetches, shared_hit, shared_read, index_bytes</code></td></tr>
+<tr><td><code>t2_write_&lt;size&gt;.csv</code></td><td>+ <code>n_indexes (0|1|3), mode (batch|single), rows, total_ms, rows_per_s, index_bytes</code></td></tr>
+<tr><td><code>t2_gin_&lt;size&gt;.csv</code></td><td>+ <code>query, index_name, plan_stage, index_bytes, create_ms</code></td></tr>
+<tr><td><code>t2_sizes_&lt;size&gt;.csv</code></td><td><code>db, object (bảng/collection), index_name, bytes</code></td></tr>
+</tbody>
+</table></div>
+
+<h3>Biểu đồ đề xuất</h3>
+<ol>
+<li>p50/p95 theo Q1–Q5, trước và sau index, 10k và 100k (trục y log).</li>
+<li>docs examined và nReturned theo query (thấy COLLSCAN duyệt toàn bộ còn IXSCAN gần bằng số trả về).</li>
+<li>Regex vs text: p50 theo từ khóa, ghi số kết quả trên đầu cột.</li>
+<li>Wishlist: p50 và heap fetches theo cấu hình A/B/C, C có hai cột trước/sau VACUUM.</li>
+<li>Chi phí ghi: rows/s theo số index (0, 1, 3), Mongo và PG.</li>
+</ol>
+</section>
+
+<section id="report">
+<h2>Report và demo</h2>
+<h3>Dàn ý chương Indexing</h3>
+<div class="tbl"><table>
+<thead><tr><th>Mục</th><th>Bằng chứng</th></tr></thead>
+<tbody>
+<tr><td>1. B-tree trên đĩa ở PG và Mongo (WiredTiger)</td><td>Sơ đồ nút; kích thước index (<code>t2_sizes_*.csv</code>); buffer đọc Seq Scan vs Index Scan.</td></tr>
+<tr><td>2. Index phức hợp, thứ tự cột, ESR</td><td>Q1 với index đúng thứ tự vs thứ tự sai <code>{basePrice, categoryID, isActive}</code>: so <code>totalKeysExamined</code>. Q4: stage <code>SORT</code> trước/sau T2-24.</td></tr>
+<tr><td>3. Partial, sparse, expression index</td><td><code>idx_reviews_pending</code>, <code>idx_search_keyword</code>, <code>idx_rangeKm</code>, <code>uq_users_email_lower</code>: kích thước so với index đầy đủ.</td></tr>
+<tr><td>4. Multikey index</td><td>Q5 trên <code>variants.variantId</code>: <code>isMultiKey: true</code> trong explain, so với COLLSCAN.</td></tr>
+<tr><td>5. Tìm kiếm văn bản và GIN</td><td>T2-19, T2-25; khác biệt kết quả regex / <code>$text</code> / <code>pg_trgm</code> / <code>tsvector</code>.</td></tr>
+<tr><td>6. Covering index và index-only scan</td><td>T2-20: plan trước/sau VACUUM, <code>Heap Fetches</code>.</td></tr>
+<tr><td>7. Unique index làm ràng buộc nghiệp vụ</td><td>Wishlist <code>NULLS NOT DISTINCT</code> + <code>ON CONFLICT</code>: kết quả <code>wishlist_race.sh</code>.</td></tr>
+<tr><td>8. Chi phí ghi</td><td>T2-21; index không ai dùng (T2-23).</td></tr>
+<tr><td>9. Index khóa ngoại và phân trang</td><td><code>order_items(order_id)</code> trước/sau; <code>skip</code> vs keyset.</td></tr>
+</tbody>
+</table></div>
+
+<h3>Kịch bản demo 10 phút</h3>
+<div class="tbl"><table>
+<thead><tr><th>Bước</th><th>Lệnh / màn hình</th><th>Nói gì</th></tr></thead>
+<tbody>
+<tr><td>1 (1 phút)</td><td><code>/products</code>: lọc danh mục + giá + quãng đường, sắp theo giá</td><td>Bộ lọc chạy trên Mongo; <code>parity.php</code> PASS.</td></tr>
+<tr><td>2 (2 phút)</td><td>mongosh trên <code>vinfast_bench</code>: explain Q1 sau khi xóa index phụ</td><td>COLLSCAN, duyệt cả collection để trả về một phần nhỏ.</td></tr>
+<tr><td>3 (1 phút)</td><td>Chạy lại <code>mongo-init</code>, explain Q1</td><td>IXSCAN trên <code>idx_cat_active_price</code>; giải thích ESR.</td></tr>
+<tr><td>4 (1 phút)</td><td>Explain Q4 trước/sau T2-24</td><td>Stage SORT biến mất khi index phục vụ trọn sort.</td></tr>
+<tr><td>5 (1 phút)</td><td>Biểu đồ 1 và 3</td><td>Mức giảm p95 ở 100k; regex và text khác cả tốc độ lẫn kết quả.</td></tr>
+<tr><td>6 (2 phút)</td><td>Bấm tim trên web; chạy <code>wishlist_race.sh</code>; <code>SELECT count(*)</code></td><td>20 request song song, vẫn 1 dòng nhờ unique index + ON CONFLICT.</td></tr>
+<tr><td>7 (1 phút)</td><td>psql: câu danh sách wishlist trước/sau VACUUM</td><td>Index Only Scan, Heap Fetches về 0.</td></tr>
+<tr><td>8 (1 phút)</td><td>Biểu đồ 5</td><td>Mỗi index làm ghi chậm hơn; chỉ giữ index mà query thật cần.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="phoi-hop">
+<h2>Phối hợp với topic khác</h2>
+<p>Quy tắc: <b>không sửa file của topic khác khi chưa báo</b>. Cần sửa thì nhắn chủ file trước, ghi rõ dòng nào và vì sao; ưu tiên PR chung. Mỗi index thêm vào baseline phải kèm số đo.</p>
+<div class="tbl"><table>
+<thead><tr><th>File / thư mục</th><th>Chủ</th><th>T2 làm gì</th></tr></thead>
+<tbody>
+<tr><td><code>database/postgres/002_indexes.sql</code>, <code>database/mongo/002_indexes.js</code></td><td><b>T2</b></td><td>Sửa tự do, nhưng index phục vụ query của topic khác (ví dụ <code>orders</code> cho dashboard T3) thì báo topic đó trước khi xóa/đổi.</td></tr>
+<tr><td><code>bench/t2/</code>, <code>bench/results/t2_*</code></td><td><b>T2</b></td><td>Toàn quyền.</td></tr>
+<tr><td><code>app/models/Wishlist.php</code>, <code>WishlistController.php</code>, <code>app/views/frontend/wishlist/</code></td><td><b>T2</b> (mới)</td><td>Toàn quyền.</td></tr>
+<tr><td><code>app/models/News.php</code>, <code>Comment.php</code></td><td>T2 (đã port)</td><td>Sửa tiếp được; báo T3 nếu đổi chữ ký hàm admin dùng.</td></tr>
+<tr><td><code>app/models/Product.php</code>, <code>Category.php</code>, <code>database/mongo/001_collections.js</code>, <code>bench.products_sql</code></td><td>T1</td><td>Chỉ sửa nhỏ (T2-11, T2-12, T2-24 phương án B) sau khi T1 đồng ý.</td></tr>
+<tr><td><code>database/postgres/001_schema.sql</code>, <code>004_coupons.sql</code></td><td>Chung (DDL)</td><td>Không sửa; cần cột/ràng buộc mới thì đề xuất cho cả nhóm.</td></tr>
+<tr><td><code>app/models/ActivityLog.php</code></td><td>T3</td><td>Chỉ gọi <code>ActivityLog::record()</code>; actionType phải nằm trong enum validator.</td></tr>
+<tr><td><code>app/models/Order.php</code>, giỏ hàng, checkout, <code>products/partials/card.php</code> (nút giỏ)</td><td>T3/T4</td><td>Thêm nút tim vào <code>card.php</code>: báo T4 và T1 vì cùng sửa file.</td></tr>
+<tr><td><code>app/services/InventoryService.php</code></td><td>T4/T5</td><td>Không đụng.</td></tr>
+<tr><td><code>database/seed/*</code>, <code>bench/README.md</code>, <code>docker-compose*.yml</code>, <code>.env.example</code></td><td>Chung (seed: T5)</td><td>Chỉ thêm phần T2 (mục T2 trong <code>bench/README.md</code>, biến <code>SEARCH_MODE</code>), báo nhóm.</td></tr>
+</tbody>
+</table></div>
+
+<h3>T2 cung cấp / cần</h3>
+<div class="tbl"><table>
+<thead><tr><th>Chiều</th><th>Nội dung</th><th>Với ai</th></tr></thead>
+<tbody>
+<tr><td>Cung cấp</td><td>Index <code>orders(user_id, created_at DESC)</code>, <code>(status, created_at DESC)</code>, <code>order_items(order_id)</code>, <code>(product_id, variant_id)</code> (đã có)</td><td>T3 (lịch sử đơn, dashboard)</td></tr>
+<tr><td>Cung cấp</td><td><code>uq_variantId</code>, <code>uq_productID</code> (đã có) để tra theo lô</td><td>T1, T4</td></tr>
+<tr><td>Cung cấp</td><td><code>idx_search_keyword</code>, <code>idx_action_time</code> trên log (đã có)</td><td>T3 (thống kê từ khóa)</td></tr>
+<tr><td>Cần</td><td>Schema <code>bench.products_sql</code> (T1-18) cho bản SQL của Q1–Q4</td><td>T1</td></tr>
+<tr><td>Cần</td><td>Đồng ý khi sửa <code>Product.php</code> (T2-11, T2-12, T2-24)</td><td>T1</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="dod">
+<h2>Definition of Done</h2>
+<ul class="dod">
+<li>Trả lời được các câu hỏi "Tự trả lời" ở Phần 0, ghi trong nháp report.</li>
+<li>Bảng kiểm kê index (<code>bench/t2/inventory.md</code>) có ít nhất 10 query, chạy lại được từ <code>explain_queries.*</code>.</li>
+<li>Q1 và Q4 không còn stage <code>SORT</code> trong RAM, hoặc report giải thích vì sao giữ.</li>
+<li>Mọi thay đổi <code>002_indexes.sql</code> / <code>002_indexes.js</code> có comment lý do và số đo; <code>docker compose down -v; docker compose up -d --build</code> chạy sạch.</li>
+<li><code>bench/t2/parity.php</code> PASS trên seed cơ bản và 10k.</li>
+<li>Không còn <code>COLLSCAN</code> / <code>Seq Scan</code> trên các query catalog chính ở 100k khi có đủ index; tỷ lệ docs examined / nReturned đã ghi lại.</li>
+<li>Không còn SQL trong <code>app/views/frontend/news/index.php</code>.</li>
+<li>Wishlist: xem, thêm, bỏ, tim trên card và trang chi tiết, link navbar; trang wishlist dùng 1 query PG + 1 query Mongo.</li>
+<li>20 request "thêm" song song kết thúc với đúng 1 dòng, không lỗi 23505.</li>
+<li>CSV <code>bench/results/t2_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code> cho 10k và 100k đã commit, kèm biểu đồ; <code>bench/README.md</code> có phần T2.</li>
+<li>Chương report Indexing xong; mọi con số lấy từ CSV, không ước lượng; demo 10 phút đã tổng duyệt.</li>
+</ul>
+</section>
+
+<section id="thuat-ngu">
+<h2>Thuật ngữ</h2>
+<dl class="gloss">
+<dt>Index (chỉ mục)</dt><dd>Cấu trúc phụ giúp tìm dòng/document nhanh mà không đọc hết dữ liệu.</dd>
+<dt>B-tree</dt><dd>Cây cân bằng, khóa đã sắp xếp. Loại index mặc định của PG và Mongo.</dd>
+<dt>Composite / compound index</dt><dd>Index trên nhiều cột/field. Dùng được theo tiền tố từ trái sang phải.</dd>
+<dt>ESR</dt><dd>Equality, Sort, Range: thứ tự nên xếp field trong compound index của Mongo.</dd>
+<dt>Selectivity (độ chọn lọc)</dt><dd>Tỷ lệ dòng thỏa điều kiện. Điều kiện trả về ít dòng thì index có lợi nhiều.</dd>
+<dt>Partial index</dt><dd>Index chỉ chứa dòng thỏa một điều kiện <code>WHERE</code> (PG) hoặc <code>partialFilterExpression</code> (Mongo).</dd>
+<dt>Sparse index</dt><dd>Index Mongo bỏ qua document không có field.</dd>
+<dt>Expression index</dt><dd>Index trên kết quả biểu thức, ví dụ <code>lower(email)</code>.</dd>
+<dt>Covering index / INCLUDE</dt><dd>Index chứa đủ cột query cần; <code>INCLUDE</code> thêm cột không dùng để sắp.</dd>
+<dt>Index Only Scan</dt><dd>PG trả kết quả chỉ từ index, không đọc heap.</dd>
+<dt>Heap</dt><dd>Nơi PG lưu dữ liệu thật của bảng.</dd>
+<dt>Heap Fetches</dt><dd>Số lần Index Only Scan vẫn phải đọc heap vì trang chưa được đánh dấu "sạch".</dd>
+<dt>Visibility map</dt><dd>Bản đồ trang nào chỉ chứa dòng mọi giao dịch đều thấy. <code>VACUUM</code> cập nhật nó.</dd>
+<dt>VACUUM / ANALYZE</dt><dd><code>VACUUM</code> dọn dòng cũ và cập nhật visibility map; <code>ANALYZE</code> cập nhật thống kê cho planner.</dd>
+<dt>Planner</dt><dd>Bộ phận của DB chọn cách chạy query (dùng index nào, thứ tự ra sao) dựa trên thống kê.</dd>
+<dt>GIN</dt><dd>Generalized Inverted Index: index đảo ngược cho jsonb, full-text, trigram.</dd>
+<dt>pg_trgm</dt><dd>Extension PG chia chuỗi thành cụm 3 ký tự, giúp <code>ILIKE '%...%'</code> dùng được index GIN.</dd>
+<dt>tsvector</dt><dd>Dạng "danh sách từ" của văn bản dùng cho full-text search trong PG.</dd>
+<dt>Seq Scan / Index Scan / Bitmap Heap Scan</dt><dd>Đọc cả bảng / theo index từng dòng / gom vị trí từ index rồi đọc bảng theo khối.</dd>
+<dt>COLLSCAN / IXSCAN / FETCH / SORT</dt><dd>Stage Mongo: đọc cả collection / quét index / đọc document / sắp trong RAM.</dd>
+<dt>totalKeysExamined, totalDocsExamined, nReturned</dt><dd>Số khóa index đã quét, số document đã đọc, số document trả về.</dd>
+<dt>Multikey index</dt><dd>Index Mongo trên field mảng, mỗi phần tử một khóa.</dd>
+<dt>Text index</dt><dd>Index Mongo tách văn bản thành từ, tìm bằng <code>$text</code>.</dd>
+<dt>Write amplification (chi phí ghi)</dt><dd>Một lần ghi dữ liệu kéo theo nhiều lần ghi index.</dd>
+<dt>p50 / p95</dt><dd>Trung vị / 95% số lần đo nhanh hơn giá trị này.</dd>
+<dt>Warm-up</dt><dd>Các lần chạy đầu để nạp dữ liệu vào cache, không tính vào kết quả.</dd>
+<dt>Idempotent</dt><dd>Làm 1 lần hay nhiều lần cho cùng kết quả.</dd>
+<dt>Keyset pagination</dt><dd>Phân trang bằng "lấy tiếp sau giá trị cuối" thay vì <code>skip</code>/<code>OFFSET</code>.</dd>
+</dl>
+</section>
+
+<footer>Bám theo docs/hybrid-db-plan.html. Nội dung đã đối chiếu với code nhánh hybrid sau Phase 0/0.5 (002_indexes.sql, 002_indexes.js, Product.php, seed). Task có nhãn "Đã làm sẵn" chỉ cần đọc hiểu; trạng thái do bạn tự chọn. Trạng thái task được chia sẻ với cả nhóm khi trang kết nối được dữ liệu chung; nếu không, chỉ lưu trên trình duyệt này.</footer>
+</div>
+
+<script>
+(function(){
+  var TOPIC = 't2';
+  var LABELS = {todo:'Chưa làm', doing:'Đang làm', done:'Xong'};
+  var tasks = Array.prototype.slice.call(document.querySelectorAll('.task[data-task]'));
+  var state = {}; // id -> {status, by, at}
+  var db = null, user = null, myId = null, canWrite = true, names = {};
+  var LKEY = 'vinfast-tasks-' + TOPIC;
+  try { state = JSON.parse(localStorage.getItem(LKEY) || '{}') || {}; } catch(e) { state = {}; }
+  var syncEl = document.getElementById('sync');
+  function setSync(t){ syncEl.textContent = t; }
+
+  tasks.forEach(function(t){
+    var id = t.getAttribute('data-task');
+    var slot = t.querySelector('.status-slot');
+    var sel = document.createElement('select');
+    sel.id = 'st-' + id;
+    sel.setAttribute('aria-label', 'Trạng thái ' + id);
+    ['todo','doing','done'].forEach(function(k){ var o = document.createElement('option'); o.value = k; o.textContent = LABELS[k]; sel.appendChild(o); });
+    var who = document.createElement('span'); who.className = 'who';
+    slot.appendChild(sel); slot.appendChild(who);
+    sel.addEventListener('click', function(e){ e.stopPropagation(); });
+    sel.addEventListener('change', function(){ save(id, sel.value); });
+    var head = t.querySelector('.task-head');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('role','button');
+    head.addEventListener('click', function(){ t.classList.toggle('open'); head.setAttribute('aria-expanded', t.classList.contains('open')); });
+    head.addEventListener('keydown', function(e){ if ((e.key === 'Enter' || e.key === ' ') && e.target === head) { e.preventDefault(); head.click(); } });
+    head.setAttribute('aria-expanded','false');
+  });
+
+  function render(){
+    var c = {todo:0, doing:0, done:0};
+    tasks.forEach(function(t){
+      var id = t.getAttribute('data-task');
+      var s = (state[id] && state[id].status) || 'todo';
+      c[s]++;
+      t.setAttribute('data-status', s);
+      var sel = document.getElementById('st-' + id);
+      if (sel.value !== s) sel.value = s;
+      sel.disabled = !canWrite;
+      var who = t.querySelector('.who');
+      var st = state[id];
+      if (st && st.by && st.status !== 'todo') {
+        var n = names[st.by] || '';
+        var d = st.at ? new Date(st.at) : null;
+        who.textContent = (n ? n : 'Ai đó') + (d ? ' · ' + d.toLocaleDateString('vi-VN') : '');
+      } else who.textContent = '';
+    });
+    var total = tasks.length || 1;
+    document.getElementById('m-done').style.width = (c.done/total*100) + '%';
+    document.getElementById('m-doing').style.width = (c.doing/total*100) + '%';
+    document.getElementById('counts').innerHTML = '<b>' + c.done + '</b>/' + tasks.length + ' xong · ' + c.doing + ' đang làm';
+    applyFilter();
+  }
+
+  var filter = 'all';
+  document.querySelectorAll('.filters button').forEach(function(b){
+    b.addEventListener('click', function(){
+      filter = b.getAttribute('data-filter');
+      document.querySelectorAll('.filters button').forEach(function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      applyFilter();
+    });
+  });
+  function applyFilter(){
+    tasks.forEach(function(t){ t.hidden = !(filter === 'all' || t.getAttribute('data-status') === filter); });
+  }
+
+  function persistLocal(){ try { localStorage.setItem(LKEY, JSON.stringify(state)); } catch(e) {} }
+
+  var writing = {};
+  function save(id, status){
+    state[id] = {status: status, by: myId || null, at: new Date().toISOString()};
+    render();
+    if (!db) { persistLocal(); return; }
+    if (writing[id]) { writing[id].next = status; return; }
+    writing[id] = {};
+    (function go(s){
+      db.collection('tasks').doc(id).set({status: s, by: myId || null, at: new Date().toISOString(), topic: TOPIC})
+        .catch(function(e){
+          if (e && e.code === 'invalid_argument') { canWrite = false; setSync('Chỉ xem: bạn chưa có quyền cập nhật'); render(); }
+          else setSync('Chưa lưu được, thử lại sau');
+        })
+        .then(function(){
+          var n = writing[id] && writing[id].next;
+          if (n && n !== s) { writing[id].next = null; go(n); } else delete writing[id];
+        });
+    })(status);
+  }
+
+  function resolveNames(){
+    if (!user || !user.profiles) return;
+    var ids = [];
+    Object.keys(state).forEach(function(k){ var b = state[k] && state[k].by; if (b && ids.indexOf(b) < 0) ids.push(b); });
+    if (!ids.length) return;
+    user.profiles(ids).then(function(ps){ ids.forEach(function(i){ names[i] = (ps && ps[i] && ps[i].name) || ''; }); render(); }).catch(function(){});
+  }
+
+  render();
+  if (!window.claude || !window.claude.use) { setSync('Lưu trên trình duyệt này'); return; }
+  Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function(r){
+    db = r[0]; user = r[1];
+    if (!db) { setSync('Lưu trên trình duyệt này'); return; }
+    var p = (user && user.id) ? user.id() : Promise.resolve(null);
+    p.then(function(id){ myId = id; }).catch(function(){});
+    if (user && user.can) { Promise.resolve(user.can('data.write')).then(function(v){ if (v === false) { canWrite = false; setSync('Chỉ xem'); render(); } }).catch(function(){}); }
+    var timer = setTimeout(function(){ setSync('Chưa kết nối được dữ liệu chung'); }, 10000);
+    db.collection('tasks').where('topic','==',TOPIC).onSnapshot(function(snap){
+      var next = {};
+      snap.docs.forEach(function(d){ var v = d.data(); if (v) next[d.id] = {status: v.status, by: v.by, at: v.at}; });
+      state = next;
+      if (!snap.metadata.fromCache) { clearTimeout(timer); if (canWrite) setSync('Đồng bộ với cả nhóm'); }
+      render(); resolveNames();
+    }, function(){ clearTimeout(timer); setSync('Mất kết nối dữ liệu chung'); });
+  }).catch(function(){ setSync('Lưu trên trình duyệt này'); });
+})();
+</script>

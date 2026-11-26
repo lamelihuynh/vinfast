@@ -1,0 +1,16 @@
+# Benchmark (T2, T3, T5): chạy kèm docker-compose.yml
+#   docker compose -f docker-compose.yml -f docker-compose.bench.yml --profile bench run --rm k6 run /bench/t5/smoke.js
+# PostgreSQL được nâng max_connections cho kịch bản nhiều kết nối đồng thời.
+services:
+  postgres:
+    command: ["postgres", "-c", "max_connections=250", "-c", "shared_buffers=256MB"]
+
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["bench"]
+    depends_on:
+      app: { condition: service_started }
+    environment:
+      BASE_URL: http://app
+    volumes:
+      - ./bench:/bench

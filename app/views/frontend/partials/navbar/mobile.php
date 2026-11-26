@@ -31,6 +31,7 @@
     </div>
 
     <?php if (Auth::check()): ?>
+      <a class="block rounded-md border border-white/10 px-3 py-2.5 text-white/85 text-sm" href="<?= BASE_URL ?>wishlist">Sản phẩm yêu thích</a>
       <a class="block rounded-md border border-white/10 px-3 py-2.5 text-white/85 text-sm" href="<?= BASE_URL ?>user/profile">Tài khoản</a>
     <?php else: ?>
       <div class="pt-1 flex gap-2">

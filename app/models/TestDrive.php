@@ -1,12 +1,17 @@
 <?php
 /**
  * app/models/TestDrive.php — Test Drive Registration Model
- * Table: test_drives
+ * Table: test_drives (PostgreSQL)
  * Owner: Tang Vu (Member 1)
  * Used by: ContactController (frontend submit), ContactAdminController (admin view)
  *
- * Columns: id, name, email, phone, product_id, province, showroom,
- *          preferred_date, note, status(pending|confirmed|cancelled|done), created_at
+ * Columns: id, user_id, name, email, phone, product_id (VARCHAR, Mongo productID),
+ *          variant_id, product_name_snapshot, province, showroom,
+ *          preferred_date, note, status(pending|confirmed|cancelled|done),
+ *          created_at, updated_at
+ *
+ * Products live in MongoDB now, so there is no JOIN: the product name is
+ * snapshotted at insert time and returned as `product_name`.
  */
 class TestDrive {
 
@@ -21,16 +26,26 @@ class TestDrive {
         ?string $note
     ): bool {
         global $pdo;
+
+        $productName = '';
+        try {
+            $product = Product::getByIdAdmin((int)$productId);
+            $productName = (string)($product['name'] ?? '');
+        } catch (Throwable $e) {
+            error_log('TestDrive::create could not load product ' . $productId . ': ' . $e->getMessage());
+        }
+
         $stmt = $pdo->prepare(
-            'INSERT INTO test_drives
-             (name, email, phone, product_id, province, showroom, preferred_date, note, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, "pending")'
+            "INSERT INTO test_drives
+             (name, email, phone, product_id, product_name_snapshot, province, showroom, preferred_date, note, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
         );
         return $stmt->execute([
             $name,
             $email,
             $phone,
-            $productId,
+            (string)$productId,
+            $productName,
             $province,
             $showroom,
             $preferredDate,
@@ -44,16 +59,22 @@ class TestDrive {
         $page = max(1, $page);
         $offset = max(0, ($page - 1) * $perPage);
 
-        $sql = 'SELECT td.*, p.name as product_name
-                FROM test_drives td
-                LEFT JOIN products p ON td.product_id = p.id';
+        $sql = "SELECT td.id, td.user_id, td.name, td.email, td.phone, td.product_id, td.variant_id,
+                       td.province, td.showroom, td.preferred_date, td.note, td.status,
+                       to_char(td.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                       to_char(td.updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at,
+                       td.product_name_snapshot AS product_name
+                FROM test_drives td";
         $params = [];
         if ($status !== null && $status !== '') {
             $sql .= ' WHERE td.status = :status';
             $params[':status'] = $status;
         }
-        $sql .= ' ORDER BY FIELD(td.status, "pending", "confirmed", "done", "cancelled"), td.updated_at DESC, td.created_at DESC
-                 LIMIT :limit OFFSET :offset';
+        $sql .= " ORDER BY CASE td.status
+                              WHEN 'pending' THEN 1 WHEN 'confirmed' THEN 2
+                              WHEN 'done' THEN 3 WHEN 'cancelled' THEN 4 ELSE 5 END,
+                           td.updated_at DESC, td.created_at DESC
+                 LIMIT :limit OFFSET :offset";
 
         $stmt = $pdo->prepare($sql);
         foreach ($params as $key => $val) {
@@ -78,6 +99,31 @@ class TestDrive {
         return (int)$pdo->query($sql)->fetchColumn();
     }
 
+    /**
+     * Counts for every status tab in one query (see Contact::countByStatus).
+     * @return array{all:int, pending:int, confirmed:int, done:int, cancelled:int}
+     */
+    public static function countByStatus(): array
+    {
+        global $pdo;
+        $row = $pdo->query(
+            "SELECT COUNT(*)                                     AS \"all\",
+                    COUNT(*) FILTER (WHERE status = 'pending')   AS pending,
+                    COUNT(*) FILTER (WHERE status = 'confirmed') AS confirmed,
+                    COUNT(*) FILTER (WHERE status = 'done')      AS done,
+                    COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled
+             FROM test_drives"
+        )->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return array_map('intval', [
+            'all' => $row['all'] ?? 0,
+            'pending' => $row['pending'] ?? 0,
+            'confirmed' => $row['confirmed'] ?? 0,
+            'done' => $row['done'] ?? 0,
+            'cancelled' => $row['cancelled'] ?? 0,
+        ]);
+    }
+
     public static function setStatus(int $id, string $status): bool
     {
         global $pdo;
@@ -94,4 +140,3 @@ class TestDrive {
         return $stmt->execute([$id]);
     }
 }
-

@@ -32,7 +32,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-6 js-vehicle-only">
                             <label class="form-label">Giá bán (VND) <span class="text-danger">*</span></label>
                             <input type="number" min="0" step="1000" class="form-control" name="price" id="modal_price" required>
                         </div>
@@ -43,33 +43,56 @@
                             <small class="text-muted">Tối đa 2000 ký tự.</small>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12 js-vehicle-only">
                             <h6 class="mb-2">Thông số kỹ thuật</h6>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 js-vehicle-only">
                             <label class="form-label">Quãng đường</label>
                             <input type="text" class="form-control" name="range" id="modal_range" maxlength="120">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 js-vehicle-only">
                             <label class="form-label">Công suất</label>
                             <input type="text" class="form-control" name="power" id="modal_power" maxlength="120">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 js-vehicle-only">
                             <label class="form-label">Tăng tốc</label>
                             <input type="text" class="form-control" name="acceleration" id="modal_acceleration" maxlength="120">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 js-vehicle-only">
                             <label class="form-label">Vận tốc tối đa</label>
                             <input type="text" class="form-control" name="max_speed" id="modal_max_speed" maxlength="120">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 js-vehicle-only">
                             <label class="form-label">Pin / Dung lượng</label>
                             <input type="text" class="form-control" name="battery" id="modal_battery" maxlength="120">
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-6 js-vehicle-only">
                             <label class="form-label">Số tiền đặt cọc (VND) <span class="text-danger">*</span></label>
                             <input type="number" min="0" step="1000" class="form-control" name="deposit_amount" id="modal_deposit_amount" required placeholder="Nhập số tiền đặt cọc">
+                        </div>
+
+                        <!-- Phụ kiện: thuộc tính động theo category (render bởi product-modal.js) -->
+                        <div class="col-12 js-accessory-only d-none" id="accessoryAttrsSection">
+                            <h6 class="mb-2">Thuộc tính</h6>
+                            <div class="row g-3" id="accessoryAttrsContainer"></div>
+                        </div>
+
+                        <!-- Phụ kiện: phiên bản (mỗi phiên bản có giá + tồn kho riêng) -->
+                        <div class="col-12 js-accessory-only d-none" id="accessoryVariantsSection">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="mb-0">Phiên bản <span class="text-danger">*</span></h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddVariant">
+                                    <i class="fa-solid fa-plus me-1"></i>Thêm phiên bản
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-1" id="accessoryVariantsTable">
+                                    <thead class="table-light"></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted">Tên phiên bản tự gợi ý từ thuộc tính (có thể sửa). Để trống tồn kho để giữ nguyên số hiện tại; phiên bản mới mặc định tồn kho 0.</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Tải ảnh mới</label>
@@ -79,17 +102,17 @@
 
                         <!-- Table editor for existing images -> color mapping (srtdash-style) -->
                         <div class="col-12 mt-3">
-                            <h6 class="mb-2">Bảng ảnh & gán màu</h6>
+                            <h6 class="mb-2" id="imageTableTitle">Bảng ảnh & gán màu</h6>
                             <div class="table-responsive">
                                 <table class="table table-sm table-hover" id="colorImageTable">
                                     <thead>
                                         <tr>
                                             <th class="w-12">Ảnh</th>
                                             <th>Filename</th>
-                                            <th>Tên màu <span class="text-danger">*</span></th>
-                                            <th>HEX</th>
-                                            <th>Phụ thu</th>
-                                            <th class="w-12">Mặc định</th>
+                                            <th class="js-vehicle-col">Tên màu <span class="text-danger">*</span></th>
+                                            <th class="js-vehicle-col">HEX</th>
+                                            <th class="js-vehicle-col">Phụ thu</th>
+                                            <th class="w-12" id="imageTableDefaultTh">Mặc định</th>
                                             <th class="w-12">Hành động</th>
                                         </tr>
                                     </thead>

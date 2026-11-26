@@ -34,6 +34,7 @@ $statusMap = [
 
 $typeMap = [
     'deposit' => 'Đặt cọc',
+    'purchase' => 'Mua hàng',
     'test_drive' => 'Lái thử',
 ];
 
@@ -84,7 +85,7 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
         'refunded' => ['label' => 'Đã hoàn tiền', 'badge' => 'badge-info'],
     ];
 
-    $paymentStatusRaw = Order::getPaymentStatusFromNote($note);
+    $paymentStatusRaw = (string)($order['payment_status'] ?? '') ?: Order::getPaymentStatusFromNote($note);
     $paymentStatusUi = $paymentStatusMap[$paymentStatusRaw] ?? $paymentStatusMap['pending_verify'];
 
     return [
@@ -95,7 +96,7 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
         'email' => (string)($note['email'] ?? ''),
         'phone' => (string)($note['phone'] ?? $extractPhone($order['note'] ?? '')),
         'cccd' => (string)($note['cccd'] ?? ''),
-        'productName' => (string)($order['product_name'] ?? ''),
+        'productName' => (string)($order['product_name'] ?? '') . ((int)($order['item_count'] ?? 0) > 1 ? ' + ' . ((int)$order['item_count'] - 1) . ' sản phẩm khác' : ''),
         'price' => number_format((float)($order['price'] ?? 0), 0, ',', '.') . ' VND',
         'type' => $typeMap[(string)($order['type'] ?? '')] ?? (string)($order['type'] ?? ''),
         'status' => $labelByStatus((string)($order['status'] ?? 'pending')),
@@ -104,7 +105,7 @@ $extractOrderDetail = static function (array $order) use ($typeMap, $labelByStat
         'province' => (string)($note['province'] ?? ''),
         'showroom' => (string)($note['showroom'] ?? ''),
         'payMethod' => $payMethodMap[(string)($note['pay_method'] ?? '')] ?? (string)($note['pay_method'] ?? ''),
-        'depositAmount' => !empty($note['deposit_amount']) ? number_format((float)$note['deposit_amount'], 0, ',', '.') . ' VND' : '--',
+        'depositAmount' => number_format((float)($order['total_amount'] ?? 0), 0, ',', '.') . ' VND',
         'paymentStatus' => $paymentStatusUi['label'],
         'paymentStatusRaw' => $paymentStatusRaw,
         'paymentStatusBadge' => $paymentStatusUi['badge'],

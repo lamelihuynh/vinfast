@@ -29,6 +29,10 @@ class ProductAdminController
         $price_min = $priceMinRaw === '' ? null : (float)str_replace([',', ' '], '', $priceMinRaw);
         $price_max = $priceMaxRaw === '' ? null : (float)str_replace([',', ' '], '', $priceMaxRaw);
         $sort = trim((string)($_GET['sort'] ?? 'default'));
+        $kind = trim((string)($_GET['kind'] ?? 'all'));
+        if (!in_array($kind, Category::KINDS, true)) {
+            $kind = 'all';
+        }
         $allowedStatus = ['all', 'active', 'inactive'];
         if (!in_array($status, $allowedStatus, true)) {
             $status = 'all';
@@ -43,6 +47,7 @@ class ProductAdminController
             'price_min' => $price_min,
             'price_max' => $price_max,
             'sort' => $sort,
+            'kind' => $kind !== 'all' ? $kind : null,
         ];
 
         $summaryFilters = [
@@ -51,6 +56,7 @@ class ProductAdminController
             'status' => 'all',
             'price_min' => $price_min,
             'price_max' => $price_max,
+            'kind' => $kind !== 'all' ? $kind : null,
         ];
         $summary = [
             'total' => Product::countAdminList($summaryFilters),
@@ -72,6 +78,7 @@ class ProductAdminController
             'price_min' => $priceMinRaw !== '' ? $priceMinRaw : null,
             'price_max' => $priceMaxRaw !== '' ? $priceMaxRaw : null,
             'sort' => $sort !== 'default' ? $sort : null,
+            'kind' => $kind !== 'all' ? $kind : null,
         ], static function ($value): bool {
             return $value !== null;
         });
@@ -83,6 +90,8 @@ class ProductAdminController
             'products' => $products,
             'productsForModal' => $productsForModal,
             'cats' => $cats,
+            'categoryDefs' => $this->categoryDefsForModal(),
+            'kind' => $kind,
             'old' => $old,
             'q' => $q,
             'cat' => $cat,
@@ -114,8 +123,9 @@ class ProductAdminController
                 $localImages[] = ltrim($img, '/');
             }
 
-            return [
+            $row = [
                 'id' => (int)($p['id'] ?? 0),
+                'kind' => (string)($p['kind'] ?? 'vehicle'),
                 'category_id' => (int)($p['category_id'] ?? 0),
                 'name' => (string)($p['name'] ?? ''),
                 'slug' => (string)($p['slug'] ?? ''),
@@ -131,7 +141,86 @@ class ProductAdminController
                 'exterior_colors' => $exteriorColors,
                 'images' => array_values($localImages),
             ];
+
+            if (($p['kind'] ?? 'vehicle') === 'accessory') {
+                $row['specs'] = $specs;
+                $row['variants'] = $this->mapVariantsForModal($p);
+            }
+
+            return $row;
         }, $products);
+    }
+
+    /** Phiên bản phụ kiện + tồn kho PG, cùng dạng với old state để JS dùng chung. */
+    private function mapVariantsForModal(array $product): array
+    {
+        $variants = is_array($product['variants'] ?? null) ? $product['variants'] : [];
+        $inventory = InventoryService::byProduct((string)($product['id'] ?? ''));
+
+        $rows = [];
+        foreach ($variants as $v) {
+            if (!is_array($v)) {
+                continue;
+            }
+            $variantId = (string)($v['variantId'] ?? '');
+            $inv = $inventory[$variantId] ?? null;
+            $rows[] = [
+                'variant_id' => $variantId,
+                'name' => (string)($v['name'] ?? ''),
+                'price' => (float)($v['price'] ?? 0),
+                'is_active' => !empty($v['isActive']) ? 1 : 0,
+                'attributes' => is_array($v['attributes'] ?? null) ? $v['attributes'] : [],
+                'stock' => $inv !== null ? (string)$inv['stock'] : '',
+                'version_orig' => $inv['version'] ?? '',
+                'stock_orig' => $inv !== null ? (string)$inv['stock'] : '',
+                'reserved' => (int)($inv['reserved'] ?? 0),
+            ];
+        }
+        return $rows;
+    }
+
+    /** Định nghĩa category cho modal: id => {id, name, kind, dynamic_attributes[], variant_attributes[]}. */
+    private function categoryDefsForModal(): array
+    {
+        $defs = [];
+        foreach (Category::allById() as $id => $c) {
+            $defs[(string)$id] = [
+                'id' => (int)$id,
+                'name' => (string)$c['name'],
+                'kind' => (string)$c['kind'],
+                'dynamic_attributes' => array_values($this->normalizeAttrDefs($c['dynamic_attributes'] ?? [])),
+                'variant_attributes' => array_values($this->normalizeAttrDefs($c['variant_attributes'] ?? [])),
+            ];
+        }
+        return $defs;
+    }
+
+    /** @return array<string,array{key:string,label:string,type:string,unit:string,required:bool,options:string[]}> key => def */
+    private function normalizeAttrDefs($defs): array
+    {
+        $out = [];
+        foreach ((array)$defs as $d) {
+            if (!is_array($d)) {
+                continue;
+            }
+            $key = trim((string)($d['key'] ?? ''));
+            if ($key === '' || !preg_match('/^[A-Za-z0-9_]+$/', $key)) {
+                continue;
+            }
+            $type = (string)($d['type'] ?? 'string');
+            if (!in_array($type, ['string', 'number', 'boolean', 'enum', 'text', 'list'], true)) {
+                $type = 'string';
+            }
+            $out[$key] = [
+                'key' => $key,
+                'label' => (string)($d['label'] ?? $key),
+                'type' => $type,
+                'unit' => (string)($d['unit'] ?? ''),
+                'required' => !empty($d['required']),
+                'options' => array_values(array_map('strval', (array)($d['options'] ?? []))),
+            ];
+        }
+        return $out;
     }
 
 
@@ -149,6 +238,12 @@ class ProductAdminController
             exit;
         }
 
+        $categoryId = (int)($_POST['category_id'] ?? 0);
+        if ($categoryId > 0 && Category::kindOf($categoryId) === 'accessory') {
+            $this->saveAccessory($id, is_array($existing) ? $existing : [], $categoryId);
+            return;
+        }
+
         $payload = $this->collectPayload();
         $errors = $this->validatePayload($payload, $id);
 
@@ -159,25 +254,7 @@ class ProductAdminController
             exit;
         }
 
-        $existingImages = array_values(array_unique(array_filter(
-            array_map('trim', (array)($_POST['existing_images'] ?? [])),
-            static fn($img) => is_string($img) && $img && !preg_match('/^https?:\/\//i', $img)
-        )));
-        $newImages = [];
-
-        try {
-            $imageSubdir = $this->resolveImageFamilyFromPayload($payload, is_array($existing) ? $existing : []);
-            $newImages = $this->uploadNewImages($_FILES['images'] ?? null, $imageSubdir);
-        } catch (RuntimeException $e) {
-            $_SESSION['errors'] = [$e->getMessage()];
-            $_SESSION['old'] = $payload + ['id' => $id, 'existing_images' => $existingImages];
-            header('Location: ' . ADMIN_URL . 'products');
-            exit;
-        }
-
-        $allImages = array_values(array_unique(array_merge($existingImages, $newImages)));
-        $mainImage = $this->resolveMainImage($allImages, $newImages);
-        $allImages = $this->prioritizeMainImage($allImages, $mainImage);
+        $allImages = $this->collectImages($payload, is_array($existing) ? $existing : [], $payload + ['id' => $id]);
 
         if ($isEdit) {
             $this->persistUpdate($id, is_array($existing) ? $existing : [], $payload, $allImages);
@@ -188,6 +265,281 @@ class ProductAdminController
         }
         header('Location: ' . ADMIN_URL . 'products');
         exit;
+    }
+
+    private function postedExistingImages(): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map('trim', array_map('strval', (array)($_POST['existing_images'] ?? []))),
+            static fn(string $img): bool => $img !== '' && !preg_match('/^https?:\/\//i', $img)
+        )));
+    }
+
+    /** existing_images[] + ảnh upload mới, ảnh chính đưa lên đầu. Lỗi upload -> redirect kèm old state. */
+    private function collectImages(array $payload, array $existing, array $oldState): array
+    {
+        $existingImages = $this->postedExistingImages();
+        $newImages = [];
+
+        try {
+            $imageSubdir = $this->resolveImageFamilyFromPayload($payload, $existing);
+            $newImages = $this->uploadNewImages($_FILES['images'] ?? null, $imageSubdir);
+        } catch (RuntimeException $e) {
+            $_SESSION['errors'] = [$e->getMessage()];
+            $_SESSION['old'] = $oldState + ['existing_images' => $existingImages];
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
+        }
+
+        $allImages = array_values(array_unique(array_merge($existingImages, $newImages)));
+        $mainImage = $this->resolveMainImage($allImages, $newImages);
+        return $this->prioritizeMainImage($allImages, $mainImage);
+    }
+
+    // ------------------------------------------------------------------
+    // Phụ kiện (category.kind = 'accessory'): thuộc tính động + phiên bản
+    // ------------------------------------------------------------------
+
+    private function saveAccessory(int $id, array $existing, int $categoryId): void
+    {
+        $isEdit = $id > 0;
+        $category = Category::allById()[$categoryId] ?? [];
+        $attrDefs = $this->normalizeAttrDefs($category['dynamic_attributes'] ?? []);
+        $variantDefs = $this->normalizeAttrDefs($category['variant_attributes'] ?? []);
+
+        $errors = [];
+        $name = $this->cleanText($_POST['name'] ?? '');
+        $slug = $this->slugify((string)($_POST['slug'] ?? ''));
+        if ($slug === '' && $name !== '') {
+            $slug = Product::slugify($name);
+        }
+        $description = $this->cleanText($_POST['description'] ?? '');
+
+        if ($name === '') {
+            $errors[] = 'Vui lòng nhập tên sản phẩm.';
+        } elseif ($this->strLength($name) > 120) {
+            $errors[] = 'Tên sản phẩm tối đa 120 ký tự.';
+        }
+        if ($this->strLength($description) > 2000) {
+            $errors[] = 'Mô tả tối đa 2000 ký tự.';
+        }
+        if ($slug === '') {
+            $errors[] = 'Slug không hợp lệ.';
+        } elseif (Product::slugExists($slug, $isEdit ? $id : null)) {
+            $errors[] = 'Slug đã tồn tại.';
+        }
+
+        $postedAttrs = is_array($_POST['attrs'] ?? null) ? $_POST['attrs'] : [];
+        $attributes = $this->castAttributes($attrDefs, $postedAttrs, $errors, '');
+        $variants = $this->collectAccessoryVariants($variantDefs, $errors);
+
+        $payload = [
+            'category_id' => $categoryId,
+            'name' => $name,
+            'slug' => $slug,
+            'description' => $description,
+            'is_active' => isset($_POST['is_active']) ? 1 : 0,
+        ];
+        // Old state cùng dạng với mapProductsForModal() để modal mở lại đúng dữ liệu đã nhập
+        $oldState = $payload + [
+            'id' => $id,
+            'kind' => 'accessory',
+            'specs' => $attributes,
+            'variants' => array_map(static fn(array $v): array => [
+                'variant_id' => $v['variant_id'],
+                'name' => $v['name'],
+                'price' => $v['price_input'],
+                'is_active' => $v['is_active'],
+                'attributes' => $v['attributes'],
+                'stock' => $v['stock_input'],
+                'version_orig' => $v['version_orig'],
+                'stock_orig' => $v['stock_orig'],
+                'reserved' => $v['reserved'],
+            ], $variants),
+        ];
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['old'] = $oldState + ['existing_images' => $this->postedExistingImages()];
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
+        }
+
+        $allImages = $this->collectImages($payload, $existing, $oldState);
+
+        $data = $payload + [
+            'images' => $allImages,
+            'attributes' => $attributes,
+            'variants' => array_map(static fn(array $v): array => [
+                'variant_id' => $v['variant_id'],
+                'name' => $v['name'],
+                'price' => $v['price'],
+                'is_active' => $v['is_active'],
+                'attributes' => $v['attributes'],
+                'stock' => $v['stock'],
+                'version_orig' => $v['version_orig'],
+            ], $variants),
+        ];
+
+        if ($isEdit) {
+            try {
+                $ok = Product::updateWithVariants($id, $data);
+            } catch (ConcurrentUpdateException $e) {
+                $_SESSION['errors'] = ['Tồn kho đã thay đổi bởi thao tác khác, vui lòng tải lại trang và thử lại.'];
+                header('Location: ' . ADMIN_URL . 'products');
+                exit;
+            }
+            if ($ok) {
+                $oldImages = is_array($existing['images'] ?? null) ? $existing['images'] : [];
+                foreach (array_diff($oldImages, $allImages) as $img) {
+                    $this->deleteUploadedImage((string)$img);
+                }
+            }
+        } else {
+            $ok = Product::createWithVariants($data) > 0;
+        }
+
+        if ($ok) {
+            $_SESSION['flash'] = $isEdit ? 'Sản phẩm đã được cập nhật thành công.' : 'Sản phẩm đã được tạo thành công.';
+        } else {
+            $_SESSION['errors'] = ['Không thể lưu sản phẩm phụ kiện. Vui lòng thử lại.'];
+            $_SESSION['old'] = $oldState + ['existing_images' => $this->postedExistingImages()];
+        }
+        header('Location: ' . ADMIN_URL . 'products');
+        exit;
+    }
+
+    /**
+     * Đọc variants[i][variant_id|name|price|stock|stock_orig|reserved|is_active|attrs][...] từ form.
+     * stock = null (giữ nguyên tồn kho PG) khi admin không đổi so với lúc mở form,
+     * tránh ghi đè số tồn vừa bị đơn hàng khác trừ.
+     */
+    private function collectAccessoryVariants(array $variantDefs, array &$errors): array
+    {
+        $rows = is_array($_POST['variants'] ?? null) ? array_values($_POST['variants']) : [];
+        $variants = [];
+
+        foreach ($rows as $i => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $label = 'Phiên bản #' . ($i + 1);
+            $attrs = $this->castAttributes($variantDefs, is_array($row['attrs'] ?? null) ? $row['attrs'] : [], $errors, $label . ' - ');
+
+            $name = $this->cleanText($row['name'] ?? '');
+            if ($name === '' && $attrs) {
+                $name = implode(' / ', array_map(static fn($v): string => is_bool($v) ? ($v ? 'Có' : 'Không') : (is_array($v) ? implode(', ', $v) : (string)$v), $attrs));
+            }
+            if ($name === '') {
+                $errors[] = $label . ': vui lòng nhập tên phiên bản.';
+            } elseif ($this->strLength($name) > 120) {
+                $errors[] = $label . ': tên tối đa 120 ký tự.';
+            }
+
+            $priceRaw = trim(str_replace([',', ' '], '', is_scalar($row['price'] ?? null) ? (string)$row['price'] : ''));
+            if ($priceRaw === '' || !is_numeric($priceRaw) || (float)$priceRaw < 0) {
+                $errors[] = $label . ': giá phải là số lớn hơn hoặc bằng 0.';
+            }
+
+            $stockRaw = trim(is_scalar($row['stock'] ?? null) ? (string)$row['stock'] : '');
+            $stockOrig = trim(is_scalar($row['stock_orig'] ?? null) ? (string)$row['stock_orig'] : '');
+            $stock = null;
+            if ($stockRaw !== '') {
+                if (!ctype_digit($stockRaw)) {
+                    $errors[] = $label . ': tồn kho phải là số nguyên không âm.';
+                } elseif ($stockOrig === '' || (int)$stockRaw !== (int)$stockOrig) {
+                    $stock = (int)$stockRaw;
+                }
+            }
+
+            $variantId = trim(is_scalar($row['variant_id'] ?? null) ? (string)$row['variant_id'] : '');
+            if (!preg_match('/^[A-Za-z0-9_-]{1,80}$/', $variantId)) {
+                $variantId = '';
+            }
+
+            $variants[] = [
+                'variant_id' => $variantId,
+                'name' => $name,
+                'price' => is_numeric($priceRaw) ? max(0, (float)$priceRaw) : 0.0,
+                'price_input' => $priceRaw,
+                'is_active' => isset($row['is_active']) ? 1 : 0,
+                'attributes' => $attrs,
+                'stock' => $stock,
+                'stock_input' => $stockRaw,
+                'stock_orig' => $stockOrig,
+                'version_orig' => filter_var($row['version_orig'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]),
+                'reserved' => max(0, (int)($row['reserved'] ?? 0)),
+            ];
+        }
+
+        if (!$variants) {
+            $errors[] = 'Sản phẩm phụ kiện cần ít nhất 1 phiên bản.';
+        }
+        return $variants;
+    }
+
+    /**
+     * Ép kiểu giá trị form theo định nghĩa thuộc tính của category.
+     * number -> int|float, boolean -> bool, list -> string[], string/text/enum -> string. Giá trị rỗng bị bỏ.
+     */
+    private function castAttributes(array $defs, array $posted, array &$errors, string $errorPrefix): array
+    {
+        $out = [];
+        foreach ($defs as $key => $def) {
+            $raw = $posted[$key] ?? null;
+            $label = $errorPrefix . $def['label'];
+            $options = $def['options'];
+
+            if ($def['type'] === 'boolean') {
+                $out[$key] = is_scalar($raw) && !in_array((string)$raw, ['', '0'], true);
+                continue;
+            }
+
+            if ($def['type'] === 'list') {
+                $values = [];
+                foreach ((array)$raw as $item) {
+                    $item = $this->cleanText(is_scalar($item) ? $item : '');
+                    if ($item === '' || in_array($item, $values, true)) {
+                        continue;
+                    }
+                    if ($options && !in_array($item, $options, true)) {
+                        $errors[] = $label . ': giá trị "' . $item . '" không hợp lệ.';
+                        continue;
+                    }
+                    $values[] = $item;
+                }
+                if ($values) {
+                    $out[$key] = $values;
+                }
+            } else {
+                $value = $this->cleanText(is_scalar($raw) ? $raw : '');
+                if ($value !== '') {
+                    if ($def['type'] === 'number') {
+                        $number = str_replace([',', ' '], '', $value);
+                        if (!is_numeric($number)) {
+                            $errors[] = $label . ' phải là số.';
+                            continue;
+                        }
+                        $out[$key] = preg_match('/^-?\d+$/', $number) ? (int)$number : (float)$number;
+                    } elseif ($def['type'] === 'enum' && $options && !in_array($value, $options, true)) {
+                        $errors[] = $label . ': giá trị "' . $value . '" không hợp lệ.';
+                        continue;
+                    } else {
+                        $max = $def['type'] === 'text' ? 2000 : 255;
+                        if ($this->strLength($value) > $max) {
+                            $errors[] = $label . ' tối đa ' . $max . ' ký tự.';
+                            continue;
+                        }
+                        $out[$key] = $value;
+                    }
+                }
+            }
+
+            if ($def['required'] && !array_key_exists($key, $out)) {
+                $errors[] = $label . ' là bắt buộc.';
+            }
+        }
+        return $out;
     }
 
     private function persistCreate(array $payload, array $allImages): void

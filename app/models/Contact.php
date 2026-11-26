@@ -2,12 +2,12 @@
 
 /**
  * app/models/Contact.php — Customer Contact Message Model
- * Table: contacts
+ * Table: contacts (PostgreSQL)
  * Owner: Tang Vu (Member 1)
  * Used by: ContactController (frontend submit), ContactAdminController (admin view)
  *
  * Columns: id, name, email, phone, message,
- *          status(unread|read|replied), created_at
+ *          status(unread|read|replied), created_at, updated_at
  */
 class Contact
 {
@@ -16,7 +16,7 @@ class Contact
     {
         global $pdo;
         $stmt = $pdo->prepare(
-            'INSERT INTO contacts (name, email, phone, message, status) VALUES (?, ?, ?, ?, "unread")'
+            "INSERT INTO contacts (name, email, phone, message, status) VALUES (?, ?, ?, ?, 'unread')"
         );
         return $stmt->execute([$name, $email, $phone !== '' ? $phone : null, $message]);
     }
@@ -27,13 +27,18 @@ class Contact
         $page = max(1, $page);
         $offset = max(0, ($page - 1) * $perPage);
 
-        $sql = 'SELECT * FROM contacts';
+        $sql = "SELECT c.id, c.name, c.email, c.phone, c.message, c.status,
+                       to_char(c.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+                       to_char(c.updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at
+                  FROM contacts c";
         $params = [];
         if ($status !== null && $status !== '') {
-            $sql .= ' WHERE status = :status';
+            $sql .= ' WHERE c.status = :status';
             $params[':status'] = $status;
         }
-        $sql .= ' ORDER BY FIELD(status, "unread", "read", "replied"), updated_at DESC, created_at DESC LIMIT :limit OFFSET :offset';
+        $sql .= " ORDER BY CASE c.status WHEN 'unread' THEN 1 WHEN 'read' THEN 2 WHEN 'replied' THEN 3 ELSE 4 END,
+                           c.updated_at DESC, c.created_at DESC
+                  LIMIT :limit OFFSET :offset";
 
         $stmt = $pdo->prepare($sql);
         foreach ($params as $key => $val) {
@@ -56,6 +61,30 @@ class Contact
             return (int)$stmt->fetchColumn();
         }
         return (int)$pdo->query($sql)->fetchColumn();
+    }
+
+    /**
+     * Counts for every status tab in one query instead of one COUNT per tab.
+     * FILTER rather than GROUP BY so empty statuses still come back as 0.
+     * @return array{all:int, unread:int, read:int, replied:int}
+     */
+    public static function countByStatus(): array
+    {
+        global $pdo;
+        $row = $pdo->query(
+            "SELECT COUNT(*)                                   AS \"all\",
+                    COUNT(*) FILTER (WHERE status = 'unread')  AS unread,
+                    COUNT(*) FILTER (WHERE status = 'read')    AS \"read\",
+                    COUNT(*) FILTER (WHERE status = 'replied') AS replied
+             FROM contacts"
+        )->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return array_map('intval', [
+            'all' => $row['all'] ?? 0,
+            'unread' => $row['unread'] ?? 0,
+            'read' => $row['read'] ?? 0,
+            'replied' => $row['replied'] ?? 0,
+        ]);
     }
 
     public static function setStatus(int $id, string $status): bool

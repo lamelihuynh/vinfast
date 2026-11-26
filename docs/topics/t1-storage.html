@@ -1,0 +1,1290 @@
+<title>T1 Data Storage Tasks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky progress bar + milestone sections of task cards; status per task is shared via db */
+:root{
+  --bg:#f6f8fa; --surface:#ffffff; --fg:#17202a; --muted:#5a6773; --line:#dde3e9;
+  --accent:#1f5fbf; --accent-soft:#e7effb;
+  --pg:#2f5d8a; --pg-soft:#e4edf6; --mg:#1d7a46; --mg-soft:#e2f3e9;
+  --warn:#9a5b00; --warn-soft:#fdf1dc; --ok:#1d7a46; --ok-soft:#e2f3e9; --doing:#8a5a00; --doing-soft:#fdf1dc;
+  --code-bg:#eef2f6;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --surface:#161d23; --fg:#e3e9ee; --muted:#93a1ad; --line:#26313a;
+  --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
+  --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --surface:#161d23; --fg:#e3e9ee; --muted:#93a1ad; --line:#26313a;
+  --accent:#7fb0ff; --accent-soft:#1a2a40; --pg:#8fb8e3; --pg-soft:#1a2836; --mg:#6fd39a; --mg-soft:#15291e;
+  --warn:#f0b65a; --warn-soft:#2e2412; --ok:#6fd39a; --ok-soft:#15291e; --doing:#f0b65a; --doing-soft:#2e2412; --code-bg:#1c252d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:920px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+header.top{padding-block:36px 18px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.2;margin:6px 0 10px;text-wrap:balance}
+h2{font-size:21px;margin:0 0 12px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+h4{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px}
+p{margin:0 0 10px;max-width:72ch}
+.lede{color:var(--muted);max-width:68ch}
+a{color:var(--accent)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-left,0px))}
+.bar-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.meter{flex:1 1 220px;height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex;min-width:0}
+.meter .m-done{background:var(--ok)} .meter .m-doing{background:var(--doing)}
+.counts{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.counts b{color:var(--fg)}
+.filters{display:flex;gap:4px;flex-wrap:wrap}
+.filters button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:3px 10px;border-radius:99px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.sync{font-size:12px;color:var(--muted)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;margin-top:8px;scrollbar-width:thin}
+nav.toc a{flex:none;font-size:12.5px;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;white-space:nowrap}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent);outline:none}
+section{padding-top:36px;scroll-margin-top:110px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid>*{min-width:0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:4px;vertical-align:middle}
+.tag.pg{background:var(--pg-soft);color:var(--pg)} .tag.mg{background:var(--mg-soft);color:var(--mg)}
+.tag.ddl{background:var(--warn-soft);color:var(--warn)} .tag.new{background:var(--accent-soft);color:var(--accent)}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;word-break:break-word}
+pre{background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.5;margin:8px 0 12px}
+pre code{background:none;padding:0;font-size:inherit;word-break:normal}
+ul,ol{margin:0 0 10px;padding-left:22px} li{margin:3px 0}
+.tbl{overflow-x:auto;margin:8px 0 14px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+.callout{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.info{border-color:var(--accent);background:var(--accent-soft)}
+.milestone>h2 .wk{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:400;margin-right:6px}
+.tasks{display:grid;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.task[data-status="done"]{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.task[data-status="doing"]{border-color:color-mix(in srgb,var(--doing) 45%,var(--line))}
+.task-head{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:12px 16px;cursor:pointer}
+.task-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tid{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.task-head h3{min-width:0}
+.task-head .meta{grid-column:2/3;font-size:12.5px;color:var(--muted)}
+.status-slot{grid-row:1/3;grid-column:3}
+.status-slot select{font:inherit;font-size:12.5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.task[data-status="done"] .status-slot select{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.task[data-status="doing"] .status-slot select{background:var(--doing-soft);color:var(--doing);border-color:var(--doing)}
+.who{display:block;font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
+.task-body{padding:0 16px 14px;border-top:1px solid var(--line)}
+.task:not(.open) .task-body{display:none}
+.task-body>p:first-child{margin-top:12px}
+.files li code{font-weight:600}
+.dod{list-style:none;padding-left:0}
+.dod li::before{content:"✓ ";color:var(--ok);font-weight:700}
+@media (max-width:560px){.task-head{grid-template-columns:1fr auto}.tid{grid-column:1/2}.task-head h3{grid-column:1/3;grid-row:2}.task-head .meta{grid-column:1/3;grid-row:3}.status-slot{grid-row:1;grid-column:2}}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+/* Bổ sung: badge "Đã làm sẵn" / "Làm một phần", thẻ khái niệm, danh sách câu hỏi */
+.tag.ready{background:var(--ok-soft);color:var(--ok)} .tag.part{background:var(--doing-soft);color:var(--doing)}
+.concept{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
+.concept h3{margin-bottom:6px}
+.concept .links{font-size:13px;color:var(--muted);margin:6px 0 0}
+.qs li{margin:5px 0}
+.task-body h4:first-child{margin-top:12px}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Đồ án DBMS · Topic T1 · Lưu trữ &amp; quản lý dữ liệu</div>
+  <h1>T1 · Lưu trữ dữ liệu: danh sách task</h1>
+  <p class="lede">Topic này hỏi một câu đơn giản: <b>mỗi loại dữ liệu nên nằm ở đâu và có hình dạng thế nào?</b> Catalog sản phẩm (xe, pin, áo, thảm lót…) có thuộc tính rất khác nhau giữa các loại, nên được lưu ở MongoDB dưới dạng document. Đơn hàng, tồn kho, người dùng cần ràng buộc chặt và transaction, nên nằm ở PostgreSQL. Hai DB nối với nhau bằng chuỗi <code>product_id</code> / <code>variant_id</code>, không có khóa ngoại. Bạn sẽ đọc hiểu phần đã dựng sẵn, làm nốt các chức năng còn thiếu, rồi đo bằng 3 thí nghiệm để chứng minh lựa chọn thiết kế.</p>
+  <p class="lede">Bấm vào tiêu đề task để mở chi tiết; đổi trạng thái ở ô bên phải. Task có nhãn <span class="tag ready">ĐÃ LÀM SẴN</span> là phần Phase 0/0.5 đã có trong code: việc của bạn là đọc hiểu và tự trả lời câu hỏi, rồi tự chuyển sang "Xong".</p>
+</header>
+
+<div class="bar" role="region" aria-label="Tiến độ">
+  <div class="bar-row">
+    <div class="meter" aria-hidden="true"><div class="m-done" id="m-done" style="width:0"></div><div class="m-doing" id="m-doing" style="width:0"></div></div>
+    <span class="counts" id="counts">0 task</span>
+    <div class="filters" role="group" aria-label="Lọc theo trạng thái">
+      <button type="button" data-filter="all" aria-pressed="true">Tất cả</button>
+      <button type="button" data-filter="todo" aria-pressed="false">Chưa làm</button>
+      <button type="button" data-filter="doing" aria-pressed="false">Đang làm</button>
+      <button type="button" data-filter="done" aria-pressed="false">Xong</button>
+    </div>
+    <span class="sync" id="sync">Đang kết nối…</span>
+  </div>
+  <nav class="toc" aria-label="Mục lục"><a href="#tong-quan">Tổng quan</a><a href="#kien-thuc">Kiến thức</a><a href="#bat-dau">30 phút đầu</a><a href="#w2">Đã làm sẵn</a><a href="#w3">Tuần 3</a><a href="#w4">Tuần 4</a><a href="#w5">Tuần 5</a><a href="#w6">Tuần 6</a><a href="#thi-nghiem">Thí nghiệm</a><a href="#report">Report &amp; demo</a><a href="#phoi-hop">Phối hợp</a><a href="#dod">Definition of Done</a><a href="#thuat-ngu">Thuật ngữ</a></nav>
+</div>
+
+<section id="tong-quan">
+  <h2>Tổng quan</h2>
+  <h3>Topic này nói về gì</h3>
+  <p>Website VinFast trước đây chạy trên MySQL. Thông số xe nằm trong một cột JSON <code>specs</code>, màu xe ở bảng riêng <code>product_colors</code>. Khi thêm phụ kiện (pin, sạc, áo, thảm lót), mỗi loại lại cần thuộc tính riêng: pin có dung lượng kWh, áo có size, thảm lót có dòng xe tương thích. Nhóm đã chuyển catalog sang MongoDB, còn phần giao dịch ở lại PostgreSQL. T1 chịu trách nhiệm cho <b>cách lưu catalog</b> và <b>giải thích bằng số đo</b> vì sao chọn như vậy.</p>
+
+  <h3 style="margin-top:14px">Sau topic này bạn trả lời được</h3>
+  <ol class="qs">
+    <li>Dữ liệu nào nên ở MongoDB, dữ liệu nào nên ở PostgreSQL, và tiêu chí chọn là gì?</li>
+    <li>Đọc trọn 1 sản phẩm (variant, màu, thuộc tính): <code>findOne</code> trên document so với JOIN 4 bảng chuẩn hóa khác nhau bao nhiêu ở 10k và 100k sản phẩm?</li>
+    <li>Thêm 1 thuộc tính mới cho một loại sản phẩm tốn bao nhiêu với MongoDB, với bảng EAV, với <code>ALTER TABLE</code>? Có khóa bảng không?</li>
+    <li>Review nên nhúng vào sản phẩm hay để bảng riêng? Từ khoảng bao nhiêu review thì nhúng toàn bộ trở nên bất lợi?</li>
+    <li>Không có khóa ngoại giữa hai DB thì giữ dữ liệu đúng bằng cách nào (validator, unique index, snapshot, kiểm tra chéo)?</li>
+  </ol>
+
+  <h3 style="margin-top:14px">Hiện trạng code (đã kiểm tra trên nhánh hiện tại)</h3>
+  <div class="tbl"><table>
+    <tr><th>Phần</th><th>Trạng thái</th><th>Ở đâu</th></tr>
+    <tr><td>Docker, kết nối 2 DB, seed</td><td><span class="tag ready">ĐÃ LÀM SẴN</span></td><td><code>docker-compose.yml</code>, <code>app/core/Db.php</code>, <code>database/seed/seed.php</code></td></tr>
+    <tr><td>Validator Mongo, collection</td><td><span class="tag ready">ĐÃ LÀM SẴN</span></td><td><code>database/mongo/001_collections.js</code></td></tr>
+    <tr><td>Product/Category đọc trên Mongo</td><td><span class="tag ready">ĐÃ LÀM SẴN</span></td><td><code>app/models/Product.php</code>, <code>Category.php</code></td></tr>
+    <tr><td>Phụ kiện: phiên bản thật, form admin theo thuộc tính động</td><td><span class="tag ready">ĐÃ LÀM SẴN</span></td><td><code>accessories.php</code>, <code>products/accessory.php</code>, <code>product-modal.js</code></td></tr>
+    <tr><td>Luồng ghi Product, chọn phiên bản cho <b>xe</b>, form xe</td><td><span class="tag part">LÀM MỘT PHẦN</span></td><td>T1-10, T1-11, T1-14</td></tr>
+    <tr><td>Hàm tra giá/variant cho T3, T4</td><td>Chưa làm</td><td>T1-12</td></tr>
+    <tr><td>Admin category, review sản phẩm</td><td>Chưa làm</td><td>T1-13, T1-15 → T1-17</td></tr>
+    <tr><td>Kiểm tra tham chiếu chéo 2 DB</td><td>Chưa làm (task mới)</td><td>T1-23</td></tr>
+    <tr><td>3 thí nghiệm A/B/C, report</td><td>Chưa làm</td><td>T1-18 → T1-22, T1-24</td></tr>
+  </table></div>
+  <p><b>Người phụ trách:</b> (điền). <b>Nhánh gốc:</b> <code>develop-hybrid</code>. Tạo nhánh mới cho từng nhóm việc, ví dụ <code>topic1/product-write</code>, <code>topic1/reviews</code>, <code>bench/t1</code>.</p>
+  <p><b>Ngoài phạm vi T1:</b> tìm kiếm, lọc, index hiệu năng (T2); dashboard và log hoạt động (T3); giỏ hàng, checkout, coupon (T4); trừ tồn kho đồng thời, sinh dữ liệu lớn <code>generate.php</code> (T5); bình luận tin tức.</p>
+</section>
+
+<section id="kien-thuc">
+  <h2>Kiến thức cần nắm trước</h2>
+  <p>Đọc phần này trước khi làm task. Mỗi khái niệm có ví dụ lấy từ chính dữ liệu VinFast trong repo.</p>
+
+  <div class="concept">
+    <h3>1. Bảng chuẩn hóa và document</h3>
+    <p>Trong SQL chuẩn hóa, một sản phẩm bị tách ra nhiều bảng để không lặp dữ liệu. Muốn đọc lại thì phải JOIN. Trong MongoDB, một sản phẩm là một <b>document</b> (giống một object JSON), chứa luôn các phần con hay đọc cùng nhau.</p>
+    <p>Ví dụ xe id 165 (rút gọn, đúng tên trường trong <code>001_collections.js</code>):</p>
+<pre><code>{ productID: "165", categoryID: 1, name: "…", slug: "…", basePrice: …,
+  attributes: { range: "…", rangeKm: …, power: "…", deposit_amount: … },
+  variants: [ { variantId: "165-STD", name: "Tiêu chuẩn", price: …, isActive: true,
+                colors: [ { colorCode: "…", colorName: "…", colorHex: "#…", surcharge: 0 } ] } ],
+  avgRating: 0, totalReviews: 0, totalSold: 0, reviews: [], createdAt: ISODate("…") }</code></pre>
+    <p>Bản SQL tương đương cần 4 bảng: <code>products_sql</code>, <code>product_variants</code>, <code>variant_colors</code>, <code>product_attributes</code>. Đó là thứ bạn dựng ở T1-18 để so sánh.</p>
+    <p class="links">Tài liệu: <a href="https://www.mongodb.com/docs/manual/data-modeling/">MongoDB Data Modeling</a> · <a href="https://www.postgresql.org/docs/16/ddl.html">PostgreSQL Data Definition</a></p>
+  </div>
+
+  <div class="concept">
+    <h3>2. Thuộc tính động theo category</h3>
+    <p>Mỗi category tự khai báo danh sách thuộc tính trong <code>categories.dynamicAttributes</code> (cấp sản phẩm) và <code>variantAttributes</code> (cấp phiên bản). Ví dụ trong <code>database/seed/accessories.php</code>:</p>
+    <ul>
+      <li><b>Pin &amp; Sạc</b> (id 3): <code>capacity_kwh</code>, <code>power_kw</code>, <code>connector</code> (enum Type 2 / CCS2…), <code>compatible_models</code> (list). Phiên bản phân biệt bằng <code>option</code>.</li>
+      <li><b>Thời trang</b> (id 4): <code>material</code>, <code>gender</code>. Phiên bản = <b>màu × size</b>, ví dụ "Áo polo VinFast" có các phiên bản "Đen / M", "Trắng / L"… Mỗi phiên bản có tồn kho riêng.</li>
+      <li><b>Phụ kiện xe</b> (id 5): <code>needs_install</code> (boolean). Phiên bản = dòng xe (<code>fit_model</code>) × màu.</li>
+      <li><b>Xe</b> (id 1, 2): <code>range</code>, <code>rangeKm</code>, <code>power</code>, <code>battery</code>, <code>max_speed</code>, <code>acceleration</code>, <code>deposit_amount</code> (khai báo trong <code>seed.php</code>).</li>
+    </ul>
+    <p>Trong SQL có 3 cách lưu kiểu dữ liệu này: (a) thêm cột cho mọi thuộc tính (bảng rất thưa, mỗi lần thêm phải <code>ALTER TABLE</code>); (b) bảng <b>EAV</b> <code>(product_id, attr_key, value)</code> (linh hoạt nhưng khó lọc, khó ràng buộc kiểu); (c) cột <code>JSONB</code>. Thí nghiệm B đo chi phí của các cách này.</p>
+    <p class="links">Tài liệu: <a href="https://www.postgresql.org/docs/16/ddl-alter.html">ALTER TABLE / Modifying Tables</a> · <a href="https://www.postgresql.org/docs/16/datatype-json.html">PostgreSQL JSON Types</a></p>
+  </div>
+
+  <div class="concept">
+    <h3>3. Nhúng (embed) và tham chiếu (reference)</h3>
+    <p>Quy tắc dễ nhớ: <b>nhúng</b> những gì luôn đọc cùng nhau, số lượng nhỏ và có giới hạn; <b>tham chiếu</b> những gì dùng chung, lớn dần không giới hạn, hoặc cần sửa ở một chỗ.</p>
+    <ul>
+      <li><code>variants[]</code> và <code>colors[]</code>: <b>nhúng</b>. Trang chi tiết luôn cần chúng; một sản phẩm chỉ có vài phiên bản.</li>
+      <li><code>categoryID</code>: <b>tham chiếu</b>. Nhiều sản phẩm dùng chung 1 category; đổi tên category chỉ sửa 1 document.</li>
+      <li>Review: <b>lai</b> (subset pattern). Toàn bộ review ở bảng PG <code>product_reviews</code>. Document sản phẩm chỉ giữ <code>avgRating</code>, <code>totalReviews</code> và <code>reviews[]</code> tối đa 5 bài mới nhất đã duyệt. Vì sao? Số review tăng không giới hạn, và document MongoDB tối đa 16 MB.</li>
+    </ul>
+    <p class="links">Tài liệu: <a href="https://www.mongodb.com/docs/manual/data-modeling/concepts/embedding-vs-references/">Embedded data vs References</a> · <a href="https://www.mongodb.com/docs/manual/reference/limits/">MongoDB Limits (16 MB)</a></p>
+  </div>
+
+  <div class="concept">
+    <h3>4. JSON Schema validator</h3>
+    <p>MongoDB mặc định nhận mọi document. Validator <code>$jsonSchema</code> thêm ràng buộc ở tầng DB, tương tự <code>NOT NULL</code> / <code>CHECK</code> trong SQL. Ví dụ trong <code>001_collections.js</code>: <code>products</code> bắt buộc có <code>productID</code> (chuỗi chỉ gồm số), <code>variants</code> có ít nhất 1 phần tử, <code>reviews</code> tối đa 5 phần tử, <code>rating</code> từ 1 đến 5.</p>
+    <p>Document sai → lỗi <code>Document failed validation</code>, mã <b>121</b>. File dùng <code>validationLevel: "moderate"</code>: document mới phải hợp lệ; document cũ đã sai vẫn sửa được.</p>
+    <p>Validator <b>không</b> thay được: khóa ngoại, unique (phải dùng unique index), ràng buộc giữa nhiều document.</p>
+    <p class="links">Tài liệu: <a href="https://www.mongodb.com/docs/manual/core/schema-validation/">MongoDB Schema Validation</a> · <a href="https://www.postgresql.org/docs/16/ddl-constraints.html">PostgreSQL Constraints</a></p>
+  </div>
+
+  <div class="concept">
+    <h3>5. Unique index, kể cả trên mảng</h3>
+    <p><code>002_indexes.js</code> (file của T2) tạo unique index <code>uq_productID</code>, <code>uq_product_slug</code> và <code>uq_variantId</code> trên <code>variants.variantId</code>. Index trên trường nằm trong mảng gọi là <b>multikey</b>. Unique multikey nghĩa là hai sản phẩm không được dùng chung một <code>variantId</code>. Vi phạm → lỗi <b>E11000</b> (mã 11000).</p>
+    <p class="links">Tài liệu: <a href="https://www.mongodb.com/docs/manual/core/index-unique/">Unique Indexes</a> · <a href="https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/">Multikey Indexes</a></p>
+  </div>
+
+  <div class="concept">
+    <h3>6. Tham chiếu logic giữa 2 DB và snapshot giá</h3>
+    <p>Các bảng PG <code>order_items</code>, <code>inventory</code>, <code>cart_items</code>, <code>wishlist_items</code>, <code>test_drives</code> lưu <code>product_id VARCHAR(32)</code> và <code>variant_id VARCHAR(64)</code>. Giá trị này trùng <code>products.productID</code> và <code>variants.variantId</code> bên Mongo. PostgreSQL <b>không thể</b> tạo khóa ngoại sang MongoDB, nên đây là <b>tham chiếu logic</b>: app phải tự giữ cho đúng.</p>
+    <p><code>order_items</code> còn lưu <b>snapshot</b>: <code>product_name_snapshot</code>, <code>variant_name_snapshot</code>, <code>color_name_snapshot</code>, <code>unit_price</code>. Khi admin đổi giá hoặc đổi tên sản phẩm, đơn cũ vẫn hiện đúng giá lúc mua, và trang lịch sử đơn không cần đọc Mongo.</p>
+<pre><code>-- Đơn hàng không cần JOIN sang catalog: mọi thông tin hiển thị nằm trong snapshot
+SELECT o.id, oi.product_id, oi.variant_id, oi.product_name_snapshot, oi.unit_price, oi.quantity
+FROM orders o JOIN order_items oi ON oi.order_id = o.id
+WHERE o.user_id = 2;</code></pre>
+    <p>Hệ quả: variantId đã có đơn thì <b>không được đổi</b>. Sản phẩm đã có đơn thì chỉ ẩn (<code>isActive=false</code>), không xóa.</p>
+  </div>
+
+  <div class="concept">
+    <h3>7. Nhất quán cuối (eventual consistency)</h3>
+    <p>Khi duyệt một review, ta ghi PG trước (nguồn chính), rồi cập nhật tóm tắt bên Mongo. Hai thao tác này không nằm trong một transaction chung. Nếu Mongo lỗi giữa chừng, <code>avgRating</code> sẽ lệch tạm thời và cần một lệnh "đồng bộ lại" để sửa. Đây là đánh đổi chấp nhận được vì <code>avgRating</code> chỉ để hiển thị.</p>
+    <p class="links">Tài liệu: <a href="https://www.mongodb.com/docs/manual/core/transactions/">MongoDB Transactions</a> (vì sao docker-compose chạy Mongo dạng replica set)</p>
+  </div>
+
+  <div class="concept">
+    <h3>8. Đo hiệu năng cho đúng</h3>
+    <ul>
+      <li><b>EXPLAIN (ANALYZE, BUFFERS)</b> trong PG: chạy thật câu SQL và in kế hoạch thực thi, thời gian từng bước, số trang đọc.</li>
+      <li><b>explain("executionStats")</b> trong Mongo: cho biết dùng index nào (<code>IXSCAN</code> hay <code>COLLSCAN</code>), đã xem bao nhiêu document.</li>
+      <li><b>p50 / p95</b>: sắp xếp các lần đo; p50 là giá trị giữa, p95 là giá trị mà 95% lần đo nhanh hơn. Dùng p50/p95 thay vì trung bình vì trung bình bị vài lần chậm bất thường kéo lệch.</li>
+      <li><b>Warm-up</b>: bỏ vài lần chạy đầu vì cache còn lạnh.</li>
+    </ul>
+    <p>Thí nghiệm của T1 là script PHP đo trực tiếp DB, không cần k6 (k6 dùng cho T5).</p>
+    <p class="links">Tài liệu: <a href="https://www.postgresql.org/docs/16/using-explain.html">Using EXPLAIN</a> · <a href="https://www.mongodb.com/docs/manual/reference/explain-results/">Explain Results</a></p>
+  </div>
+</section>
+
+<section id="bat-dau">
+  <h2>Bắt đầu trong 30 phút</h2>
+  <p>Cần Git và Docker Desktop. Lệnh dưới đây chạy được trong Git Bash hoặc PowerShell (trừ chỗ ghi chú).</p>
+  <ol>
+    <li><b>Chạy app</b> (lần đầu mất vài phút để build image):
+<pre><code>git clone &lt;url-repo&gt; vinfast
+cd vinfast
+git checkout develop-hybrid
+docker compose up -d --build
+docker compose ps        # postgres, mongo: healthy; app: running; mongo-init, seed: exited (0)</code></pre>
+      Mở <a href="http://localhost:8080">http://localhost:8080</a>. Đăng nhập admin bằng <code>admin@vinfast.vn</code> / <code>Admin@123</code> (chỉ dùng local). Port bị trùng thì copy <code>.env.example</code> thành <code>.env</code> và đổi port.</li>
+    <li><b>Mở psql</b> và xem tồn kho của xe 165:
+<pre><code>docker compose exec postgres psql -U vinfast -d vinfast
+vinfast=# \dt
+vinfast=# SELECT product_id, variant_id, stock, reserved FROM inventory WHERE product_id = '165';</code></pre>
+      Kết quả mong đợi (dữ liệu seed cơ bản): 1 dòng, <code>165 | 165-STD | 10 | 0</code>. Gõ <code>\q</code> để thoát.</li>
+    <li><b>Mở mongosh</b> và xem cùng sản phẩm đó:
+<pre><code>docker compose exec mongo mongosh vinfast
+db.products.countDocuments()                       // 60 = 16 xe cũ + 44 phụ kiện (seed cơ bản)
+db.categories.find({}, {_id: 0, categoryID: 1, name: 1, kind: 1})   // 5 category: 2 vehicle, 3 accessory
+db.products.findOne({productID: "165"}, {_id: 0, name: 1, basePrice: 1, "variants.variantId": 1, "variants.colors.colorCode": 1})</code></pre>
+      Kết quả mong đợi: <code>variants</code> có đúng 1 phần tử <code>165-STD</code>, trong đó là danh sách mã màu. Đây chính là cặp khóa <code>(product_id, variant_id)</code> bạn vừa thấy ở bảng <code>inventory</code>. Nếu bạn đã seed với <code>--size</code> thì số document lớn hơn.</li>
+    <li><b>Đọc 5 file theo thứ tự:</b>
+      <ol>
+        <li><code>database/mongo/001_collections.js</code>: hình dạng document và validator.</li>
+        <li><code>database/postgres/001_schema.sql</code>, mục 3 và 5: <code>product_reviews</code>, <code>inventory</code>, <code>orders</code>, <code>order_items</code>.</li>
+        <li><code>app/models/Product.php</code>: docblock đầu file và <code>formatProduct()</code>.</li>
+        <li><code>database/seed/accessories.php</code>: thuộc tính động của 3 category phụ kiện.</li>
+        <li><code>database/seed/seed.php</code>, mục 2: cách xe cũ được chuyển thành document.</li>
+      </ol></li>
+  </ol>
+  <div class="callout info"><b>Reset dữ liệu về seed:</b> <code>docker compose down -v</code> rồi <code>docker compose up -d --build</code> (xóa cả volume). Hoặc nhanh hơn: <code>docker compose run --rm seed php database/seed/seed.php --force</code>.</div>
+</section>
+
+<section class="milestone" id="w2">
+  <h2><span class="wk">Phase 0/0.5</span>Đã làm sẵn: đọc hiểu</h2>
+  <div class="callout info">Các task này đã có trong code (commit <code>9be0dfb</code> và trước đó). Bạn <b>không viết lại</b>. Mỗi task: đọc file được chỉ, chạy lệnh kiểm tra, tự trả lời câu hỏi (ghi vào sổ tay nhóm, sẽ dùng cho report). Xong thì tự đặt trạng thái "Xong".</div>
+  <div class="tasks">
+
+<article class="task" data-task="t1-01">
+  <div class="task-head">
+    <span class="tid">T1-01</span>
+    <h3>Đọc hiểu docker-compose: PostgreSQL + Mongo replica set</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~45 phút · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Hiểu một lệnh <code>docker compose up</code> dựng những gì và theo thứ tự nào.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>docker-compose.yml</code>, <code>database/docker/mongo-init.sh</code>, <code>.env.example</code></li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li>Thứ tự khởi động: <code>postgres</code>, <code>mongo</code> → <code>mongo-init</code> → <code>seed</code> → <code>app</code>. Dòng nào bắt <code>app</code> phải chờ <code>seed</code> chạy xong?</li>
+      <li>Vì sao Mongo chạy <code>--replSet rs0</code> dù chỉ có 1 node? (Gợi ý: transaction Mongo chỉ chạy trên replica set.)</li>
+      <li>Vì sao trên máy host phải dùng <code>mongodb://localhost:27018/?directConnection=true</code>?</li>
+      <li>Dữ liệu nằm ở named volume nào? <code>docker compose down</code> và <code>down -v</code> khác nhau thế nào?</li>
+    </ol>
+    <h4>Tự kiểm tra</h4>
+<pre><code>docker compose exec mongo mongosh --quiet --eval "rs.status().members[0].stateStr"   # PRIMARY
+docker compose exec postgres psql -U vinfast -c "SHOW max_connections"              # 200</code></pre>
+  </div>
+</article>
+
+<article class="task" data-task="t1-02">
+  <div class="task-head">
+    <span class="tid">T1-02</span>
+    <h3>Đọc hiểu Dockerfile và composer.json</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~30 phút · <span class="tag ready">ĐÃ LÀM SẴN</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Biết image PHP có những extension nào để nói chuyện với 2 DB.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>Dockerfile</code>, <code>composer.json</code></li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li>Extension <code>mongodb</code> (cài bằng <code>pecl</code>) và thư viện <code>mongodb/mongodb</code> (cài bằng composer) khác nhau thế nào? Code app gọi lớp nào?</li>
+      <li>Vì sao <code>COPY composer.json</code> và <code>composer install</code> nằm trước <code>COPY . /var/www/html/</code>?</li>
+      <li>Vì sao <code>vendor</code> là một named volume riêng trong docker-compose?</li>
+    </ol>
+    <h4>Tự kiểm tra</h4>
+<pre><code>docker compose exec app php -m        # có pdo_pgsql và mongodb, không có pdo_mysql</code></pre>
+  </div>
+</article>
+
+<article class="task" data-task="t1-03">
+  <div class="task-head">
+    <span class="tid">T1-03</span>
+    <h3>Đọc hiểu app/core/Db.php và Exceptions.php</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~45 phút · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Hiểu một chỗ duy nhất mở kết nối 2 DB, và cách lỗi PG được đổi thành exception có nghĩa.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>app/core/Db.php</code>, <code>app/core/Exceptions.php</code>, <code>config/database.php</code>, <code>config/bootstrap.php</code></li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li><code>Db::mongo()</code> đặt <code>typeMap</code> = <code>array</code>. Nếu bỏ đi thì <code>findOne()</code> trả về kiểu gì, và <code>formatProduct()</code> có còn chạy không?</li>
+      <li><code>Db::transaction()</code> đổi SQLSTATE nào thành <code>ConcurrentUpdateException</code>, SQLSTATE nào thành <code>OutOfStockException</code>? Ràng buộc nào trong <code>001_schema.sql</code> sinh ra 23514?</li>
+      <li>Vì sao model cũ vẫn dùng được <code>global $pdo</code>?</li>
+    </ol>
+    <h4>Tự kiểm tra</h4>
+<pre><code>docker compose exec app php -r "require 'config/bootstrap.php'; var_dump(Db::pg()-&gt;query('select 1')-&gt;fetchColumn()); var_dump(Db::mongo()-&gt;command(['ping'=&gt;1])-&gt;toArray()[0]['ok']);"</code></pre>
+    <p>Mong đợi: <code>int(1)</code> và <code>float(1)</code> (hoặc <code>int(1)</code>), không có warning.</p>
+  </div>
+</article>
+
+<article class="task" data-task="t1-04">
+  <div class="task-head">
+    <span class="tid">T1-04</span>
+    <h3>Đọc hiểu cách reset và seed (thay cho cli.php reset)</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~45 phút · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag ddl">DDL</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Biết cách dựng lại DB từ đầu. Kế hoạch cũ định viết <code>cli.php reset</code>; thực tế dùng <code>seed.php --force</code> và <code>docker compose down -v</code>.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>database/seed/seed.php</code> (phần đầu và mục 1), <code>database/seed/README.md</code></li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li>Không có <code>--force</code> mà DB đã có dữ liệu thì <code>seed.php</code> làm gì?</li>
+      <li><code>--force</code> xóa những gì bên PG (file SQL nào chạy lại) và bên Mongo (collection nào bị xóa)?</li>
+      <li><code>--size=small|10k|100k</code> sinh thêm bao nhiêu sản phẩm, variant, review? (Xem bảng trong README.)</li>
+    </ol>
+    <h4>Tự kiểm tra</h4>
+<pre><code>docker compose run --rm seed php database/seed/seed.php --force
+# mong đợi các dòng "mongo: ... categories, ... products", "postgres: ...", "seed: xong."</code></pre>
+  </div>
+</article>
+
+<article class="task" data-task="t1-05">
+  <div class="task-head">
+    <span class="tid">T1-05</span>
+    <h3>Đọc hiểu validator $jsonSchema và thử phá nó</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~1h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag ddl">DDL</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Hiểu ràng buộc nào DB tự chặn, ràng buộc nào app phải tự kiểm tra. Kết quả task này dùng cho mục "Ràng buộc" của report.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>database/mongo/001_collections.js</code> (T1 sở hữu), <code>database/mongo/002_indexes.js</code> (T2 sở hữu, chỉ đọc)</li></ul>
+    <h4>Các bước</h4>
+    <ol>
+      <li>Mở <code>docker compose exec mongo mongosh vinfast</code>.</li>
+      <li>Thử document thiếu trường bắt buộc:
+<pre><code>db.products.insertOne({productID: "999999", name: "x"})
+// MongoServerError: Document failed validation   (code 121, xem errInfo để biết trường nào sai)</code></pre></li>
+      <li>Thử trùng khóa duy nhất bằng cách chép một document có sẵn:
+<pre><code>const d = db.products.findOne({productID: "165"}); delete d._id; d.productID = "999999";
+db.products.insertOne(d)
+// E11000 duplicate key error ... (uq_product_slug hoặc uq_variantId)</code></pre></li>
+      <li>Tự thử thêm: <code>rating: 6</code> trong <code>reviews</code>, <code>variants: []</code>, <code>productID: "abc"</code>. Ghi lại mã lỗi.</li>
+    </ol>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li>Vì sao file dùng <code>validationLevel: "moderate"</code> chứ không phải <code>"strict"</code>?</li>
+      <li>Vì sao <code>productID</code> là chuỗi (<code>"165"</code>) còn <code>categoryID</code> là số?</li>
+      <li>Validator có chặn được <code>categoryID: 99</code> (category không tồn tại) không? Ai phải chặn?</li>
+      <li>So sánh: những gì <code>CHECK</code>/<code>NOT NULL</code>/<code>FOREIGN KEY</code> làm được trong PG mà validator không làm được.</li>
+    </ol>
+  </div>
+</article>
+
+<article class="task" data-task="t1-06">
+  <div class="task-head">
+    <span class="tid">T1-06</span>
+    <h3>Đọc hiểu migrate dữ liệu xe cũ sang Mongo</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~1h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Hiểu 16 xe (id 165–180), 87 màu, 2 category từ MySQL cũ được ánh xạ sang document thế nào, và id cũ được giữ ra sao.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>database/seed/legacy_data.json</code> (đã export sẵn từ dump MySQL), <code>database/seed/seed.php</code> mục 2</li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li>Lập bảng ánh xạ cột → trường: <code>products.price</code> → ?, <code>products.specs</code> → ?, <code>product_colors.color_code</code> → ? (dùng cho report).</li>
+      <li><code>rangeKm</code> được tính thế nào từ chuỗi "85-165 km"? (Xem <code>Product::extractRangeKm()</code>.) Vì sao cần trường số riêng?</li>
+      <li>Vì sao mỗi xe cũ có đúng 1 variant <code>"{id}-STD"</code>?</li>
+      <li>Collection <code>counters</code> được đặt <code>seq</code> bằng bao nhiêu sau khi seed, và để làm gì?</li>
+    </ol>
+    <h4>Tự kiểm tra (trên seed cơ bản, chưa chạy <code>--size</code>)</h4>
+<pre><code>db.products.aggregate([
+  { $match: { categoryID: { $in: [1, 2] } } },
+  { $unwind: "$variants" },
+  { $group: { _id: null, p: { $addToSet: "$productID" }, colors: { $sum: { $size: "$variants.colors" } } } },
+  { $project: { _id: 0, products: { $size: "$p" }, colors: 1 } } ])
+// mong đợi: { colors: 87, products: 16 }</code></pre>
+  </div>
+</article>
+
+<article class="task" data-task="t1-07">
+  <div class="task-head">
+    <span class="tid">T1-07</span>
+    <h3>Đọc hiểu luồng đọc Product.php và adapter formatProduct</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~1.5h · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Hiểu vì sao view cũ không phải sửa khi dữ liệu chuyển sang Mongo.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>app/models/Product.php</code>: docblock, <code>formatProduct()</code>, <code>buildCatalogFilters()</code>, <code>catalogSort()</code>, <code>getById()</code>, <code>filterPaginated()</code></li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li>"Adapter" ở đây là gì? Liệt kê 5 khóa cũ và 5 khóa mới mà <code>formatProduct()</code> trả về.</li>
+      <li><code>exterior_colors</code> lấy từ variant nào? Điều gì xảy ra với xe có 3 variant mà mỗi variant có màu khác nhau?</li>
+      <li>Lọc theo quãng đường dùng trường nào trong Mongo? Index nào hỗ trợ (tìm trong <code>002_indexes.js</code>)?</li>
+      <li>Trang danh sách có cần đọc <code>reviews[]</code> không? Có cách nào bớt dữ liệu trả về (projection)?</li>
+    </ol>
+    <h4>Tự kiểm tra</h4>
+    <p>Mở <code>/products</code>, lọc theo giá và quãng đường; mở <code>/products/detail/165</code>. Không có lỗi trong <code>docker compose logs app</code>.</p>
+  </div>
+</article>
+
+<article class="task" data-task="t1-08">
+  <div class="task-head">
+    <span class="tid">T1-08</span>
+    <h3>Đọc hiểu Category.php: kind vehicle | accessory</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~45 phút · <span class="tag ready">ĐÃ LÀM SẴN</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Hiểu category quyết định cả cách hiển thị (xe đặt cọc, phụ kiện mua theo số lượng) lẫn danh sách thuộc tính.</p>
+    <h4>File cần đọc</h4>
+    <ul class="files"><li><code>app/models/Category.php</code>, <code>database/seed/accessories.php</code> (mảng <code>$categories</code>)</li></ul>
+    <h4>Tự trả lời</h4>
+    <ol>
+      <li><code>allById()</code> cache trong 1 request. Vì sao cần cache? Hàm nào làm mất cache?</li>
+      <li><code>kind</code> được dùng ở đâu để rẽ nhánh? (Gợi ý: <code>ProductController::detail()</code>, <code>ProductAdminController::save()</code>.)</li>
+      <li><code>delete()</code> hiện xóa luôn mọi sản phẩm thuộc category (giữ hành vi CASCADE cũ). Điều này nguy hiểm thế nào khi sản phẩm đã có đơn? (T1-13 sẽ sửa.)</li>
+    </ol>
+  </div>
+</article>
+
+<article class="task" data-task="t1-09">
+  <div class="task-head">
+    <span class="tid">T1-09</span>
+    <h3>Smoke test toàn bộ luồng catalog sau Phase 0</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~45 phút · <span class="tag ready">ĐÃ LÀM SẴN</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Tự xác nhận luồng đọc catalog chạy đúng trên máy bạn trước khi làm task mới. PR luồng đọc đã merge vào <code>develop-hybrid</code>.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>git log --oneline -5</code> và <code>git show --stat 9be0dfb</code>: xem commit chuyển app sang PG + Mongo đụng những file nào.</li>
+      <li>Duyệt: <code>/</code>, <code>/products</code> (lọc, sắp xếp, phân trang), <code>/products/detail/165</code>, một trang phụ kiện, <code>/admin/products</code>.</li>
+      <li>Ghi lại vào sổ tay: trang nào chậm hoặc lỗi, kèm ảnh chụp.</li>
+    </ol>
+    <h4>Kết quả mong đợi</h4>
+    <p><code>docker compose logs app</code> không có <code>Fatal</code> hay <code>Warning</code> khi duyệt các trang trên.</p>
+  </div>
+</article>
+
+<article class="task" data-task="t1-10">
+  <div class="task-head">
+    <span class="tid">T1-10</span>
+    <h3>Hoàn thiện luồng ghi Product: lỗi validator, xe nhiều phiên bản</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~5h · <span class="tag part">LÀM MỘT PHẦN</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Admin lưu sản phẩm sai thì thấy thông báo rõ ràng, không bị trang lỗi 500; sửa xe nhiều phiên bản không làm sai giá.</p>
+    <h4>Đã có sẵn</h4>
+    <p><code>create()</code>, <code>updateById()</code>, <code>setActive()</code>, <code>deleteById()</code>, <code>syncExteriorColors()</code>, <code>createWithVariants()</code>, <code>updateWithVariants()</code>. Controller đã ẩn (không xóa) sản phẩm có đơn (<code>ProductAdminController::delete</code> gọi <code>hasOrders</code>).</p>
+    <h4>Vì sao cần</h4>
+    <p>Validator và unique index ném lỗi 121 / 11000. Hiện các lỗi này chưa được bắt riêng. Ngoài ra <code>updateById()</code> chỉ ghi <code>variants.0.price</code>: với xe sinh bởi <code>--size</code> có 3 phiên bản Eco/Plus/Lux, sửa giá trong admin chỉ đổi phiên bản đầu, còn <code>basePrice</code> có thể không còn là giá rẻ nhất.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li>Trong <code>Product.php</code>, bọc <code>insertOne</code>/<code>updateOne</code> bằng try/catch, nhận <code>MongoDB\Driver\Exception\BulkWriteException</code>. Đọc mã lỗi; 121 → "Dữ liệu không hợp lệ", 11000 → "Slug hoặc mã phiên bản đã tồn tại". Ném một exception riêng (ví dụ <code>InvalidArgumentException</code>) để controller hiện thông báo.
+<pre><code>try {
+    self::collection()-&gt;insertOne($doc);
+} catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+    $errs = $e-&gt;getWriteResult()-&gt;getWriteErrors();
+    $code = $errs ? $errs[0]-&gt;getCode() : $e-&gt;getCode();
+    throw new InvalidArgumentException($code === 11000 ? 'Slug hoặc mã phiên bản đã tồn tại.' : 'Dữ liệu sản phẩm không hợp lệ.', $code, $e);
+}</code></pre></li>
+      <li>Trong <code>ProductAdminController</code> (luồng xe và luồng phụ kiện), bắt <code>InvalidArgumentException</code>, đưa vào <code>$_SESSION['errors']</code>, giữ lại dữ liệu form.</li>
+      <li><code>updateById()</code>: nếu sản phẩm chỉ có 1 variant thì giữ như cũ; nếu có nhiều variant thì không ghi đè <code>variants.0.price</code>, và tính lại <code>basePrice</code> = giá nhỏ nhất của các variant đang bật.</li>
+      <li>Ghi chú vào docblock: <code>hasOrders()</code> và <code>deleteById()</code> đang đọc/ghi bảng PG ngay trong model Mongo. Bàn với T3 (chủ phần đọc của <code>Order.php</code>) có chuyển sang <code>Order::hasProduct()</code> hay không. Không tự sửa <code>Order.php</code>.</li>
+    </ol>
+    <h4>File cần sửa</h4>
+    <ul class="files"><li><code>app/models/Product.php</code>, <code>app/controllers/admin/ProductAdminController.php</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Tạo sản phẩm với slug trùng → thông báo lỗi trên trang admin, không có 500.</li>
+      <li>Seed <code>--size=small</code>, mở một xe có 3 phiên bản, sửa giá → giá 3 phiên bản không bị đổi sai; <code>basePrice</code> = giá nhỏ nhất.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li>Bắt <code>Throwable</code> rồi nuốt lỗi: admin tưởng đã lưu. Luôn báo lỗi ra màn hình hoặc ném lại.</li></ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<section class="milestone" id="w3">
+  <h2><span class="wk">Tuần 3</span>Phiên bản xe và hàm tra cứu cho topic khác</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t1-11">
+  <div class="task-head">
+    <span class="tid">T1-11</span>
+    <h3>Trang chi tiết xe: chọn phiên bản rồi chọn màu</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~6h · Phụ thuộc: seed <code>--size=small</code> · <span class="tag part">LÀM MỘT PHẦN</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Xe có nhiều phiên bản (Eco/Plus/Lux) cho người dùng chọn phiên bản, giá và màu đổi theo.</p>
+    <h4>Vì sao cần</h4>
+    <p>Trang phụ kiện (<code>products/accessory.php</code>) đã chọn được phiên bản theo thuộc tính. Trang xe (<code>products/detail.php</code>) vẫn chỉ đọc màu của variant đầu tiên có màu, nên các phiên bản khác bị bỏ qua.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li>Đọc <code>products/accessory.php</code> để học cách nó dựng danh sách <code>$variants</code> và chuyển sang JS bằng <code>json_encode</code>.</li>
+      <li><code>ProductController::detail()</code>: đọc <code>?variant=</code>, chỉ nhận <code>variantId</code> có trong sản phẩm và đang bật; mặc định là variant đầu.</li>
+      <li><code>products/detail.php</code> và <code>partials/detail/summary.php</code>: thêm nhóm nút phiên bản (chỉ hiện khi có từ 2 phiên bản). Mỗi nút có <code>data-variant-id</code>, <code>data-price</code>; nhóm màu render theo từng phiên bản.</li>
+      <li><code>public/js/frontend/products.js</code>: đổi phiên bản → đổi giá (cộng <code>surcharge</code> của màu), đổi nhóm màu, cập nhật URL bằng <code>history.replaceState</code>.</li>
+      <li>Thêm input ẩn <code>variant_id</code>, <code>color_code</code> trong form đặt cọc để T4 dùng.</li>
+    </ol>
+    <h4>File cần sửa</h4>
+    <ul class="files"><li><code>app/controllers/frontend/ProductController.php</code>, <code>app/views/frontend/products/detail.php</code>, <code>partials/detail/summary.php</code>, <code>public/js/frontend/products.js</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li><code>/products/detail/165</code> (1 phiên bản): không hiện khối phiên bản; màu, giá như trước.</li>
+      <li>Xe 3 phiên bản: đổi phiên bản → giá, màu, URL đổi. <code>?variant=xyz</code> → về mặc định, không lỗi.</li>
+      <li>Console trình duyệt không có lỗi.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li>In thẳng dữ liệu vào JS không escape. Dùng <code>json_encode(..., JSON_HEX_TAG | JSON_HEX_AMP)</code> như <code>accessory.php</code>.</li></ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-12">
+  <div class="task-head">
+    <span class="tid">T1-12</span>
+    <h3>Hàm tra cứu: getVariant, getPriceSnapshot, getManyByIds</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~4h · <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Cho T3, T4 ba hàm ổn định để lấy giá và tên sản phẩm, không phải tự query Mongo.</p>
+    <h4>Vì sao cần</h4>
+    <p><code>order_items</code> cần snapshot (tên, phiên bản, màu, giá) đúng tại lúc đặt hàng. Hiện <code>Order::create()</code> tự lấy <code>default_variant_id</code> và tên phiên bản từ <code>note</code>. Lịch sử đơn, lái thử cần tra nhiều sản phẩm một lúc.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>getVariant($productId, $variantId)</code>: dùng projection <code>variants: {$elemMatch: {variantId: …}}</code> để chỉ lấy 1 phần tử; trả <code>null</code> nếu sản phẩm hoặc phiên bản bị ẩn.</li>
+      <li><code>getPriceSnapshot($productId, $variantId, ?$colorCode)</code>: <code>unit_price</code> = <code>variant.price</code> + <code>color.surcharge</code>. Trả đủ khóa để INSERT vào <code>order_items</code>.</li>
+      <li><code>getManyByIds(array $ids)</code>: <b>một</b> lệnh <code>find</code> với <code>$in</code>, bỏ trùng, ép chuỗi, trả mảng theo <code>productID</code>.</li>
+      <li>Viết docblock có ví dụ gọi cho T4 (<code>OrderService</code>) và T3 (lịch sử đơn, <code>TestDrive</code>). Báo T3, T4 khi xong.</li>
+    </ol>
+<pre><code>public static function getVariant(string $productId, string $variantId): ?array;
+/** @return array{product_id,variant_id,product_name_snapshot,variant_name_snapshot,color_code,color_name_snapshot,unit_price:int}|null */
+public static function getPriceSnapshot(string $productId, string $variantId, ?string $colorCode = null): ?array;
+public static function getManyByIds(array $productIds, array $fields = ['name', 'slug', 'images']): array;</code></pre>
+    <h4>File cần sửa</h4>
+    <ul class="files"><li><code>app/models/Product.php</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Tự tra giá bằng mongosh cho <code>165-STD</code> và một màu có <code>surcharge</code> &gt; 0, rồi so với <code>getPriceSnapshot()</code>.</li>
+      <li><code>getVariant('165', 'x')</code> → <code>null</code>. <code>getManyByIds(['165', '166', '999999'])</code> → 2 phần tử.</li>
+      <li>Bật profiler (<code>db.setProfilingLevel(2)</code>), gọi <code>getManyByIds</code> → <code>db.system.profile</code> ghi đúng 1 lệnh find. Tắt lại bằng <code>db.setProfilingLevel(0)</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li>Gọi <code>getById()</code> trong vòng lặp (N+1 query). Đó chính là việc <code>getManyByIds</code> phải tránh.</li></ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-23">
+  <div class="task-head">
+    <span class="tid">T1-23</span>
+    <h3>Script kiểm tra tham chiếu chéo giữa PG và Mongo</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~4h · <span class="tag new">MỚI</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Có một lệnh liệt kê mọi <code>product_id</code>/<code>variant_id</code> bên PG không còn tồn tại bên Mongo, và ngược lại.</p>
+    <h4>Vì sao cần</h4>
+    <p>Không có khóa ngoại giữa hai DB, nên dữ liệu "mồ côi" có thể xuất hiện mà không ai báo. Script này là bằng chứng cho mục "Nhất quán hai DB" của report.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li>Tạo <code>bench/t1/check_refs.php</code> (require <code>config/bootstrap.php</code>).</li>
+      <li>Đọc từ Mongo tập <code>productID</code> và tập <code>variantId</code> (dùng projection, đọc theo lô).</li>
+      <li>Với từng bảng <code>inventory</code>, <code>cart_items</code>, <code>wishlist_items</code>, <code>order_items</code>, <code>test_drives</code>: lấy <code>DISTINCT product_id, variant_id</code>, đếm số cặp không có bên Mongo.</li>
+      <li>Chiều ngược lại: variant nào bên Mongo chưa có dòng <code>inventory</code>.</li>
+      <li>In bảng kết quả; exit 1 nếu có lỗi ở <code>inventory</code> hoặc <code>cart_items</code>. <code>order_items</code> mồ côi chỉ cảnh báo (snapshot vẫn giữ thông tin).</li>
+    </ol>
+<pre><code>docker compose exec app php bench/t1/check_refs.php</code></pre>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/check_refs.php</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Trên seed sạch: 0 lỗi.</li>
+      <li>Tự tạo lỗi: <code>db.products.deleteOne({productID: "166"})</code> trên DB thử → script báo các dòng <code>inventory</code>, <code>test_drives</code> của 166. Reset lại bằng <code>seed.php --force</code>.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<section class="milestone" id="w4">
+  <h2><span class="wk">Tuần 4</span>Admin category và review sản phẩm</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t1-13">
+  <div class="task-head">
+    <span class="tid">T1-13</span>
+    <h3>Admin quản lý category và thuộc tính động</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Khó · ~8h · <span class="tag new">MỚI</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Admin thêm, sửa, xóa thuộc tính của một category mà không cần migration hay sửa code.</p>
+    <h4>Vì sao cần</h4>
+    <p>Đây là lợi ích chính của mô hình document mà report phải chứng minh. Hiện chưa có trang <code>/admin/categories</code>; thuộc tính chỉ đổi được bằng seed.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>Category.php</code>: thêm <code>update()</code>, <code>addAttribute(int $id, string $scope, array $def)</code>, <code>updateAttribute()</code>, <code>removeAttribute()</code>; <code>$scope</code> ∈ <code>dynamic</code> | <code>variant</code>. Kiểu hợp lệ theo validator: <code>string, number, boolean, enum, text, list</code>; key theo mẫu <code>^[a-zA-Z][a-zA-Z0-9_]*$</code>.
+<pre><code>// Chỉ thêm khi key chưa có; modifiedCount = 0 nghĩa là key đã tồn tại
+Db::mongo()-&gt;categories-&gt;updateOne(
+    ['categoryID' =&gt; $id, 'dynamicAttributes.key' =&gt; ['$ne' =&gt; $def['key']]],
+    ['$push' =&gt; ['dynamicAttributes' =&gt; $def]]);</code></pre></li>
+      <li>Sửa một phần tử trong mảng dùng <code>arrayFilters</code>; xóa dùng <code>$pull</code>. Nhớ đặt lại cache (<code>self::$cache = null</code>).</li>
+      <li>Đổi <code>delete()</code>: trả <code>false</code> nếu category còn sản phẩm, thay vì xóa luôn sản phẩm. Báo nhóm vì hành vi thay đổi.</li>
+      <li><code>CategoryAdminController</code>: <code>index</code>, <code>save</code>, <code>delete</code>, <code>attributeSave</code>, <code>attributeDelete</code>; mọi thao tác ghi dùng POST + <code>Auth::verifyCsrf()</code>. View <code>admin/categories/index.php</code>, <code>form.php</code>; thêm link ở sidebar admin.</li>
+      <li>Xóa thuộc tính không xóa dữ liệu cũ trong <code>products.attributes</code>, chỉ ẩn khỏi form.</li>
+      <li>(Mở rộng, không bắt buộc) <code>Category::syncValidator()</code>: dùng <code>collMod</code> sinh lại validator cho <code>products</code>, mỗi category một nhánh <code>anyOf</code> có <code>required</code> theo thuộc tính bắt buộc.</li>
+    </ol>
+    <h4>File cần sửa / tạo</h4>
+    <ul class="files"><li><code>app/models/Category.php</code>; <code>app/controllers/admin/CategoryAdminController.php</code> (mới), <code>app/views/admin/categories/*</code> (mới), <code>app/views/admin/partials/sidebar.php</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Thêm <code>charging_time</code> (number, bắt buộc) cho một category xe → có trong <code>dynamicAttributes</code>. Profiler không ghi lệnh nào lên <code>products</code>.</li>
+      <li>Key trùng → báo lỗi; xóa category còn sản phẩm → bị chặn; thiếu CSRF → từ chối.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li><code>categoryID</code> là số nguyên trong Mongo. Truyền chuỗi <code>"3"</code> vào bộ lọc thì không khớp document nào.</li></ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-14">
+  <div class="task-head">
+    <span class="tid">T1-14</span>
+    <h3>Form sản phẩm xe sinh ô nhập theo dynamicAttributes</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~5h · Phụ thuộc: T1-13 · <span class="tag part">LÀM MỘT PHẦN</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Thêm thuộc tính ở T1-13 thì form sản phẩm <b>xe</b> tự có ô mới, giống phụ kiện.</p>
+    <h4>Đã có sẵn</h4>
+    <p>Với phụ kiện, <code>ProductAdminController::categoryDefsForModal()</code> gửi định nghĩa thuộc tính xuống JS; <code>product-modal.js</code> có <code>renderAttrField()</code>, <code>renderAttrs()</code>; lưu qua <code>saveAccessory()</code> → <code>createWithVariants()</code>/<code>updateWithVariants()</code> → <code>InventoryService::ensureRows()</code>.</p>
+    <h4>Còn thiếu</h4>
+    <p>Xe vẫn dùng 6 ô cứng (<code>range</code>, <code>power</code>, <code>acceleration</code>, <code>max_speed</code>, <code>battery</code>, <code>deposit_amount</code>, lớp <code>js-vehicle-only</code> trong <code>modal.php</code>), dù category xe đã khai báo các key này trong <code>dynamicAttributes</code>.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li>Trong <code>product-modal.js</code>, gọi <code>renderAttrs()</code> cho cả category xe; giữ <code>deposit_amount</code> là ô bắt buộc.</li>
+      <li>Ở controller, luồng xe đọc <code>$_POST['attributes'][key]</code> theo định nghĩa category, thay vì đọc từng ô cứng. Giữ cách tính <code>rangeKm</code>.</li>
+      <li>Xóa các ô cứng khi luồng mới đã chạy. Kiểm tra lại form sửa xe 165 điền đúng giá trị cũ.</li>
+    </ol>
+    <h4>File cần sửa</h4>
+    <ul class="files"><li><code>app/controllers/admin/ProductAdminController.php</code>, <code>app/views/admin/products/partials/modal.php</code>, <code>public/js/admin/product-modal.js</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Sau khi thêm <code>charging_time</code> ở T1-13, modal xe có ô mới mà không sửa code.</li>
+      <li>Bỏ trống thuộc tính bắt buộc → lỗi validate; sửa xe 165 → giá trị cũ điền đúng; lọc quãng đường trên <code>/products</code> vẫn đúng.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-15">
+  <div class="task-head">
+    <span class="tid">T1-15</span>
+    <h3>ProductReview (PG) và ReviewService đồng bộ tóm tắt sang Mongo</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Khó · ~6h · <span class="tag new">MỚI</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p><code>product_reviews</code> là nguồn chính; Mongo giữ <code>avgRating</code>, <code>totalReviews</code>, <code>reviews[]</code> (5 bài mới nhất đã duyệt).</p>
+    <h4>Vì sao cần</h4>
+    <p>Đây là ví dụ thật của mô hình lai (subset pattern) và nhất quán cuối. Bảng và index đã có; chỉ thiếu code.</p>
+    <h4>Bảng đã có (đọc, không sửa)</h4>
+    <p><code>product_reviews(id, user_id → users, product_id VARCHAR(32), rating 1–5, body, helpful_count, is_approved BOOLEAN, created_at)</code>, <code>UNIQUE (user_id, product_id)</code>. Index (T2): <code>idx_reviews_product_approved (product_id, created_at DESC) WHERE is_approved</code>, <code>idx_reviews_pending</code>.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>app/models/ProductReview.php</code> (chỉ PG): <code>create(): ?int</code> dùng <code>ON CONFLICT (user_id, product_id) DO NOTHING RETURNING id</code>; <code>getApprovedByProduct()</code>, <code>summary()</code>, <code>latestApproved($productId, 5)</code>, <code>getAdminList()</code>, <code>countPending()</code>, <code>setApproved(int $id, bool $ok): ?string</code> (<code>RETURNING product_id</code>), <code>delete(): ?string</code>.</li>
+      <li><code>app/services/ReviewService.php</code> (chạm 2 DB): <code>approve</code>, <code>reject</code>, <code>delete</code> → ghi PG trước, rồi <code>refreshSummary($productId)</code>.</li>
+      <li><code>refreshSummary</code>: tính lại từ PG rồi <code>$set</code> sang Mongo. Hình dạng phần tử <code>reviews[]</code> phải đúng validator: <code>reviewId, userId, userNameSnapshot, rating, comment, images, createdAt, helpfulCount</code>. Tham khảo <code>gen_sync_product_stats()</code> trong <code>generate.php</code> (đã làm đúng việc này cho dữ liệu sinh).
+<pre><code>public static function refreshSummary(string $productId): void {
+    try {
+        [$avg, $count] = ProductReview::summary($productId);
+        $top = array_map([self::class, 'toEmbedded'], ProductReview::latestApproved($productId, 5));
+        Db::mongo()-&gt;products-&gt;updateOne(['productID' =&gt; $productId],
+            ['$set' =&gt; ['avgRating' =&gt; round((float)$avg, 2), 'totalReviews' =&gt; (int)$count, 'reviews' =&gt; $top]]);
+    } catch (Throwable $e) {
+        error_log("review summary $productId: " . $e-&gt;getMessage());   // best-effort, PG đã commit
+    }
+}</code></pre></li>
+      <li>Lệnh đồng bộ lại: <code>bench/t1/reviews_resync.php [--product=165]</code> gọi <code>refreshSummary</code> cho một hoặc mọi sản phẩm có review.</li>
+    </ol>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>app/models/ProductReview.php</code>, <code>app/services/ReviewService.php</code>, <code>bench/t1/reviews_resync.php</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Review chưa duyệt không đổi Mongo. Duyệt 2 bài 4 và 5 sao cho một sản phẩm chưa có review → <code>avgRating</code> 4.5, <code>totalReviews</code> 2.</li>
+      <li>Duyệt bài thứ 7 → <code>reviews</code> vẫn 5 phần tử, mới nhất đứng đầu.</li>
+      <li><code>docker compose stop mongo</code>, duyệt 1 bài → PG vẫn lưu, trang không lỗi. <code>docker compose start mongo</code>, chạy resync → khớp.</li>
+      <li>Cùng user review lần 2 cùng sản phẩm → <code>create()</code> trả <code>null</code>.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4>
+    <ul>
+      <li><code>rating</code> phải là <code>int</code> bên Mongo; PDO trả chuỗi → ép <code>(int)</code>, nếu không validator báo 121.</li>
+      <li><code>createdAt</code> phải là <code>MongoDB\BSON\UTCDateTime</code>, không phải chuỗi.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-16">
+  <div class="task-head">
+    <span class="tid">T1-16</span>
+    <h3>ReviewController và tab "Đánh giá" trên trang chi tiết</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~5h · Phụ thuộc: T1-15 · <span class="tag new">MỚI</span> <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Người dùng đăng nhập gửi review. Trang chi tiết hiện 5 review nhúng (đọc từ Mongo, không query PG); trang sau đọc từ PG.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>ReviewController::post()</code> (<code>/review/post</code>): POST, đăng nhập, CSRF, rating 1–5, nội dung 10–2000 ký tự, sản phẩm tồn tại → <code>ProductReview::create()</code>, flash "Đánh giá đang chờ duyệt".</li>
+      <li><code>ReviewController::list($productId)</code> (<code>/review/list/{id}?page=n</code>): trả HTML partial đọc từ PG (dùng keyset hoặc OFFSET, ghi lý do chọn).</li>
+      <li><code>partials/detail/tabs.php</code>: thêm tab "Đánh giá" (điểm trung bình, tổng số, 5 review nhúng, nút "Xem thêm"). Làm tương tự cho <code>accessory.php</code>.</li>
+      <li>Gọi <code>ActivityLog::record('review', $productId, …)</code> khi gửi thành công (hàm của T3, bọc try/catch).</li>
+    </ol>
+    <h4>File cần sửa / tạo</h4>
+    <ul class="files"><li><code>app/controllers/frontend/ReviewController.php</code> (mới); <code>app/views/frontend/products/partials/detail/tabs.php</code>, <code>review-form.php</code>, <code>review-list.php</code> (mới); <code>public/js/frontend/products.js</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Chưa đăng nhập → chuyển tới trang đăng nhập. Gửi hợp lệ → dòng <code>is_approved = false</code>, tab chưa hiện bài.</li>
+      <li>Bật log SQL (<code>docker compose exec postgres psql -U vinfast -c "ALTER SYSTEM SET log_statement='all'" -c "SELECT pg_reload_conf()"</code>), mở trang chi tiết → <code>docker compose logs postgres</code> không có query <code>product_reviews</code>. Nhớ đặt lại <code>'none'</code>.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-17">
+  <div class="task-head">
+    <span class="tid">T1-17</span>
+    <h3>Tab duyệt review trong trang quản lý bình luận</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~4h · Phụ thuộc: T1-15, T1-12 · <span class="tag pg">PG</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Admin duyệt, từ chối, xóa review sản phẩm ở cùng trang với bình luận tin tức.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>CommentAdminController::index()</code>: thêm <code>?tab=news|reviews</code>. Tab reviews dùng <code>ProductReview::getAdminList()</code>; tên sản phẩm lấy bằng <code>Product::getManyByIds()</code> (1 lệnh cho cả trang).</li>
+      <li>Thêm <code>reviewApprove($id)</code>, <code>reviewReject($id)</code>, <code>reviewDelete($id)</code>: POST + CSRF → <code>ReviewService</code>.</li>
+      <li>View: nav tab trong <code>admin/comments/index.php</code>; bảng ở <code>admin/comments/partials/reviews-table.php</code>. Không đổi các hàm duyệt bình luận tin tức hiện có.</li>
+      <li><code>CommentAdminController.php</code> thuộc người phụ trách tin tức: báo trước khi sửa, chỉ thêm hàm mới.</li>
+    </ol>
+    <h4>File cần sửa / tạo</h4>
+    <ul class="files"><li><code>app/controllers/admin/CommentAdminController.php</code>, <code>app/views/admin/comments/index.php</code>, <code>app/views/admin/comments/partials/reviews-table.php</code> (mới)</li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li>Tab tin tức như cũ. Duyệt review → badge đổi, <code>avgRating</code> bên Mongo cập nhật.</li>
+      <li>Gửi GET tới URL duyệt → không đổi gì.</li>
+    </ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<section class="milestone" id="w5">
+  <h2><span class="wk">Tuần 5</span>Benchmark</h2>
+  <div class="callout info">Mọi thí nghiệm chạy trên DB riêng <code>vinfast_bench</code> để không phá DB dev của cả nhóm. Cách tạo ở mục <a href="#thi-nghiem">Quy trình thí nghiệm</a>. Không ghi số liệu vào report nếu chưa có dòng CSV tương ứng.</div>
+  <div class="tasks">
+
+<article class="task" data-task="t1-24">
+  <div class="task-head">
+    <span class="tid">T1-24</span>
+    <h3>Khung đo nhỏ bench/t1/lib.php</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Dễ · ~2h · <span class="tag new">MỚI</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Có sẵn các hàm đo thời gian, tính p50/p95, ghi CSV để 3 thí nghiệm dùng chung.</p>
+    <h4>Vì sao cần</h4>
+    <p>Repo chưa có helper đo chung (<code>bench/</code> mới có <code>t5/smoke.js</code> cho k6). Nếu T5 đã có helper chung khi bạn bắt đầu, dùng của T5 và bỏ task này.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>bench_args()</code>: đọc <code>--size</code>, <code>--warmup</code> (mặc định 5), <code>--runs</code> (mặc định 30).</li>
+      <li><code>bench_time(callable $fn): float</code> dùng <code>hrtime(true)</code>, trả mili giây.</li>
+      <li><code>bench_percentile(array $xs, float $p)</code>; <code>bench_csv(string $file, array $header, array $row)</code> ghi vào <code>bench/results/</code>, tự thêm header khi file mới.</li>
+    </ol>
+<pre><code>function bench_time(callable $fn): float {
+    $t = hrtime(true); $fn(); return (hrtime(true) - $t) / 1e6;
+}</code></pre>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/lib.php</code></li></ul>
+    <h4>Tự kiểm tra</h4>
+    <p><code>bench_percentile([1,2,3,4,5,6,7,8,9,10], 50)</code> trả 5 hoặc 5.5 (ghi rõ bạn dùng công thức nào).</p>
+  </div>
+</article>
+
+<article class="task" data-task="t1-18">
+  <div class="task-head">
+    <span class="tid">T1-18</span>
+    <h3>Schema bench chuẩn hóa và nạp dữ liệu từ Mongo</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~5h · Phụ thuộc: seed <code>--size=10k/100k</code> (đã có) · <span class="tag pg">PG</span> <span class="tag ddl">DDL</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Cùng một tập sản phẩm tồn tại ở hai mô hình: document trong Mongo và các bảng chuẩn hóa trong schema <code>bench</code> của PG.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>bench/t1/schema_bench.sql</code>: <code>CREATE SCHEMA IF NOT EXISTS bench</code>; bảng <code>products_sql</code>, <code>product_variants</code>, <code>variant_colors</code>, <code>product_attributes</code> (EAV: <code>product_id, attr_key, value_text, value_num</code>), <code>category_attributes</code>; có PK/FK. Không đặt trong <code>database/postgres/</code> vì app không dùng.</li>
+      <li><code>bench/t1/load_bench.php</code>: đọc Mongo theo lô 1000 document, ghi PG bằng <code>pgsqlCopyFromArray</code> (nhanh hơn INSERT từng dòng). <code>TRUNCATE</code> trước, <code>ANALYZE</code> sau.</li>
+      <li>Gửi T2 tên bảng, cột (họ có thể dùng cho thí nghiệm index).</li>
+    </ol>
+<pre><code># Git Bash (PowerShell không hỗ trợ "&lt;": dùng Get-Content file | docker compose exec -T ...)
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -v ON_ERROR_STOP=1 &lt; bench/t1/schema_bench.sql
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t1/load_bench.php</code></pre>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/schema_bench.sql</code>, <code>bench/t1/load_bench.php</code></li></ul>
+    <h4>Kết quả mong đợi / tự kiểm tra</h4>
+    <ul>
+      <li><code>SELECT count(*) FROM bench.products_sql</code> = <code>db.products.countDocuments()</code>.</li>
+      <li>Số dòng <code>product_variants</code> = kết quả <code>$unwind: "$variants"</code> + <code>$count</code>; tương tự cho màu.</li>
+    </ul>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li>Thuộc tính kiểu list (<code>compatible_models</code>) không vừa một ô <code>value_text</code>: tách thành nhiều dòng EAV hoặc lưu chuỗi nối, ghi rõ lựa chọn trong report.</li></ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-19">
+  <div class="task-head">
+    <span class="tid">T1-19</span>
+    <h3>Thí nghiệm A: findOne so với JOIN 4 bảng</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~4h · Phụ thuộc: T1-18, T1-24 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Đo chi phí đọc trọn 1 sản phẩm ở 10k và 100k sản phẩm.</p>
+    <h4>Giả thuyết cần kiểm chứng</h4>
+    <p>JOIN trả về nhiều dòng lặp (variants × colors × attributes) nên tốn thêm thời gian ghép mảng trong PHP; <code>json_agg</code> trả 1 dòng nên chênh lệch nhỏ hơn.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>bench/t1/detail_read.php</code>: chọn 35 <code>productID</code> ngẫu nhiên với <code>mt_srand(42)</code>, dùng chung cho mọi biến thể.</li>
+      <li>Biến thể: <code>mongo_findone</code>, <code>sql_join4</code> (nhiều dòng, ghép trong PHP), <code>sql_json_agg</code> (1 dòng). Đo cả thời gian ghép mảng. Ghi số dòng trả về và số byte.</li>
+      <li>Trước khi đo: assert 3 biến thể trả cùng dữ liệu cho 5 id.</li>
+      <li>Lưu EXPLAIN của 1 id vào <code>bench/results/t1_detail_explain_&lt;size&gt;.txt</code>.</li>
+    </ol>
+<pre><code>SELECT p.*, v.variant_id, v.price, c.code, c.hex, c.surcharge, a.attr_key, a.value_text
+FROM bench.products_sql p
+JOIN bench.product_variants v ON v.product_id = p.product_id
+LEFT JOIN bench.variant_colors c ON c.variant_id = v.variant_id
+LEFT JOIN bench.product_attributes a ON a.product_id = p.product_id
+WHERE p.product_id = $1;   -- số dòng = variants × colors × attributes</code></pre>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/detail_read.php</code> → <code>bench/results/t1_detail_read_10k.csv</code>, <code>t1_detail_read_100k.csv</code></li></ul>
+    <h4>Tự kiểm tra</h4>
+    <p>Mỗi CSV có 3 biến thể × 30 dòng đo. Phụ kiện không có màu: dùng <code>LEFT JOIN</code> (như trên) nếu không sẽ mất sản phẩm.</p>
+  </div>
+</article>
+
+<article class="task" data-task="t1-20">
+  <div class="task-head">
+    <span class="tid">T1-20</span>
+    <h3>Thí nghiệm B: chi phí thêm 1 thuộc tính</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Khó · ~5h · Phụ thuộc: T1-18, T1-24 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>So sánh chi phí đổi schema: Mongo, EAV, JSONB và <code>ALTER TABLE</code>, kể cả thời gian câu SELECT khác bị chặn.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>bench/t1/add_attribute.php</code> với các biến thể:
+        <ul>
+          <li><code>mongo_category_only</code>: <code>$push</code> định nghĩa vào category (không đụng products).</li>
+          <li><code>mongo_backfill</code>: thêm định nghĩa + <code>updateMany $set</code> giá trị mặc định cho mọi sản phẩm của category.</li>
+          <li><code>pg_eav</code>: INSERT định nghĩa vào <code>category_attributes</code> + <code>INSERT … SELECT</code> vào <code>product_attributes</code>.</li>
+          <li><code>pg_jsonb</code> (tùy chọn): <code>UPDATE … SET attrs = attrs || '{"x":0}'</code> nếu bạn thêm cột JSONB vào <code>products_sql</code>.</li>
+          <li><code>pg_alter_default</code>: <code>ALTER TABLE … ADD COLUMN … DEFAULT 0</code> (từ PG 11 chỉ đổi metadata khi default là hằng số).</li>
+          <li><code>pg_alter_backfill</code>: <code>ADD COLUMN</code> không default + <code>UPDATE</code> toàn bảng.</li>
+        </ul></li>
+      <li>Sau mỗi lần đo, hoàn tác ngoài phần đo (<code>DROP COLUMN</code>, <code>$unset</code>, <code>DELETE</code>); <code>VACUUM</code> định kỳ.</li>
+      <li>Với <code>pg_alter_*</code>: mở session thứ 2 chạy SELECT liên tục, ghi thời gian bị chặn (khóa <code>AccessExclusiveLock</code>) vào cột <code>param</code>.</li>
+    </ol>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/add_attribute.php</code> → <code>bench/results/t1_add_attribute_10k.csv</code>, <code>t1_add_attribute_100k.csv</code></li></ul>
+    <h4>Tự kiểm tra</h4>
+    <p>Chạy xong, <code>\d bench.products_sql</code> không còn cột thừa; <code>db.categories.findOne({categoryID: 1}).dynamicAttributes</code> không còn thuộc tính thử.</p>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li>Chạy trên DB dev thay vì <code>vinfast_bench</code>: thuộc tính thử xuất hiện trong form admin của cả nhóm.</li></ul>
+  </div>
+</article>
+
+<article class="task" data-task="t1-21">
+  <div class="task-head">
+    <span class="tid">T1-21</span>
+    <h3>Thí nghiệm C: review nhúng so với bảng SQL</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Khó · ~6h · Phụ thuộc: T1-24 · <span class="tag pg">PG</span> <span class="tag mg">MONGO</span></span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Ở mức 10, 1 000 và 10 000 review/sản phẩm: đo đọc, ghi, phân trang, kích thước; giải thích vì sao app chọn phương án lai (5 review nhúng + bảng PG).</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>bench/t1/reviews.php --levels=10,1000,10000 --products=20</code>, <code>mt_srand(42)</code>. Mongo: collection <code>bench_reviews_embedded {productID, reviews[]}</code> (mới nhất đầu mảng). PG: <code>bench.product_reviews</code> + index <code>(product_id, created_at DESC)</code>.</li>
+      <li>Thao tác đo:
+        <ul>
+          <li><code>read_page1</code>: <code>$slice [0, 10]</code> so với <code>LIMIT 10</code>.</li>
+          <li><code>read_page_mid</code>: <code>$slice</code> so với <code>OFFSET</code> so với keyset (<code>WHERE created_at &lt; ?</code>).</li>
+          <li><code>write_one</code>: <code>$push</code> với <code>$position: 0</code> so với <code>INSERT</code>.</li>
+          <li><code>avg</code>: <code>$avg</code> trong aggregation so với <code>avg(rating)</code>.</li>
+          <li><code>hybrid_page1</code>: đọc 5 review nhúng trong <code>products</code> như app thật.</li>
+        </ul></li>
+      <li>Kích thước: <code>$bsonSize</code> so với <code>pg_total_relation_size</code> chia số sản phẩm; ngoại suy số review chạm 16 MB.</li>
+    </ol>
+<pre><code>db.bench_reviews_embedded.aggregate([
+  { $project: { n: { $size: "$reviews" }, bytes: { $bsonSize: "$$ROOT" } } },
+  { $group: { _id: "$n", avgBytes: { $avg: "$bytes" }, maxBytes: { $max: "$bytes" } } } ])</code></pre>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/reviews.php</code> → <code>bench/results/t1_reviews_10k.csv</code>, <code>t1_reviews_size_10k.csv</code> (chạy trên DB seed 10k)</li></ul>
+    <h4>Tự kiểm tra</h4>
+    <p>Document level 10 000 có đúng 10 000 phần tử; PG có 20 × 10 000 dòng ở level đó; CSV đủ mọi tổ hợp × 30 dòng.</p>
+    <h4>Lỗi hay gặp</h4>
+    <ul><li><code>insertOne</code> một document 10 000 review có thể chậm và chạm giới hạn kích thước lệnh; chia nhỏ bằng nhiều <code>$push</code> với <code>$each</code>.</li></ul>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<section class="milestone" id="w6">
+  <h2><span class="wk">Tuần 6</span>Report và demo</h2>
+  <div class="tasks">
+
+<article class="task" data-task="t1-22">
+  <div class="task-head">
+    <span class="tid">T1-22</span>
+    <h3>Tổng hợp CSV, biểu đồ, chương report, tập demo</h3>
+    <span class="status-slot"></span>
+    <span class="meta">Vừa · ~8h · Phụ thuộc: T1-19, T1-20, T1-21</span>
+  </div>
+  <div class="task-body">
+    <h4>Mục tiêu</h4>
+    <p>Từ số đo ra bảng, biểu đồ, chương report và demo 10 phút trên DB vừa reset.</p>
+    <h4>Các bước</h4>
+    <ol>
+      <li><code>bench/t1/summarize.php</code> đọc mọi <code>bench/results/t1_*.csv</code> → <code>bench/results/t1_summary_all.csv</code>.</li>
+      <li><code>bench/t1/plot.py</code> (matplotlib, chạy trên máy host) → 3 PNG trong <code>bench/results/</code>.</li>
+      <li>Viết chương report theo dàn ý ở mục <a href="#report">Report và demo</a>. Dùng câu trả lời đã ghi ở các task "Đã làm sẵn".</li>
+      <li>Tập demo 2 lần, bấm giờ.</li>
+    </ol>
+    <h4>File cần tạo</h4>
+    <ul class="files"><li><code>bench/t1/summarize.php</code>, <code>bench/t1/plot.py</code>; <code>bench/results/t1_*.png</code></li></ul>
+    <h4>Tự kiểm tra</h4>
+    <p>PNG và summary đã commit; mọi con số trong report tra được về 1 dòng CSV; demo xong trong 10 phút.</p>
+  </div>
+</article>
+
+  </div>
+</section>
+
+<section id="thi-nghiem">
+  <h2>Quy trình thí nghiệm</h2>
+  <div class="callout">Cùng máy, cùng cấu hình Docker, seed cố định (<code>generate.php</code> dùng seed ngẫu nhiên cố định; script của bạn dùng <code>mt_srand(42)</code>). Mỗi phép đo <b>5 lần khởi động (bỏ) + 30 lần đo</b>, báo cáo p50, p95 và max. p50 giữa hai lần chạy lệch quá 20% thì chạy lại. Ghi cấu hình máy (CPU, RAM, Docker Desktop/WSL2) vào report.</div>
+  <div class="tbl"><table>
+    <tr><th>Thí nghiệm</th><th>Dataset</th><th>Biến thể</th><th>Đo</th><th>CSV</th></tr>
+    <tr><td>A (T1-19)</td><td>10k, 100k sản phẩm</td><td>mongo_findone, sql_join4, sql_json_agg</td><td>latency, số dòng, byte, plan</td><td><code>t1_detail_read_&lt;size&gt;.csv</code></td></tr>
+    <tr><td>B (T1-20)</td><td>10k, 100k</td><td>mongo_category_only, mongo_backfill, pg_eav, (pg_jsonb), pg_alter_default, pg_alter_backfill</td><td>thời gian, thời gian bị chặn</td><td><code>t1_add_attribute_&lt;size&gt;.csv</code></td></tr>
+    <tr><td>C (T1-21)</td><td>20 sản phẩm × 10 / 1k / 10k review</td><td>embedded, sql, sql_keyset, hybrid</td><td>latency đọc/ghi/avg/phân trang, byte</td><td><code>t1_reviews_10k.csv</code>, <code>t1_reviews_size_10k.csv</code></td></tr>
+  </table></div>
+<pre><code># 1. Tạo DB benchmark riêng (một lần) — xem bench/README.md
+docker compose exec -T postgres createdb -U vinfast vinfast_bench
+docker compose run --rm -e MONGO_DB=vinfast_bench mongo-init
+
+# 2. Seed theo size (lặp lại cho 10k rồi 100k)
+docker compose run --rm -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench seed php database/seed/seed.php --force --size=10k
+
+# 3. Chạy thí nghiệm (biến môi trường trỏ app sang DB bench)
+docker compose exec -T postgres psql -U vinfast -d vinfast_bench -v ON_ERROR_STOP=1 &lt; bench/t1/schema_bench.sql
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t1/load_bench.php
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t1/detail_read.php   --size=10k --warmup=5 --runs=30
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t1/add_attribute.php --size=10k --warmup=5 --runs=30
+docker compose exec -e PG_DB=vinfast_bench -e MONGO_DB=vinfast_bench app php bench/t1/reviews.php --levels=10,1000,10000 --products=20 --warmup=5 --runs=30
+
+# 4. Tổng hợp và vẽ
+docker compose exec app php bench/t1/summarize.php
+python bench/t1/plot.py
+
+# Xem kế hoạch thực thi
+docker compose exec postgres psql -U vinfast -d vinfast_bench -c "EXPLAIN (ANALYZE, BUFFERS) SELECT ... WHERE p.product_id = '&lt;id&gt;'"
+docker compose exec mongo mongosh vinfast_bench --quiet --eval 'printjson(db.products.find({productID:"&lt;id&gt;"}).explain("executionStats").executionStats)'</code></pre>
+  <p><b>CSV thô</b> (mỗi dòng 1 lần đo): <code>experiment,db,variant,dataset_size,param,run,latency_ms,rows_returned,payload_bytes,ts</code>. <code>param</code> = số review/sản phẩm (C) hoặc thời gian bị chặn ms (B). Tên file theo quy ước <code>bench/results/t1_&lt;thi-nghiem&gt;_&lt;size&gt;.csv</code> trong <code>bench/README.md</code>.</p>
+  <p><b>Tổng hợp:</b> <code>t1_summary_all.csv</code> = <code>experiment,db,variant,dataset_size,param,n,p50_ms,p95_ms,mean_ms,min_ms,max_ms</code>; <code>t1_reviews_size_10k.csv</code> = <code>level,product_id,bson_bytes,pg_bytes_per_product</code>.</p>
+  <p><b>Biểu đồ:</b> <code>t1_detail_read.png</code> cột nhóm theo size, chiều cao p50, vạch lỗi tới p95. <code>t1_add_attribute.png</code> cột theo biến thể, trục y log, 2 màu cho 10k/100k. <code>t1_reviews.png</code> 2 ô: p50 theo số review (trục x log) và byte document theo level, kèm đường 16 MB.</p>
+  <p><b>Dọn dẹp:</b> <code>docker compose exec -T postgres dropdb -U vinfast vinfast_bench</code>; <code>docker compose exec -T mongo mongosh vinfast_bench --quiet --eval 'db.dropDatabase()'</code>.</p>
+</section>
+
+<section id="report">
+  <h2>Report và demo</h2>
+  <h3>Dàn ý chương T1</h3>
+  <ol>
+    <li><b>Bài toán.</b> Xe, pin, áo, phụ kiện xe có thuộc tính khác nhau; phụ kiện có phiên bản màu × size với tồn kho riêng. Bằng chứng: cột <code>specs</code> JSON và bảng <code>product_colors</code> trong schema MySQL cũ; <code>dynamicAttributes</code> trong <code>accessories.php</code>.</li>
+    <li><b>Phân chia dữ liệu.</b> Bảng "dữ liệu nào ở DB nào và vì sao": catalog → Mongo; đơn hàng, tồn kho, người dùng, review gốc → PG.</li>
+    <li><b>Thiết kế document.</b> Sơ đồ document; ERD 4 bảng tương đương; lý do nhúng variants/màu, tham chiếu category, review lai.</li>
+    <li><b>Ràng buộc.</b> <code>$jsonSchema</code> + unique index so với NOT NULL/CHECK/FK; phần app phải tự kiểm tra. Bằng chứng: lỗi 121, E11000 (T1-05).</li>
+    <li><b>Migrate.</b> Bảng ánh xạ cột → trường; 16/16 xe, 87/87 màu, 2/2 category (T1-06).</li>
+    <li><b>Thí nghiệm A, B, C.</b> Giả thuyết, cách đo, biểu đồ, bảng p50/p95, trích EXPLAIN, nhận xét.</li>
+    <li><b>Nhất quán hai DB.</b> Tham chiếu logic, snapshot giá trong <code>order_items</code>, kết quả <code>check_refs.php</code>; nhất quán cuối của <code>avgRating</code>, kịch bản tắt Mongo + resync.</li>
+    <li><b>Kết luận, hạn chế.</b> Khi nào chọn document, khi nào chọn bảng; giới hạn 16 MB, dữ liệu lặp, không có FK giữa hai DB.</li>
+  </ol>
+  <h3>Kịch bản demo 10 phút</h3>
+  <div class="tbl"><table>
+    <tr><th>Phút</th><th>Lệnh / màn hình</th><th>Nói gì</th></tr>
+    <tr><td>0–1</td><td><code>docker compose ps</code>; <code>docker compose logs seed</code></td><td>Một lệnh dựng 2 DB, validator, seed.</td></tr>
+    <tr><td>1–2</td><td><code>db.products.findOne({productID:"165"})</code> và một phụ kiện thời trang</td><td>Một document có variants, màu, thuộc tính, tóm tắt review; thuộc tính khác nhau giữa xe và áo.</td></tr>
+    <tr><td>2–3</td><td>Insert document thiếu trường → lỗi 121</td><td>Validator là ràng buộc ở tầng DB.</td></tr>
+    <tr><td>3–4.5</td><td>Trang chi tiết xe nhiều phiên bản; trang áo chọn màu × size</td><td>Đổi phiên bản thì giá, màu, tồn kho đổi; trang đọc bằng 1 <code>findOne</code>.</td></tr>
+    <tr><td>4.5–6</td><td><code>/admin/categories</code> thêm <code>charging_time</code>; mở modal sản phẩm</td><td>Thêm thuộc tính không cần ALTER, form tự có ô mới.</td></tr>
+    <tr><td>6–7.5</td><td>Gửi review; duyệt ở tab review của trang quản lý bình luận; xem <code>avgRating</code></td><td>PG là nguồn chính, Mongo cập nhật tóm tắt sau.</td></tr>
+    <tr><td>7.5–9.5</td><td>3 biểu đồ trong <code>bench/results/</code></td><td>A: findOne vs JOIN; B: chi phí đổi schema; C: vì sao không nhúng toàn bộ review.</td></tr>
+    <tr><td>9.5–10</td><td>Slide kết luận</td><td>Chọn mô hình theo cách dữ liệu được đọc và ghi.</td></tr>
+  </table></div>
+</section>
+
+<section id="phoi-hop">
+  <h2>Phối hợp với topic khác</h2>
+  <div class="callout"><b>Quy tắc:</b> chỉ sửa file của topic mình. Cần sửa file của topic khác thì nhắn người sở hữu trước, nói rõ hàm nào và vì sao. File "chung" phải báo cả nhóm và mở PR riêng.</div>
+  <h3>Ai sở hữu file nào</h3>
+  <div class="tbl"><table>
+    <tr><th>Chủ</th><th>File</th></tr>
+    <tr><td>T1 (bạn)</td><td><code>database/mongo/001_collections.js</code>; <code>app/models/Product.php</code>, <code>Category.php</code>; <code>ProductReview.php</code>, <code>app/services/ReviewService.php</code>, <code>CategoryAdminController.php</code>, <code>ReviewController.php</code> (mới); view sản phẩm (<code>products/detail.php</code>, <code>accessory.php</code>, <code>partials/detail/*</code>); form sản phẩm admin (<code>ProductAdminController.php</code>, <code>admin/products/partials/*</code>, <code>product-modal.js</code>); <code>database/seed/accessories.php</code>; <code>bench/t1/*</code>, <code>bench/results/t1_*</code></td></tr>
+    <tr><td>T2</td><td><code>database/mongo/002_indexes.js</code>, <code>database/postgres/002_indexes.sql</code>, tìm kiếm/lọc catalog, <code>bench/t2/*</code></td></tr>
+    <tr><td>T3</td><td><code>app/models/ActivityLog.php</code>, phần đọc của <code>Order.php</code>, dashboard, <code>bench/t3/*</code></td></tr>
+    <tr><td>T4</td><td>Phần ghi của <code>Order.php</code>, giỏ hàng, checkout, <code>database/postgres/004_coupons.sql</code>, <code>bench/t4/*</code></td></tr>
+    <tr><td>T5</td><td><code>app/services/InventoryService.php</code>, <code>database/seed/generate.php</code>, <code>docker-compose.bench.yml</code>, <code>bench/t5/*</code></td></tr>
+    <tr><td>Chung (báo cả nhóm)</td><td><code>database/postgres/001_schema.sql</code>, <code>docker-compose.yml</code>, <code>Dockerfile</code>, <code>app/core/Db.php</code>, <code>Exceptions.php</code>, <code>config/*</code>, <code>database/seed/seed.php</code>, <code>legacy_data.json</code>, <code>CommentAdminController.php</code> (của người phụ trách tin tức)</td></tr>
+  </table></div>
+  <h3>Hợp đồng giữa các topic</h3>
+  <div class="tbl"><table>
+    <tr><th>Hướng</th><th>Nội dung</th><th>Với ai</th></tr>
+    <tr><td>T1 cung cấp</td><td>Danh sách khóa của <code>formatProduct()</code> (docblock đầu <code>Product.php</code>). Thêm khóa thì được; bỏ hay đổi tên khóa phải báo.</td><td>Cả nhóm</td></tr>
+    <tr><td>T1 cung cấp</td><td>Hình dạng document theo <code>001_collections.js</code>. <code>generate.php</code> phải sinh document hợp validator.</td><td>T5</td></tr>
+    <tr><td>T1 cung cấp</td><td><code>Product::getVariant()</code>, <code>getPriceSnapshot()</code> (T1-12)</td><td>T4</td></tr>
+    <tr><td>T1 cung cấp</td><td><code>Product::getManyByIds()</code> (T1-12)</td><td>T3, T1-17</td></tr>
+    <tr><td>T1 cung cấp</td><td>Schema <code>bench.*</code> chuẩn hóa (T1-18)</td><td>T2</td></tr>
+    <tr><td>Quy ước chung</td><td><code>variantId</code> = <code>"{productID}-{CODE}"</code>, bằng <code>inventory.variant_id</code> = <code>order_items.variant_id</code>. Đã có đơn thì không đổi.</td><td>T1, T4, T5</td></tr>
+    <tr><td>T1 cần</td><td><code>InventoryService::ensureRows(string $productId, array $stockByVariant)</code>, <code>removeRowsExcept()</code> (đã có, T5 sở hữu)</td><td>T5</td></tr>
+    <tr><td>T1 cần</td><td><code>ActivityLog::record()</code> (đã có)</td><td>T3</td></tr>
+    <tr><td>T1 cần</td><td>Không đổi tên/xóa <code>uq_productID</code>, <code>uq_product_slug</code>, <code>uq_variantId</code>, <code>idx_reviews_product_approved</code></td><td>T2</td></tr>
+    <tr><td>Cần chốt</td><td><code>Product::hasOrders()</code> đang query <code>order_items</code> trực tiếp. Giữ nguyên hay chuyển thành <code>Order::hasProduct()</code>?</td><td>T3 (T1-10)</td></tr>
+  </table></div>
+</section>
+
+<section id="dod">
+  <h2>Definition of Done</h2>
+  <ul class="dod">
+    <li>Đã trả lời câu hỏi của T1-01 → T1-09 trong sổ tay nhóm.</li>
+    <li>Clone mới + <code>docker compose up -d --build</code> chạy không cần sửa tay; <code>seed.php --force</code> chạy lại được.</li>
+    <li>16/16 xe cũ, 87/87 màu, 2/2 category còn nguyên id sau mọi thay đổi của bạn.</li>
+    <li>Validator từ chối document sai (121); unique productID/slug/variantId hoạt động (E11000); admin thấy thông báo thay vì lỗi 500.</li>
+    <li>Xe nhiều phiên bản: chọn phiên bản và màu chạy; giá đúng; sửa trong admin không làm sai giá.</li>
+    <li><code>getVariant</code>, <code>getPriceSnapshot</code>, <code>getManyByIds</code> có docblock và đã báo T3, T4.</li>
+    <li>Admin thêm thuộc tính cho category và nó hiện trong form sản phẩm (cả xe và phụ kiện) mà không sửa code.</li>
+    <li>Duyệt review cập nhật <code>avgRating</code>, <code>totalReviews</code>; <code>reviews[]</code> tối đa 5; có lệnh resync.</li>
+    <li><code>check_refs.php</code> báo 0 lỗi trên seed sạch.</li>
+    <li>CSV thô, <code>t1_summary_all.csv</code>, 3 biểu đồ, file EXPLAIN đã commit trong <code>bench/results/</code>; không có con số nào trong report mà không có trong CSV.</li>
+    <li>Chương report T1 xong; demo 10 phút đã tập 2 lần.</li>
+  </ul>
+</section>
+
+<section id="thuat-ngu">
+  <h2>Thuật ngữ</h2>
+  <div class="tbl"><table>
+    <tr><th>Thuật ngữ</th><th>Nghĩa ngắn gọn</th></tr>
+    <tr><td>Document / Collection</td><td>Một bản ghi dạng JSON (BSON) trong MongoDB / tập các document, tương tự dòng / bảng.</td></tr>
+    <tr><td>Chuẩn hóa (normalization)</td><td>Tách dữ liệu ra nhiều bảng để không lặp; đọc lại phải JOIN.</td></tr>
+    <tr><td>Embed / Reference</td><td>Nhúng dữ liệu con vào document cha / chỉ lưu id rồi tra riêng.</td></tr>
+    <tr><td>Subset pattern</td><td>Nhúng một phần nhỏ hay dùng (5 review mới nhất), phần đầy đủ để chỗ khác.</td></tr>
+    <tr><td>Variant (phiên bản)</td><td>Một lựa chọn bán được của sản phẩm: xe Eco/Plus, áo "Đen / M". Mỗi variant có 1 dòng tồn kho.</td></tr>
+    <tr><td>Thuộc tính động</td><td>Thuộc tính khai báo theo category (<code>dynamicAttributes</code>, <code>variantAttributes</code>), không cố định trong code.</td></tr>
+    <tr><td>EAV</td><td>Entity–Attribute–Value: bảng 3 cột (thực thể, tên thuộc tính, giá trị) để lưu thuộc tính tùy ý trong SQL.</td></tr>
+    <tr><td>JSONB</td><td>Kiểu JSON nhị phân của PostgreSQL, truy vấn và đánh index được.</td></tr>
+    <tr><td>$jsonSchema validator</td><td>Luật kiểm tra hình dạng document khi ghi vào collection.</td></tr>
+    <tr><td>validationLevel moderate</td><td>Chỉ bắt buộc hợp lệ với document mới và document đang hợp lệ.</td></tr>
+    <tr><td>Unique / multikey index</td><td>Index cấm giá trị trùng / index trên trường nằm trong mảng.</td></tr>
+    <tr><td>Mã 121 / E11000</td><td>Lỗi MongoDB: document không qua validator / trùng khóa unique.</td></tr>
+    <tr><td>SQLSTATE</td><td>Mã lỗi chuẩn của PostgreSQL, ví dụ 23514 = vi phạm CHECK, 40001 = lỗi tuần tự hóa.</td></tr>
+    <tr><td>Tham chiếu logic</td><td>Lưu id của bản ghi ở DB khác mà không có khóa ngoại kiểm tra.</td></tr>
+    <tr><td>Snapshot</td><td>Bản sao giá trị tại một thời điểm (tên, giá lúc đặt hàng trong <code>order_items</code>).</td></tr>
+    <tr><td>Nhất quán cuối</td><td>Hai nơi lưu có thể lệch tạm thời, sau đó được đồng bộ lại.</td></tr>
+    <tr><td>Replica set</td><td>Nhóm node MongoDB sao chép cho nhau; cần cho transaction, kể cả khi chỉ có 1 node.</td></tr>
+    <tr><td>Counter</td><td>Document trong <code>counters</code> giữ số tăng dần để sinh <code>productID</code>/<code>categoryID</code> mới.</td></tr>
+    <tr><td>Adapter</td><td>Hàm chuyển dữ liệu mới về hình dạng cũ (<code>formatProduct</code>) để code cũ không phải sửa.</td></tr>
+    <tr><td>Projection</td><td>Chỉ lấy một số trường của document, giảm dữ liệu trả về.</td></tr>
+    <tr><td>$slice / $push $position</td><td>Lấy một đoạn của mảng / chèn phần tử vào vị trí cho trước trong mảng.</td></tr>
+    <tr><td>OFFSET / Keyset pagination</td><td>Phân trang bằng bỏ qua N dòng / bằng điều kiện "sau giá trị cuối trang trước".</td></tr>
+    <tr><td>EXPLAIN ANALYZE / executionStats</td><td>Kế hoạch thực thi kèm số đo thật, của PG / của MongoDB.</td></tr>
+    <tr><td>p50 / p95</td><td>Giá trị mà 50% / 95% lần đo nhanh hơn hoặc bằng.</td></tr>
+    <tr><td>Warm-up</td><td>Các lần chạy đầu bị bỏ để cache ổn định.</td></tr>
+    <tr><td>Idempotent</td><td>Chạy nhiều lần cho cùng kết quả như chạy một lần (ví dụ resync, mongo-init).</td></tr>
+    <tr><td>Upsert</td><td>Cập nhật nếu có, chèn mới nếu chưa có.</td></tr>
+  </table></div>
+</section>
+
+<footer>Nguồn: <code>docs/hybrid-db-plan.html</code> và code trên nhánh <code>develop-hybrid</code> (commit <code>579a742</code>). Task có nhãn <span class="tag ready">ĐÃ LÀM SẴN</span> đã được đối chiếu với code; nhãn chỉ để nhận biết, trạng thái vẫn do bạn tự đặt. Trạng thái task được đồng bộ cho cả nhóm khi trang mở dưới dạng Artifact; nếu không, chỉ lưu trên trình duyệt này.</footer>
+</div>
+
+<script>
+(function(){
+  var TOPIC = 't1';
+  var LABELS = {todo:'Chưa làm', doing:'Đang làm', done:'Xong'};
+  var tasks = Array.prototype.slice.call(document.querySelectorAll('.task[data-task]'));
+  var state = {}; // id -> {status, by, at}
+  var db = null, user = null, myId = null, canWrite = true, names = {};
+  var LKEY = 'vinfast-tasks-' + TOPIC;
+  try { state = JSON.parse(localStorage.getItem(LKEY) || '{}') || {}; } catch(e) { state = {}; }
+  var syncEl = document.getElementById('sync');
+  function setSync(t){ syncEl.textContent = t; }
+
+  tasks.forEach(function(t){
+    var id = t.getAttribute('data-task');
+    var slot = t.querySelector('.status-slot');
+    var sel = document.createElement('select');
+    sel.id = 'st-' + id;
+    sel.setAttribute('aria-label', 'Trạng thái ' + id);
+    ['todo','doing','done'].forEach(function(k){ var o = document.createElement('option'); o.value = k; o.textContent = LABELS[k]; sel.appendChild(o); });
+    var who = document.createElement('span'); who.className = 'who';
+    slot.appendChild(sel); slot.appendChild(who);
+    sel.addEventListener('click', function(e){ e.stopPropagation(); });
+    sel.addEventListener('change', function(){ save(id, sel.value); });
+    var head = t.querySelector('.task-head');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('role','button');
+    head.addEventListener('click', function(){ t.classList.toggle('open'); head.setAttribute('aria-expanded', t.classList.contains('open')); });
+    head.addEventListener('keydown', function(e){ if ((e.key === 'Enter' || e.key === ' ') && e.target === head) { e.preventDefault(); head.click(); } });
+    head.setAttribute('aria-expanded','false');
+  });
+
+  function render(){
+    var c = {todo:0, doing:0, done:0};
+    tasks.forEach(function(t){
+      var id = t.getAttribute('data-task');
+      var s = (state[id] && state[id].status) || 'todo';
+      c[s]++;
+      t.setAttribute('data-status', s);
+      var sel = document.getElementById('st-' + id);
+      if (sel.value !== s) sel.value = s;
+      sel.disabled = !canWrite;
+      var who = t.querySelector('.who');
+      var st = state[id];
+      if (st && st.by && st.status !== 'todo') {
+        var n = names[st.by] || '';
+        var d = st.at ? new Date(st.at) : null;
+        who.textContent = (n ? n : 'Ai đó') + (d ? ' · ' + d.toLocaleDateString('vi-VN') : '');
+      } else who.textContent = '';
+    });
+    var total = tasks.length || 1;
+    document.getElementById('m-done').style.width = (c.done/total*100) + '%';
+    document.getElementById('m-doing').style.width = (c.doing/total*100) + '%';
+    document.getElementById('counts').innerHTML = '<b>' + c.done + '</b>/' + tasks.length + ' xong · ' + c.doing + ' đang làm';
+    applyFilter();
+  }
+
+  var filter = 'all';
+  document.querySelectorAll('.filters button').forEach(function(b){
+    b.addEventListener('click', function(){
+      filter = b.getAttribute('data-filter');
+      document.querySelectorAll('.filters button').forEach(function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      applyFilter();
+    });
+  });
+  function applyFilter(){
+    tasks.forEach(function(t){ t.hidden = !(filter === 'all' || t.getAttribute('data-status') === filter); });
+  }
+
+  function persistLocal(){ try { localStorage.setItem(LKEY, JSON.stringify(state)); } catch(e) {} }
+
+  var writing = {};
+  function save(id, status){
+    state[id] = {status: status, by: myId || null, at: new Date().toISOString()};
+    render();
+    if (!db) { persistLocal(); return; }
+    if (writing[id]) { writing[id].next = status; return; }
+    writing[id] = {};
+    (function go(s){
+      db.collection('tasks').doc(id).set({status: s, by: myId || null, at: new Date().toISOString(), topic: TOPIC})
+        .catch(function(e){
+          if (e && e.code === 'invalid_argument') { canWrite = false; setSync('Chỉ xem: bạn chưa có quyền cập nhật'); render(); }
+          else setSync('Chưa lưu được, thử lại sau');
+        })
+        .then(function(){
+          var n = writing[id] && writing[id].next;
+          if (n && n !== s) { writing[id].next = null; go(n); } else delete writing[id];
+        });
+    })(status);
+  }
+
+  function resolveNames(){
+    if (!user || !user.profiles) return;
+    var ids = [];
+    Object.keys(state).forEach(function(k){ var b = state[k] && state[k].by; if (b && ids.indexOf(b) < 0) ids.push(b); });
+    if (!ids.length) return;
+    user.profiles(ids).then(function(ps){ ids.forEach(function(i){ names[i] = (ps && ps[i] && ps[i].name) || ''; }); render(); }).catch(function(){});
+  }
+
+  render();
+  if (!window.claude || !window.claude.use) { setSync('Lưu trên trình duyệt này'); return; }
+  Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function(r){
+    db = r[0]; user = r[1];
+    if (!db) { setSync('Lưu trên trình duyệt này'); return; }
+    var p = (user && user.id) ? user.id() : Promise.resolve(null);
+    p.then(function(id){ myId = id; }).catch(function(){});
+    if (user && user.can) { Promise.resolve(user.can('data.write')).then(function(v){ if (v === false) { canWrite = false; setSync('Chỉ xem'); render(); } }).catch(function(){}); }
+    var timer = setTimeout(function(){ setSync('Chưa kết nối được dữ liệu chung'); }, 10000);
+    db.collection('tasks').where('topic','==',TOPIC).onSnapshot(function(snap){
+      var next = {};
+      snap.docs.forEach(function(d){ var v = d.data(); if (v) next[d.id] = {status: v.status, by: v.by, at: v.at}; });
+      state = next;
+      if (!snap.metadata.fromCache) { clearTimeout(timer); if (canWrite) setSync('Đồng bộ với cả nhóm'); }
+      render(); resolveNames();
+    }, function(){ clearTimeout(timer); setSync('Mất kết nối dữ liệu chung'); });
+  }).catch(function(){ setSync('Lưu trên trình duyệt này'); });
+})();
+</script>
