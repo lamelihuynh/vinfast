@@ -108,6 +108,7 @@ $scripts .= '<script src="' . BASE_URL . 'public/js/frontend/homepage_effects.js
                     <div class="max-h-[calc(100vh-200px)] overflow-y-auto p-4" id="checkoutFormContainer">
                         <form id="<?= $checkoutFormId ?>" method="post" action="<?= BASE_URL ?>order/checkout/<?= $productId ?>">
                             <input type="hidden" name="_csrf" value="<?= Auth::csrfToken() ?>">
+                            <input type="hidden" name="checkout_token" value="<?= htmlspecialchars($checkoutToken) ?>">
                             <input type="hidden" name="step" value="<?= (int)$currentStep ?>" data-step-input>
 
                             <?php include ROOT . '/app/views/frontend/order/partials/checkout/step1.php'; ?>

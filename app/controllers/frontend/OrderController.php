@@ -109,6 +109,9 @@ class OrderController
 
         $checkoutOld = is_array($_SESSION['checkout_old'] ?? null) ? $_SESSION['checkout_old'] : [];
 
+        if (($checkoutOld['product_id'] ?? null) !== $id) {
+            $checkoutOld = [];
+        }
         $formData = [
             'owner_type' => (string)($checkoutOld['owner_type'] ?? 'ca-nhan'),
             'full_name' => (string)($checkoutOld['full_name'] ?? $defaultName),
@@ -122,12 +125,30 @@ class OrderController
             'pay_method' => (string)($checkoutOld['pay_method'] ?? 'card-intl'),
             'agree_terms' => (string)($checkoutOld['agree_terms'] ?? ''),
             'variant_name' => (string)($checkoutOld['variant_name'] ?? ''),
+            'variant_id' => (string)($checkoutOld['variant_id'] ?? ''),
             'interior_code' => (string)($checkoutOld['interior_code'] ?? ''),
             'step' => (int)($checkoutOld['step'] ?? 1),
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Auth::verifyCsrf();
+
+            if (isset($_GET['save_checkout_step2'])) {
+                $draft = json_decode((string)file_get_contents('php://input'), true);
+                if (!is_array($draft)) {
+                    http_response_code(400);
+                    return;
+                }
+                $fields = ['owner_type', 'full_name', 'phone', 'email', 'cccd', 'province',
+                    'showroom', 'salesperson', 'pay_method', 'agree_terms', 'variant_name', 'variant_id', 'interior_code', 'checkout_token'];
+                $old = [];
+                foreach ($fields as $field) {
+                    $old[$field] = $this->cleanText($draft[$field] ?? '');
+                }
+                $_SESSION['checkout_old'] = $old + ['step' => 3, 'product_id' => $id];
+                http_response_code(204);
+                return;
+            }
 
             $switchProductId = (int)($_POST['switch_product_id'] ?? 0);
             if ($switchProductId > 0 && $switchProductId !== $id) {
@@ -144,6 +165,8 @@ class OrderController
             }
 
             $formData = [
+                'product_id' => $id,
+                'checkout_token' => $this->cleanText($_POST['checkout_token'] ?? ''),
                 'full_name' => $this->cleanText($_POST['full_name'] ?? ''),
                 'phone' => $this->cleanText($_POST['phone'] ?? ''),
                 'cccd' => $this->cleanText($_POST['cccd'] ?? ''),
@@ -155,6 +178,7 @@ class OrderController
                 'pay_method' => $this->cleanText($_POST['pay_method'] ?? 'card-intl'),
                 'agree_terms' => $this->cleanText($_POST['agree_terms'] ?? ''),
                 'variant_name' => $this->cleanText($_POST['variant_name'] ?? ''),
+                'variant_id' => $this->cleanText($_POST['variant_id'] ?? ''),
                 'interior_code' => strtoupper($this->cleanText($_POST['interior_code'] ?? '')),
                 'step' => (int)($_POST['step'] ?? 3),
             ];
@@ -162,8 +186,8 @@ class OrderController
             if (!Auth::check()) {
                 $_SESSION['flash'] = 'Vui lòng đăng nhập để hoàn tất đặt cọc.';
                 $_SESSION['checkout_old'] = $formData;
-                header('Location: ' . BASE_URL . 'auth/login');
-                exit;
+                $_SESSION['return_to'] = 'order/checkout/' . $id;
+                Auth::requireLogin();
             }
 
             $v = (new Validator($_POST))
@@ -239,18 +263,37 @@ class OrderController
                 'payment_verified_at' => null,
             ];
 
-            $noteJson = json_encode($notePayload, JSON_UNESCAPED_UNICODE);
-            if ($noteJson === false) {
-                $noteJson = null;
-            }
-
-            $created = Order::create((int)Auth::id(), $id, 'deposit', $noteJson);
-            if (!$created) {
-                $_SESSION['errors'] = ['system' => 'Không thể tạo đơn đặt cọc lúc này, vui lòng thử lại sau.'];
+            try {
+                $variantId = $formData['variant_id'];
+                if ($variantId === '') {
+                    $variantId = (string)$product['default_variant_id'];
+                }
+                $created = OrderService::placeDeposit((int)Auth::id(), $product, $variantId, $notePayload,
+                    $formData['checkout_token']);
+            } catch (OutOfStockException | InvalidArgumentException | ConcurrentUpdateException $e) {
+                $msg = match (true) {
+                    $e instanceof OutOfStockException => 'Phiên bản xe không đủ tồn kho.',
+                    $e instanceof ConcurrentUpdateException => 'Đang có nhiều người đặt xe. Vui lòng thử lại.',
+                    default => $e->getMessage(),
+                };
+                $_SESSION['errors'] = ['system' => $msg];
                 $_SESSION['checkout_old'] = $formData;
-                header('Location: ' . $buildCheckoutUrl($id, $selectedColorCode));
+                header('Location: ' . $buildCheckoutUrl($id, $selectedColorCode), true, 303);
+                exit;
+            } catch (Throwable $e) {
+                error_log('Deposit checkout failed: ' . get_class($e));
+                $_SESSION['errors'] = ['system' => 'Chưa xác nhận được đơn đặt cọc. Vui lòng thử lại.'];
+                $_SESSION['checkout_old'] = $formData;
+                header('Location: ' . $buildCheckoutUrl($id, $selectedColorCode), true, 303);
                 exit;
             }
+
+            // Read the persisted snapshot, including when this POST replays an earlier order.
+            $saved = Order::getByIdForUser($created, (int)Auth::id());
+            $savedNote = json_decode((string)($saved['note'] ?? ''), true) ?? [];
+            $formData = array_replace($formData, $savedNote);
+            $selectedColor = $savedNote['color'] ?? $selectedColor;
+            unset($_SESSION['checkout_old']);
 
             $_SESSION['checkout_confirmation'] = [
                 'orderDbId' => (int)$created,
@@ -267,8 +310,8 @@ class OrderController
                 'province' => (string)$formData['province'],
                 'showroom' => (string)$formData['showroom'],
                 'payMethod' => (string)$formData['pay_method'],
-                'depositAmount' => $depositAmount,
-                'depositBaseAmount' => $depositAmount,
+                'depositAmount' => (int)($saved['total_amount'] ?? $depositAmount),
+                'depositBaseAmount' => (int)($saved['subtotal_amount'] ?? $depositAmount),
                 'depositNonRefundable' => $depositNonRefundable,
                 'paymentStatus' => 'pending_verify',
                 'orderDate' => date('d/m/Y H:i'),
@@ -295,7 +338,85 @@ class OrderController
             'showrooms' => $showrooms,
             'formData' => $formData,
             'switchProducts' => $switchProducts,
+            'checkoutToken' => preg_match('/\A[0-9a-f]{32}\z/', (string)($checkoutOld['checkout_token'] ?? ''))
+                ? $checkoutOld['checkout_token'] : bin2hex(random_bytes(16)),
         ]);
+    }
+
+    public function cartcheckout(): void
+    {
+        if (!Auth::check()) {
+            $_SESSION['return_to'] = 'order/cartcheckout';
+            Auth::requireLogin();
+        }
+        $userId = (int)Auth::id();
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $form = ['full_name' => Auth::name(), 'phone' => '', 'address' => '', 'coupon_code' => ''];
+        $discount = 0;
+        $preview = false;
+        $key = bin2hex(random_bytes(16));
+
+        if ($method === 'POST') {
+            Auth::verifyCsrf();
+            foreach (array_keys($form) as $field) {
+                $form[$field] = $this->cleanText($_POST[$field] ?? '');
+            }
+            $submittedKey = $this->cleanText($_POST['checkout_token'] ?? '');
+            if (preg_match('/\A[0-9a-f]{32}\z/', $submittedKey)) {
+                $key = $submittedKey;
+            }
+
+            try {
+                if (($_POST['intent'] ?? '') === 'preview') {
+                    $cart = CartService::summary($userId);
+                    if (!$cart['ready']) {
+                        throw new InvalidArgumentException('Giỏ hàng chưa sẵn sàng để thanh toán.');
+                    }
+                    $subtotal = $cart['subtotal'];
+                    if ($subtotal > 999999999999999) {
+                        throw new InvalidArgumentException('Giá trị đơn hàng vượt giới hạn.');
+                    }
+                    [, $discount] = CouponService::quote(Db::pg(), $form['coupon_code'], $userId, $subtotal);
+                    $preview = $form['coupon_code'] !== '';
+                } else {
+                    if ($form['full_name'] === '' || strlen($form['full_name']) > 300
+                        || !preg_match('/\A[0-9+\s.\-]{9,15}\z/', $form['phone'])
+                        || $form['address'] === '' || strlen($form['address']) > 600
+                        || ($_POST['agree_terms'] ?? '') !== '1') {
+                        throw new InvalidArgumentException('Vui lòng nhập họ tên, số điện thoại, địa chỉ và đồng ý điều khoản.');
+                    }
+                    $note = array_diff_key($form, ['coupon_code' => true]);
+                    $id = OrderService::placeFromCart($userId, $submittedKey, $this->cleanText($_POST['quote_version'] ?? ''),
+                        $form['coupon_code'], $note + ['pay_method' => 'transfer']);
+                    $_SESSION['flash'] = 'Đã tạo đơn phụ kiện. Đơn đang chờ thanh toán.';
+                    header('Location: ' . BASE_URL . 'order/detail/' . $id, true, 303);
+                    exit;
+                }
+            } catch (InvalidArgumentException | CouponException $e) {
+                $_SESSION['errors'] = [$e->getMessage()];
+            } catch (OutOfStockException $e) {
+                $_SESSION['errors'] = ['Không đủ tồn kho cho đơn này. Giỏ hàng của bạn được giữ nguyên.'];
+            } catch (ConcurrentUpdateException $e) {
+                $_SESSION['errors'] = ['Có nhiều đơn đang được xử lý. Vui lòng thử lại.'];
+            } catch (Throwable $e) {
+                error_log('Cart checkout failed: ' . get_class($e));
+                $_SESSION['errors'] = ['Chưa xác nhận được đơn hàng. Vui lòng thử lại.'];
+            }
+        } elseif ($method !== 'GET') {
+            header('Allow: GET, POST');
+            http_response_code(405);
+            return;
+        }
+
+        $cart = $cart ?? CartService::summary($userId);
+        if (!$cart['ready']) {
+            $_SESSION['errors'] ??= ['Giỏ hàng trống hoặc có phụ kiện không còn bán.'];
+            header('Location: ' . BASE_URL . 'cart', true, 303);
+            exit;
+        }
+        $form['agreed'] = ($_POST['agree_terms'] ?? '') === '1';
+        SEO::set('Đặt mua phụ kiện');
+        View::render('frontend/order/cart-checkout', compact('cart', 'form', 'key', 'discount', 'preview'));
     }
 
     public function confirmation(): void
@@ -315,7 +436,7 @@ class OrderController
 
     private function cleanText(mixed $value): string
     {
-        return trim(strip_tags((string)$value));
+        return is_scalar($value) ? trim(strip_tags((string)$value)) : '';
     }
 
     public function index(): void
@@ -362,7 +483,13 @@ class OrderController
         }
 
         $items = $order['items'];
-        $products = Product::findManyByIds(array_column($items, 'product_id'));
+        try {
+            $products = Product::findManyByIds(array_column($items, 'product_id'));
+        } catch (Throwable $e) {
+            // PostgreSQL snapshots still render when catalog enrichment is unavailable.
+            $products = [];
+            error_log('Order detail: MongoDB catalog unavailable');
+        }
 
         SEO::set('Đơn hàng #' . (int)$order['id']);
         View::render('frontend/order/detail', [

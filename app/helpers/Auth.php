@@ -123,7 +123,8 @@ class Auth
             $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
         }
 
-        if (!hash_equals($_SESSION['csrf'] ?? '', $token ?? '')) {
+        $expected = $_SESSION['csrf'] ?? null;
+        if (!is_string($expected) || $expected === '' || !is_string($token) || !hash_equals($expected, $token)) {
             http_response_code(403);
             die('Invalid CSRF token.');
         }

@@ -36,7 +36,7 @@
     if (file_exists($ctrlFile)) {
         require_once $ctrlFile;
         $ctrl = new $ctrlName();
-        if (method_exists($ctrl, $method)) {
+        if ($method !== '' && $method[0] !== '_' && is_callable([$ctrl, $method])) {
             call_user_func_array([$ctrl, $method], $params);
         } else {
             http_response_code(404);

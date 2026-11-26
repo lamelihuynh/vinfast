@@ -71,11 +71,20 @@ class UserController
                 $avatar = "public/images/avatars/{$userId}/{$fileName}";
             }
         }
-        $this->user->update(Auth::id(), [
-            'name'   => strip_tags($_POST['name']),
-            'email'  => $_POST['email'],
-            'avatar' => $avatar,
-        ]);
+        try {
+            $this->user->update(Auth::id(), [
+                'name'   => strip_tags($_POST['name']),
+                'email'  => $_POST['email'],
+                'avatar' => $avatar,
+            ]);
+        } catch (PDOException $e) {
+            if (($e->errorInfo[0] ?? $e->getCode()) !== '23505') {
+                throw $e;
+            }
+            $_SESSION['errors'] = ['Email đã tồn tại.'];
+            header('Location: ' . BASE_URL . 'user/profile', true, 303);
+            exit;
+        }
 
         $updatedUser = $this->user->findById(Auth::id());
         if (is_array($updatedUser)) {

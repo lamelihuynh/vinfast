@@ -21,6 +21,7 @@ if ($userName !== '') {
 }
 
 $isLoggedIn = Auth::check();
+$cartCount = $isLoggedIn ? Cart::countForUser(Db::pg(), (int)Auth::id()) : 0;
 
 
 $navCategories = Category::getAll();
