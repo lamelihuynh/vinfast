@@ -1,0 +1,138 @@
+=== T1 Experiment A EXPLAIN (dataset=10k, productID=231) ===
+
+--- 1. MongoDB findOne({productID: "231"}) executionStats ---
+{
+    "executionSuccess": true,
+    "nReturned": 1,
+    "executionTimeMillis": 1,
+    "totalKeysExamined": 1,
+    "totalDocsExamined": 1,
+    "executionStages": {
+        "stage": "LIMIT",
+        "nReturned": 1,
+        "executionTimeMillisEstimate": 0,
+        "works": 2,
+        "advanced": 1,
+        "needTime": 0,
+        "needYield": 0,
+        "saveState": 0,
+        "restoreState": 0,
+        "isEOF": 1,
+        "limitAmount": 1,
+        "inputStage": {
+            "stage": "FETCH",
+            "nReturned": 1,
+            "executionTimeMillisEstimate": 0,
+            "works": 1,
+            "advanced": 1,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 0,
+            "restoreState": 0,
+            "isEOF": 0,
+            "docsExamined": 1,
+            "alreadyHasObj": 0,
+            "inputStage": {
+                "stage": "IXSCAN",
+                "nReturned": 1,
+                "executionTimeMillisEstimate": 0,
+                "works": 1,
+                "advanced": 1,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 0,
+                "keyPattern": {
+                    "productID": 1
+                },
+                "indexName": "uq_productID",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                    "productID": []
+                },
+                "isUnique": true,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                    "productID": [
+                        "[\"231\", \"231\"]"
+                    ]
+                },
+                "keysExamined": 1,
+                "seeks": 1,
+                "dupsTested": 0,
+                "dupsDropped": 0
+            }
+        }
+    }
+}
+
+--- 2. PostgreSQL sql_join4 EXPLAIN (ANALYZE, BUFFERS) ---
+Incremental Sort  (cost=35.11..69.22 rows=8 width=537) (actual time=0.291..0.293 rows=28 loops=1)
+  Sort Key: v.sort_order, c.sort_order, c.code, a.attr_key
+  Presorted Key: v.sort_order
+  Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 44kB  Peak Memory: 44kB
+  Buffers: shared hit=11 read=4
+  ->  Nested Loop Left Join  (cost=1.15..69.00 rows=8 width=537) (actual time=0.223..0.241 rows=28 loops=1)
+        Buffers: shared hit=11 read=4
+        ->  Nested Loop Left Join  (cost=0.86..52.34 rows=2 width=506) (actual time=0.176..0.184 rows=4 loops=1)
+              Buffers: shared hit=9 read=3
+              ->  Nested Loop  (cost=0.57..19.42 rows=2 width=432) (actual time=0.131..0.133 rows=2 loops=1)
+                    Buffers: shared hit=4 read=2
+                    ->  Index Scan using idx_bench_variants_product on product_variants v  (cost=0.29..11.09 rows=2 width=76) (actual time=0.070..0.070 rows=2 loops=1)
+                          Index Cond: ((product_id)::text = '231'::text)
+                          Buffers: shared hit=2 read=1
+                    ->  Materialize  (cost=0.29..8.31 rows=1 width=360) (actual time=0.029..0.030 rows=1 loops=2)
+                          Buffers: shared hit=2 read=1
+                          ->  Index Scan using products_sql_pkey on products_sql p  (cost=0.29..8.30 rows=1 width=360) (actual time=0.056..0.056 rows=1 loops=1)
+                                Index Cond: ((product_id)::text = '231'::text)
+                                Buffers: shared hit=2 read=1
+              ->  Index Scan using variant_colors_pkey on variant_colors c  (cost=0.29..16.42 rows=4 width=85) (actual time=0.023..0.023 rows=2 loops=2)
+                    Index Cond: ((variant_id)::text = (v.variant_id)::text)
+                    Buffers: shared hit=5 read=1
+        ->  Materialize  (cost=0.29..16.57 rows=4 width=35) (actual time=0.011..0.013 rows=7 loops=4)
+              Buffers: shared hit=2 read=1
+              ->  Index Scan using product_attributes_pkey on product_attributes a  (cost=0.29..16.55 rows=4 width=35) (actual time=0.044..0.046 rows=7 loops=1)
+                    Index Cond: ((product_id)::text = '231'::text)
+                    Buffers: shared hit=2 read=1
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.478 ms
+Execution Time: 0.371 ms
+
+--- 3. PostgreSQL sql_json_agg EXPLAIN (ANALYZE, BUFFERS) ---
+Index Scan using products_sql_pkey on products_sql p  (cost=0.29..69.09 rows=1 width=424) (actual time=0.130..0.131 rows=1 loops=1)
+  Index Cond: ((product_id)::text = '231'::text)
+  Buffers: shared hit=15
+  SubPlan 2
+    ->  Aggregate  (cost=44.20..44.21 rows=1 width=32) (actual time=0.086..0.087 rows=1 loops=1)
+          Buffers: shared hit=9
+          ->  Incremental Sort  (cost=5.70..11.18 rows=2 width=72) (actual time=0.012..0.012 rows=2 loops=1)
+                Sort Key: v.sort_order, v.variant_id
+                Presorted Key: v.sort_order
+                Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                Buffers: shared hit=3
+                ->  Index Scan using idx_bench_variants_product on product_variants v  (cost=0.29..11.09 rows=2 width=72) (actual time=0.006..0.006 rows=2 loops=1)
+                      Index Cond: ((product_id)::text = (p.product_id)::text)
+                      Buffers: shared hit=3
+          SubPlan 1
+            ->  Aggregate  (cost=16.49..16.50 rows=1 width=32) (actual time=0.024..0.024 rows=1 loops=2)
+                  Buffers: shared hit=6
+                  ->  Sort  (cost=16.46..16.47 rows=4 width=74) (actual time=0.006..0.007 rows=2 loops=2)
+                        Sort Key: c.sort_order, c.code
+                        Sort Method: quicksort  Memory: 25kB
+                        Buffers: shared hit=6
+                        ->  Index Scan using variant_colors_pkey on variant_colors c  (cost=0.29..16.42 rows=4 width=74) (actual time=0.004..0.004 rows=2 loops=2)
+                              Index Cond: ((variant_id)::text = (v.variant_id)::text)
+                              Buffers: shared hit=6
+  SubPlan 3
+    ->  Aggregate  (cost=16.57..16.58 rows=1 width=32) (actual time=0.029..0.029 rows=1 loops=1)
+          Buffers: shared hit=3
+          ->  Index Scan using product_attributes_pkey on product_attributes a  (cost=0.29..16.55 rows=4 width=31) (actual time=0.005..0.006 rows=7 loops=1)
+                Index Cond: ((product_id)::text = (p.product_id)::text)
+                Buffers: shared hit=3
+Planning Time: 0.164 ms
+Execution Time: 0.163 ms

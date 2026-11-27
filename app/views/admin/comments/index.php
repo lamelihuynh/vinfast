@@ -17,12 +17,36 @@
  *  - Include pagination partial where needed: include ROOT."/app/views/frontend/partials/pagination.php"
  */
 ?>
+<?php
+$activeTab = isset($tab) && $tab === 'reviews' ? 'reviews' : 'news';
+$newsCounts = isset($newsCounts) && is_array($newsCounts) ? $newsCounts : ($counts ?? ['total' => 0, 'pending' => 0, 'approved' => 0]);
+$reviewCounts = isset($reviewCounts) && is_array($reviewCounts) ? $reviewCounts : ['total' => 0, 'pending' => 0, 'approved' => 0];
+?>
 <style>
     .custom-cb { width: 18px; height: 18px; cursor: pointer; }
 </style>
 
 <div class="row">
     <div class="col-lg-12 ">
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link <?= $activeTab === 'news' ? 'active fw-bold' : '' ?>" href="<?= ADMIN_URL ?>comments?tab=news">
+                    <i class="fa-regular fa-newspaper me-1"></i>Bình luận tin tức
+                    <?php if ((int)($newsCounts['pending'] ?? 0) > 0): ?>
+                        <span class="badge bg-warning text-dark ms-1"><?= (int)$newsCounts['pending'] ?></span>
+                    <?php endif; ?>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $activeTab === 'reviews' ? 'active fw-bold' : '' ?>" href="<?= ADMIN_URL ?>comments?tab=reviews">
+                    <i class="fa-solid fa-star me-1 text-warning"></i>Đánh giá sản phẩm
+                    <?php if ((int)($reviewCounts['pending'] ?? 0) > 0): ?>
+                        <span class="badge bg-warning text-dark ms-1"><?= (int)$reviewCounts['pending'] ?></span>
+                    <?php endif; ?>
+                </a>
+            </li>
+        </ul>
+
         <div id="alertContainer" class="mb-4">
             <?php if (!empty($_SESSION['flash'])): ?>
                 <div class="alert alert-success fade show shadow-sm srt-alert" role="alert">
@@ -67,7 +91,9 @@
 
         <div class="card shadow-sm" style="border-radius: 8px; border: none;">
             <div class="card-body">
-                
+                <?php if ($activeTab === 'reviews'): ?>
+                    <?php include ROOT . '/app/views/admin/comments/partials/reviews-table.php'; ?>
+                <?php else: ?>
                 <div class="d-flex justify-content-between align-items-center mb-4 border-b pb-3">
                     <h4 class="header-title mb-0">Danh sách đánh giá</h4>
                     <div class="d-flex gap-2">
@@ -216,12 +242,14 @@
                     <div class="small text-muted" id="paginationInfo"></div>
                     <ul class="pagination pagination-sm mb-0" id="paginationButtons"></ul>
                 </div>
+                <?php endif; ?>
 
             </div>
         </div>
     </div>
 </div>
 
+<?php if ($activeTab === 'news'): ?>
 <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content" style="border-radius: 8px; border: none;">
@@ -462,3 +490,4 @@ function closeModal() {
     }
 }
 </script>
+<?php endif; ?>

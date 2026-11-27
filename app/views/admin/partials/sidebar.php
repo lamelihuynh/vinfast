@@ -16,7 +16,7 @@ $isActive = static function (string $needle) use ($requestPath): bool {
 
 $isDashboardGroup = $isActive('/admin/dashboard');
 $isUserGroup = $isActive('/admin/users');
-$isProductGroup = $isActive('/admin/products') || $isActive('/admin/orders');
+$isProductGroup = $isActive('/admin/products') || $isActive('/admin/categories') || $isActive('/admin/category') || $isActive('/admin/orders');
 $isContentGroup = $isActive('/admin/settings') || $isActive('/admin/faq') || $isActive('/admin/faq-topic') || $isActive('/admin/page-content');
 $isContactGroup = $isActive('/admin/contacts');
 $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
@@ -62,6 +62,7 @@ $isNewsGroup = $isActive('/admin/news') || $isActive('/admin/comments');
             </a>
             <ul class="collapse <?= $isProductGroup ? 'show' : '' ?>">
               <li class="<?= $isActive('/admin/products') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>products">Sản phẩm</a></li>
+              <li class="<?= ($isActive('/admin/categories') || $isActive('/admin/category')) ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>categories">Danh mục</a></li>
               <li class="<?= $isActive('/admin/orders') ? 'active' : '' ?>"><a href="<?= ADMIN_URL ?>orders">Đơn hàng</a></li>
             </ul>
           </li>

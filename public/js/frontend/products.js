@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   // Products listing interactions
   var STORAGE_KEY = 'vf-products-filter-sections-v1';
   var sidebar = document.getElementById('productsSidebar');
@@ -215,6 +215,102 @@
       });
   });
 
+  // Star picker & "Xem thêm đánh giá" (dùng chung cho cả trang chi tiết xe và phụ kiện, T1-16)
+  document.querySelectorAll('.vf-review-form').forEach(function (form) {
+    var ratingInput = form.querySelector('.js-review-rating-input');
+    var ratingLabel = form.querySelector('.js-review-rating-label');
+    var starBtns = form.querySelectorAll('.js-review-star');
+    if (!ratingInput || !starBtns.length) return;
+
+    starBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var val = Math.max(1, Math.min(5, parseInt(btn.getAttribute('data-star') || '5', 10) || 5));
+        ratingInput.value = String(val);
+        if (ratingLabel) ratingLabel.textContent = val + '/5 sao';
+        starBtns.forEach(function (b) {
+          var s = parseInt(b.getAttribute('data-star') || '0', 10) || 0;
+          var active = s <= val;
+          b.classList.toggle('text-amber-400', active);
+          b.classList.toggle('text-slate-300', !active);
+          var icon = b.querySelector('i');
+          if (icon) {
+            icon.classList.toggle('fa-solid', active);
+            icon.classList.toggle('fa-regular', !active);
+          }
+        });
+      });
+    });
+  });
+
+  var loadMoreReviewsBtn = document.getElementById('vfLoadMoreReviewsBtn');
+  var reviewListEl = document.getElementById('vfReviewList');
+  if (loadMoreReviewsBtn && reviewListEl) {
+    loadMoreReviewsBtn.addEventListener('click', function () {
+      if (loadMoreReviewsBtn.disabled) return;
+      var baseUrl = loadMoreReviewsBtn.getAttribute('data-url') || '';
+      if (!baseUrl) return;
+
+      var nextPage = parseInt(loadMoreReviewsBtn.getAttribute('data-next-page') || '2', 10) || 2;
+      var total = parseInt(loadMoreReviewsBtn.getAttribute('data-total') || '0', 10) || 0;
+      var params = new URLSearchParams();
+      params.set('page', String(nextPage));
+
+      // Gửi id bài cuối đang hiển thị làm keyset cursor; server tự đọc lại mốc created_at chính xác từ PostgreSQL
+      var items = reviewListEl.querySelectorAll('.vf-review-item');
+      var lastItem = items.length ? items[items.length - 1] : null;
+      var lastId = lastItem ? (lastItem.getAttribute('data-review-id') || '') : '';
+      if (/^[1-9][0-9]*$/.test(lastId)) {
+        params.set('before_id', lastId);
+      }
+
+      loadMoreReviewsBtn.disabled = true;
+      fetch(baseUrl + '?' + params.toString(), {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'text/html' }
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.text();
+        })
+        .then(function (html) {
+          var trimmed = (html || '').trim();
+          if (!trimmed) {
+            loadMoreReviewsBtn.remove();
+            return;
+          }
+          var temp = document.createElement('div');
+          temp.innerHTML = trimmed;
+          var newArticles = temp.querySelectorAll('.vf-review-item');
+          if (!newArticles.length) {
+            loadMoreReviewsBtn.remove();
+            return;
+          }
+          newArticles.forEach(function (el) {
+            reviewListEl.appendChild(el);
+          });
+
+          var shownNow = reviewListEl.querySelectorAll('.vf-review-item').length;
+          loadMoreReviewsBtn.setAttribute('data-shown', String(shownNow));
+          loadMoreReviewsBtn.setAttribute('data-next-page', String(nextPage + 1));
+
+          var remaining = Math.max(0, total - shownNow);
+          if (remaining <= 0 || newArticles.length < 5) {
+            loadMoreReviewsBtn.remove();
+          } else {
+            var labelSpan = loadMoreReviewsBtn.querySelector('span');
+            if (labelSpan) {
+              labelSpan.textContent = 'Xem thêm đánh giá (còn ' + String(remaining).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ')';
+            }
+            loadMoreReviewsBtn.disabled = false;
+          }
+        })
+        .catch(function () {
+          loadMoreReviewsBtn.disabled = false;
+        });
+    });
+  }
+
   // Product detail interactions
   var root = document.getElementById('vfProductDetail');
   if (!root) return;
@@ -223,7 +319,42 @@
   var thumbsWrap = document.getElementById('vfPdThumbs');
   var tabButtons = root.querySelectorAll('.vf-pd-tab-btn');
   var panes = root.querySelectorAll('.vf-pd-pane');
-  var colorButtons = root.querySelectorAll('.vf-pd-color-btn');
+  var variantButtons = root.querySelectorAll('.vf-pd-variant-btn');
+  var colorGroups = root.querySelectorAll('.vf-pd-color-group');
+  var priceValueEl = document.getElementById('vfPdPriceValue');
+  var mobilePriceValueEl = document.getElementById('vfPdMobilePriceValue');
+  var selectedVariantLabelEl = document.getElementById('vfPdSelectedVariantLabel');
+  var selectedColorLabelEl = document.getElementById('vfPdSelectedColorLabel');
+  var variantInput = document.getElementById('vfPdVariantInput');
+  var colorInput = document.getElementById('vfPdColorInput');
+  var colorQueryInput = document.getElementById('vfPdColorQueryInput');
+  var depositForm = document.getElementById('vfPdDepositForm');
+
+  var variantsData = [];
+  var variantsDataEl = document.getElementById('vfPdVariantsData');
+  if (variantsDataEl && variantsDataEl.textContent) {
+    try {
+      variantsData = JSON.parse(variantsDataEl.textContent) || [];
+    } catch (e) {
+      variantsData = [];
+    }
+  }
+
+  function formatVnd(amount) {
+    var num = Math.max(0, Math.round(Number(amount) || 0));
+    return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function findVariantData(variantId) {
+    for (var i = 0; i < variantsData.length; i++) {
+      if (String(variantsData[i].variantId || '') === String(variantId || '')) {
+        return variantsData[i];
+      }
+    }
+    return variantsData[0] || null;
+  }
+
+  var currentVariantId = variantInput ? variantInput.value : (variantsData[0] ? String(variantsData[0].variantId) : '');
 
   function setActiveThumb(targetBtn) {
     if (!thumbsWrap || !mainImage || !targetBtn) return;
@@ -255,19 +386,94 @@
     });
   }
 
-  function setActiveColor(btn) {
-    if (!btn) return;
+  function activeColorGroup() {
+    for (var i = 0; i < colorGroups.length; i++) {
+      if (colorGroups[i].getAttribute('data-variant-colors') === currentVariantId) {
+        return colorGroups[i];
+      }
+    }
+    return colorGroups[0] || null;
+  }
 
-    colorButtons.forEach(function (item) {
-      item.classList.remove('is-active');
+  function syncPriceAndLinks(activeColorBtn) {
+    var vData = findVariantData(currentVariantId);
+    var basePrice = vData ? (Number(vData.price) || 0) : 0;
+    if (!vData && variantButtons.length > 0) {
+      variantButtons.forEach(function (vb) {
+        if (vb.getAttribute('data-variant-id') === currentVariantId) {
+          basePrice = Number(vb.getAttribute('data-price')) || 0;
+        }
+      });
+    }
+
+    var colorCode = activeColorBtn ? (activeColorBtn.getAttribute('data-color-code') || '') : '';
+    var colorName = activeColorBtn ? (activeColorBtn.getAttribute('data-color-name') || '') : '';
+    var surcharge = activeColorBtn ? Math.max(0, parseInt(activeColorBtn.getAttribute('data-color-surcharge') || '0', 10) || 0) : 0;
+
+    if (vData || activeColorBtn) {
+      var formattedTotal = formatVnd(basePrice + surcharge);
+      if (priceValueEl) priceValueEl.textContent = formattedTotal;
+      if (mobilePriceValueEl) mobilePriceValueEl.textContent = formattedTotal;
+    }
+
+    if (selectedVariantLabelEl && vData) {
+      selectedVariantLabelEl.textContent = vData.name || '';
+    }
+
+    if (selectedColorLabelEl) {
+      if (colorName) {
+        selectedColorLabelEl.textContent = colorName + (surcharge > 0 ? (' (+' + formatVnd(surcharge) + ' đ)') : '');
+      } else {
+        var grp = activeColorGroup();
+        var hasBtns = grp && grp.querySelectorAll('.vf-pd-color-btn').length > 0;
+        selectedColorLabelEl.textContent = hasBtns ? 'Chọn một màu để xem ảnh tương ứng' : 'Chưa cấu hình màu cho phiên bản này';
+      }
+    }
+
+    if (variantInput) variantInput.value = currentVariantId;
+    if (colorInput) colorInput.value = colorCode;
+    if (colorQueryInput) colorQueryInput.value = colorCode;
+
+    // Đồng bộ link đặt cọc ở tab mô tả và thanh mobile CTA
+    var isAuth = depositForm ? depositForm.getAttribute('data-is-auth') === '1' : true;
+    var loginUrl = depositForm ? (depositForm.getAttribute('data-login-url') || '/auth/login') : '/auth/login';
+    var checkoutPath = depositForm ? (depositForm.getAttribute('data-checkout-path') || '') : '';
+
+    root.querySelectorAll('.vf-pd-checkout-link').forEach(function (link) {
+      var base = link.getAttribute('data-checkout-base') || '';
+      if (!base) return;
+      var params = new URLSearchParams();
+      if (currentVariantId) params.set('variant_id', currentVariantId);
+      if (colorCode) {
+        params.set('color_code', colorCode);
+        params.set('color', colorCode);
+      }
+      var qs = params.toString();
+      if (isAuth || !checkoutPath) {
+        link.setAttribute('href', base + (qs ? ('?' + qs) : ''));
+      } else {
+        var target = checkoutPath + (qs ? ('?' + qs) : '');
+        link.setAttribute('href', loginUrl + '?redirect=' + encodeURIComponent(target));
+      }
     });
+  }
 
-    btn.classList.add('is-active');
+  function setActiveColor(btn, scrollOnMobile) {
+    var group = (btn && btn.closest('.vf-pd-color-group')) || activeColorGroup();
+    if (group) {
+      group.querySelectorAll('.vf-pd-color-btn').forEach(function (item) {
+        item.classList.remove('is-active');
+      });
+    }
 
-    var colorCode = btn.getAttribute('data-color-code') || '';
-    var colorName = btn.getAttribute('data-color-name') || '';
+    if (btn) {
+      btn.classList.add('is-active');
+    }
+
+    syncPriceAndLinks(btn || null);
+
+    if (!btn) return;
     var colorImage = btn.getAttribute('data-color-image') || '';
-
     if (!colorImage || !mainImage) return;
 
     var matchedThumb = null;
@@ -285,10 +491,61 @@
       mainImage.src = colorImage;
     }
 
-    if (window.innerWidth < 1024 && mainImage) {
+    if (scrollOnMobile && window.innerWidth < 1024 && mainImage) {
       var rect = mainImage.getBoundingClientRect();
       if (rect.bottom < 72 || rect.top > window.innerHeight - 120) {
         mainImage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }
+
+  function selectVariant(variantId, updateHistory) {
+    var vData = findVariantData(variantId);
+    if (!vData) return;
+
+    var prevColorCode = colorInput ? colorInput.value : '';
+    currentVariantId = String(vData.variantId);
+
+    variantButtons.forEach(function (btn) {
+      var on = btn.getAttribute('data-variant-id') === currentVariantId;
+      btn.classList.toggle('is-active', on);
+      btn.classList.toggle('border-vfNavy', on);
+      btn.classList.toggle('bg-blue-50/70', on);
+      btn.classList.toggle('text-vfNavy', on);
+      btn.classList.toggle('border-slate-200', !on);
+      btn.classList.toggle('bg-white', !on);
+      btn.classList.toggle('text-slate-700', !on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    colorGroups.forEach(function (grp) {
+      grp.classList.toggle('hidden', grp.getAttribute('data-variant-colors') !== currentVariantId);
+    });
+
+    var group = activeColorGroup();
+    var nextColorBtn = null;
+    if (group) {
+      if (prevColorCode) {
+        group.querySelectorAll('.vf-pd-color-btn').forEach(function (b) {
+          if ((b.getAttribute('data-color-code') || '').toUpperCase() === prevColorCode.toUpperCase()) {
+            nextColorBtn = b;
+          }
+        });
+      }
+      if (!nextColorBtn) {
+        nextColorBtn = group.querySelector('.vf-pd-color-btn.is-active') || group.querySelector('.vf-pd-color-btn');
+      }
+    }
+
+    setActiveColor(nextColorBtn, false);
+
+    if (updateHistory && window.history && typeof window.history.replaceState === 'function') {
+      try {
+        var nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('variant', currentVariantId);
+        window.history.replaceState(null, '', nextUrl.pathname + nextUrl.search + nextUrl.hash);
+      } catch (e) {
+        // ignore URL errors on legacy browsers
       }
     }
   }
@@ -300,16 +557,45 @@
     });
   });
 
-  if (colorButtons.length > 0) {
-    colorButtons.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        setActiveColor(btn);
-      });
+  variantButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var vid = btn.getAttribute('data-variant-id') || '';
+      if (vid) selectVariant(vid, true);
     });
+  });
 
-    var defaultColorBtn = root.querySelector('.vf-pd-color-btn.is-active');
-    if (defaultColorBtn) {
-      setActiveColor(defaultColorBtn);
-    }
+  root.querySelectorAll('.vf-pd-color-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setActiveColor(btn, true);
+    });
+  });
+
+  if (depositForm) {
+    depositForm.addEventListener('submit', function (e) {
+      if (depositForm.getAttribute('data-is-auth') === '1') {
+        return;
+      }
+      e.preventDefault();
+      var loginUrl = depositForm.getAttribute('data-login-url') || '/auth/login';
+      var checkoutPath = depositForm.getAttribute('data-checkout-path') || '/order/checkout';
+      var params = new URLSearchParams();
+      if (variantInput && variantInput.value) params.set('variant_id', variantInput.value);
+      if (colorInput && colorInput.value) {
+        params.set('color_code', colorInput.value);
+        params.set('color', colorInput.value);
+      }
+      var qs = params.toString();
+      window.location.href = loginUrl + '?redirect=' + encodeURIComponent(checkoutPath + (qs ? ('?' + qs) : ''));
+    });
+  }
+
+  var initialGroup = activeColorGroup();
+  var initialColorBtn = initialGroup
+    ? (initialGroup.querySelector('.vf-pd-color-btn.is-active') || initialGroup.querySelector('.vf-pd-color-btn'))
+    : null;
+  setActiveColor(initialColorBtn, false);
+
+  if (window.location.hash === '#danhgia') {
+    setTab('danhgia');
   }
 })();
