@@ -85,6 +85,36 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  /**
+   * Xe từ 2 phiên bản: khóa ô giá chung và ghi rõ giá từng phiên bản.
+   * Server bỏ qua giá chung của xe nhiều phiên bản (Product::updateById), nên để admin sửa sẽ gây hiểu nhầm.
+   * Phải gọi sau applyKindVisibility(), vì hàm đó bật lại mọi ô của xe.
+   */
+  function applyPriceLock(kind) {
+    var priceNote = document.getElementById('modalPriceLockNote');
+    var colorNote = document.getElementById('modalColorLockNote');
+    var list = kind === 'vehicle' && currentProduct && Array.isArray(currentProduct.vehicle_variants)
+      ? currentProduct.vehicle_variants
+      : [];
+    var locked = list.length >= 2;
+
+    inputPrice.readOnly = locked;
+    inputPrice.classList.toggle('bg-light', locked);
+    if (priceNote) {
+      priceNote.classList.toggle('d-none', !locked);
+      priceNote.textContent = locked
+        ? 'Xe có ' + list.length + ' phiên bản (' + list.map(function (v) {
+            return (v.name || '?') + ' ' + formatVndAdmin(v.price) + ' đ' + (Number(v.is_active) === 1 ? '' : ', đang ẩn');
+          }).join('; ') + '). Giá hiển thị là giá thấp nhất; form này chưa hỗ trợ sửa giá từng phiên bản.'
+        : '';
+    }
+    if (colorNote) colorNote.classList.toggle('d-none', !locked);
+  }
+
+  function formatVndAdmin(amount) {
+    return String(Math.max(0, Math.round(Number(amount) || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
   function applyKindVisibility(kind) {
     document.querySelectorAll('#productModalForm .js-vehicle-only').forEach(function (el) {
       setSectionEnabled(el, kind !== 'accessory');
@@ -358,6 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     applyKindVisibility(kind);
+    applyPriceLock(kind);
 
     if (prevKind !== kind) {
       // Đổi loại: vẽ lại bảng ảnh (bỏ/hiện cột màu), giữ danh sách ảnh hiện có

@@ -141,10 +141,34 @@ class ProductAdminController
                 $row['variants'] = $this->mapVariantsForModal($p);
             } else {
                 $row['specs']['deposit_amount'] = max(0, (int) ($specs['deposit_amount'] ?? 15000000));
+                $row['vehicle_variants'] = $this->vehicleVariantSummary($p);
             }
 
             return $row;
         }, $products);
+    }
+
+    /**
+     * Danh sách phiên bản của xe (chỉ để hiển thị trong modal, không sửa được).
+     * Từ 2 phiên bản trở lên, form khóa ô giá vì Product::updateById() không ghi giá chung
+     * vào các phiên bản (xem chú thích trong hàm đó).
+     *
+     * @return list<array{name:string,price:float,is_active:int}>
+     */
+    private function vehicleVariantSummary(array $product): array
+    {
+        $rows = [];
+        foreach ((array) ($product['variants'] ?? []) as $v) {
+            if (!is_array($v)) {
+                continue;
+            }
+            $rows[] = [
+                'name' => (string) ($v['name'] ?? ''),
+                'price' => (float) ($v['price'] ?? 0),
+                'is_active' => !empty($v['isActive']) ? 1 : 0,
+            ];
+        }
+        return $rows;
     }
 
     /** Phiên bản phụ kiện + tồn kho PG, cùng dạng với old state để JS dùng chung. */
@@ -274,6 +298,15 @@ class ProductAdminController
         }
 
         $payload = $this->collectPayload();
+
+        // Xe từ 2 phiên bản: form khóa ô giá, giá do từng phiên bản quyết định (updateById không ghi giá chung).
+        // Lấy lại giá đang lưu thay cho giá gửi lên để không báo lỗi giá và không tạo cảm giác đã đổi giá.
+        $vehicleVariants = $isEdit ? $this->vehicleVariantSummary($existing) : [];
+        $isMultiVariant = count($vehicleVariants) >= 2;
+        if ($isMultiVariant) {
+            $payload['price'] = (float) ($existing['price'] ?? 0);
+        }
+
         $errors = $this->validatePayload($payload, $id);
         $attrDefs = $payload['category_id'] > 0 ? $this->vehicleAttrDefs($payload['category_id']) : [];
         $castedAttrs = $attrDefs ? $this->castAttributes($attrDefs, $payload['raw_attrs'], $errors, '') : [];
@@ -304,6 +337,7 @@ class ProductAdminController
             'is_active' => $payload['is_active'],
             'specs' => $payload['raw_attrs'],
             'exterior_colors' => $this->buildExteriorColorRows($payload),
+            'vehicle_variants' => $vehicleVariants,
         ];
 
         if (!empty($errors)) {
@@ -318,7 +352,9 @@ class ProductAdminController
         try {
             if ($isEdit) {
                 $this->persistUpdate($id, is_array($existing) ? $existing : [], $payload, $allImages);
-                $_SESSION['flash'] = 'Sản phẩm đã được cập nhật thành công.';
+                $_SESSION['flash'] = $isMultiVariant
+                    ? 'Sản phẩm đã được cập nhật. Giá các phiên bản giữ nguyên (form chưa hỗ trợ sửa giá từng phiên bản).'
+                    : 'Sản phẩm đã được cập nhật thành công.';
             } else {
                 $this->persistCreate($payload, $allImages);
                 $_SESSION['flash'] = 'Sản phẩm đã được tạo thành công.';

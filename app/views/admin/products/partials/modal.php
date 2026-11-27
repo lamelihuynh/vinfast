@@ -35,6 +35,8 @@
                         <div class="col-md-6 js-vehicle-only">
                             <label class="form-label">Giá bán (VND) <span class="text-danger">*</span></label>
                             <input type="number" min="0" step="1000" class="form-control" name="price" id="modal_price" required>
+                            <!-- Xe từ 2 phiên bản: ô giá bị khóa, nội dung do product-modal.js điền -->
+                            <div class="form-text text-warning d-none" id="modalPriceLockNote"></div>
                         </div>
 
                         <div class="col-12">
@@ -74,6 +76,7 @@
                         <!-- Table editor for existing images -> color mapping (srtdash-style) -->
                         <div class="col-12 mt-3">
                             <h6 class="mb-2" id="imageTableTitle">Bảng ảnh & gán màu</h6>
+                            <div class="form-text text-warning mb-2 d-none" id="modalColorLockNote">Màu ở bảng này áp dụng cho phiên bản đầu tiên; màu của các phiên bản khác giữ nguyên.</div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-hover" id="colorImageTable">
                                     <thead>
