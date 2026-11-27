@@ -122,6 +122,13 @@
   box-shadow: 0 0 0 3px rgba(20, 100, 244, 0.15);
 }
 
+.vf-pd-variant-btn.is-active {
+  border-color: #0b233f;
+  background-color: rgba(239, 246, 255, 0.85);
+  color: #0b233f;
+  box-shadow: 0 0 0 2px rgba(11, 35, 63, 0.12);
+}
+
 .vf-pd-tab-btn.is-active {
   border-bottom-color: #0b233f;
   color: #0b233f;

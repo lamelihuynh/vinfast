@@ -43,38 +43,9 @@
                             <small class="text-muted">Tối đa 2000 ký tự.</small>
                         </div>
 
-                        <div class="col-12 js-vehicle-only">
-                            <h6 class="mb-2">Thông số kỹ thuật</h6>
-                        </div>
-                        <div class="col-md-6 js-vehicle-only">
-                            <label class="form-label">Quãng đường</label>
-                            <input type="text" class="form-control" name="range" id="modal_range" maxlength="120">
-                        </div>
-                        <div class="col-md-6 js-vehicle-only">
-                            <label class="form-label">Công suất</label>
-                            <input type="text" class="form-control" name="power" id="modal_power" maxlength="120">
-                        </div>
-                        <div class="col-md-4 js-vehicle-only">
-                            <label class="form-label">Tăng tốc</label>
-                            <input type="text" class="form-control" name="acceleration" id="modal_acceleration" maxlength="120">
-                        </div>
-                        <div class="col-md-4 js-vehicle-only">
-                            <label class="form-label">Vận tốc tối đa</label>
-                            <input type="text" class="form-control" name="max_speed" id="modal_max_speed" maxlength="120">
-                        </div>
-                        <div class="col-md-4 js-vehicle-only">
-                            <label class="form-label">Pin / Dung lượng</label>
-                            <input type="text" class="form-control" name="battery" id="modal_battery" maxlength="120">
-                        </div>
-
-                        <div class="col-md-6 js-vehicle-only">
-                            <label class="form-label">Số tiền đặt cọc (VND) <span class="text-danger">*</span></label>
-                            <input type="number" min="0" step="1000" class="form-control" name="deposit_amount" id="modal_deposit_amount" required placeholder="Nhập số tiền đặt cọc">
-                        </div>
-
-                        <!-- Phụ kiện: thuộc tính động theo category (render bởi product-modal.js) -->
-                        <div class="col-12 js-accessory-only d-none" id="accessoryAttrsSection">
-                            <h6 class="mb-2">Thuộc tính</h6>
+                        <!-- Thuộc tính động theo category (render bởi product-modal.js cho cả xe và phụ kiện, T1-14) -->
+                        <div class="col-12 d-none" id="dynamicAttrsSection">
+                            <h6 class="mb-2" id="dynamicAttrsTitle">Thông số &amp; Thuộc tính</h6>
                             <div class="row g-3" id="accessoryAttrsContainer"></div>
                         </div>
 

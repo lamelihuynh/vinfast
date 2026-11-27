@@ -12,13 +12,14 @@
  * formatProduct() là adapter Mongo doc -> mảng cũ (quyết định 8), nên view/controller không phải sửa:
  *   id, category_id, name, slug, description, specs, price, images, is_active, created_at,
  *   exterior_colors, category_name (admin) + khóa mới: product_id, kind ('vehicle'|'accessory'), is_accessory,
- *   category_label, variants, default_variant_id, avg_rating, total_sold
+ *   category_label, variants, default_variant_id, avg_rating, total_reviews, reviews, total_sold
  *
  * Phụ kiện (category.kind = 'accessory'): phiên bản thật (size/màu, dung lượng...), mỗi phiên bản 1 dòng
  * tồn kho bên PG. Tạo/sửa qua createWithVariants() / updateWithVariants().
  *
  * Public query API (giữ nguyên):
  *   getById, getByIdAdmin, getAll, getByCategory
+ *   getVariant, getPriceSnapshot, getManyByIds (T1-12: tra cứu cho T3, T4)
  *   filterPaginated, filterAll, countFiltered
  *   getSwitchProducts, extractRangeKm
  *   getAdminList, countAdminList, countAdminDistinctCategories
@@ -98,6 +99,7 @@ class Product
             'default_variant_id' => (string)($variants[0]['variantId'] ?? self::defaultVariantId($doc['productID'] ?? '')),
             'avg_rating' => (float)($doc['avgRating'] ?? 0),
             'total_reviews' => (int)($doc['totalReviews'] ?? 0),
+            'reviews' => self::normalizeEmbeddedReviews(is_array($doc['reviews'] ?? null) ? $doc['reviews'] : []),
             'total_sold' => (int)($doc['totalSold'] ?? 0),
         ];
 
@@ -106,6 +108,45 @@ class Product
         }
 
         return $product;
+    }
+
+    /**
+     * Chuẩn hóa mảng `reviews[]` nhúng trong document Mongo về cùng cấu trúc hiển thị
+     * với dòng kết quả từ `ProductReview::getApprovedByProduct()` (T1-16).
+     */
+    private static function normalizeEmbeddedReviews(array $rows): array
+    {
+        $out = [];
+        $tz = new DateTimeZone(date_default_timezone_get());
+        foreach ($rows as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+            $createdStr = '';
+            $createdIso = '';
+            $rawDate = $r['createdAt'] ?? null;
+            if ($rawDate instanceof MongoDB\BSON\UTCDateTime) {
+                $dt = $rawDate->toDateTime()->setTimezone($tz);
+                $createdStr = $dt->format('Y-m-d H:i:s');
+                $createdIso = $dt->format('c');
+            } elseif (is_string($rawDate) && $rawDate !== '') {
+                $createdStr = $rawDate;
+                $createdIso = $rawDate;
+            }
+
+            $out[] = [
+                'id'            => (int)($r['reviewId'] ?? 0),
+                'user_id'       => (int)($r['userId'] ?? 0),
+                'author_name'   => (string)($r['userNameSnapshot'] ?? 'Khách hàng'),
+                'rating'        => max(1, min(5, (int)($r['rating'] ?? 5))),
+                'body'          => (string)($r['comment'] ?? ''),
+                'images'        => is_array($r['images'] ?? null) ? array_values($r['images']) : [],
+                'helpful_count' => max(0, (int)($r['helpfulCount'] ?? 0)),
+                'created_at'    => $createdStr,
+                'created_iso'   => $createdIso,
+            ];
+        }
+        return $out;
     }
 
     private static function formatMany(iterable $cursor, array $categoryNames = []): array
@@ -321,6 +362,182 @@ class Product
     public static function getById($id)
     {
         return self::formatProduct(self::collection()->findOne(['productID' => (string)(int)$id, 'isActive' => true]));
+    }
+
+    /**
+     * Tra cứu đúng 1 phiên bản đang hoạt động của sản phẩm đang hiển thị (T1-12).
+     * Dùng projection `$elemMatch` để MongoDB chỉ trả về đúng 1 phần tử trong `variants[]`.
+     * Trả `null` nếu sản phẩm hoặc phiên bản không tồn tại / đang bị ẩn (`isActive = false`).
+     *
+     * Ví dụ dùng cho T4 (kiểm tra sản phẩm/phiên bản khi thêm vào giỏ / checkout):
+     *   $v = Product::getVariant('165', '165-STD');
+     *   if ($v === null) { throw new RuntimeException('Phiên bản ngừng kinh doanh.'); }
+     *
+     * @return array{productID:string,productName:string,categoryID:int,variantId:string,name:string,price:float,isActive:bool,attributes:array,colors:array}|null
+     */
+    public static function getVariant(string $productId, string $variantId): ?array
+    {
+        $productId = trim($productId);
+        $variantId = trim($variantId);
+        if ($productId === '' || $variantId === '') {
+            return null;
+        }
+
+        $doc = self::collection()->findOne(
+            [
+                'productID' => $productId,
+                'isActive' => true,
+                'variants' => [
+                    '$elemMatch' => [
+                        'variantId' => $variantId,
+                        'isActive' => true,
+                    ],
+                ],
+            ],
+            [
+                'projection' => [
+                    '_id' => 0,
+                    'productID' => 1,
+                    'categoryID' => 1,
+                    'name' => 1,
+                    'variants' => [
+                        '$elemMatch' => [
+                            'variantId' => $variantId,
+                            'isActive' => true,
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        if (!$doc || empty($doc['variants'][0]) || !is_array($doc['variants'][0])) {
+            return null;
+        }
+
+        $v = $doc['variants'][0];
+        return [
+            'productID' => (string)($doc['productID'] ?? ''),
+            'productName' => (string)($doc['name'] ?? ''),
+            'categoryID' => (int)($doc['categoryID'] ?? 0),
+            'variantId' => (string)($v['variantId'] ?? ''),
+            'name' => (string)($v['name'] ?? ''),
+            'price' => (float)($v['price'] ?? 0),
+            'isActive' => !empty($v['isActive']),
+            'attributes' => is_array($v['attributes'] ?? null) ? $v['attributes'] : [],
+            'colors' => is_array($v['colors'] ?? null) ? $v['colors'] : [],
+        ];
+    }
+
+    /**
+     * Tạo bản chụp giá và tên sản phẩm/phiên bản/màu tại thời điểm đặt hàng (T1-12).
+     * `unit_price = variant.price + color.surcharge` (nếu có truyền mã màu hợp lệ).
+     * Trả `null` nếu sản phẩm/phiên bản bị ẩn hoặc truyền `$colorCode` không tồn tại ở phiên bản đó.
+     *
+     * Ví dụ dùng cho T4 (`OrderService` khi INSERT vào bảng PG `order_items`):
+     *   $snap = Product::getPriceSnapshot('165', '165-STD', 'CE18');
+     *   // ['product_id' => '165', 'variant_id' => '165-STD', 'product_name_snapshot' => '...',
+     *   //  'variant_name_snapshot' => 'Tiêu chuẩn', 'color_code' => 'CE18',
+     *   //  'color_name_snapshot' => '...', 'unit_price' => 240000000]
+     *
+     * @return array{product_id:string,variant_id:string,product_name_snapshot:string,variant_name_snapshot:string,color_code:?string,color_name_snapshot:?string,unit_price:int}|null
+     */
+    public static function getPriceSnapshot(string $productId, string $variantId, ?string $colorCode = null): ?array
+    {
+        $variant = self::getVariant($productId, $variantId);
+        if ($variant === null) {
+            return null;
+        }
+
+        $matchedCode = null;
+        $matchedName = null;
+        $surcharge = 0;
+
+        $requestedColor = $colorCode !== null ? trim($colorCode) : '';
+        if ($requestedColor !== '') {
+            $found = false;
+            foreach ($variant['colors'] as $c) {
+                if (!is_array($c)) {
+                    continue;
+                }
+                $cCode = trim((string)($c['colorCode'] ?? ''));
+                if ($cCode !== '' && strcasecmp($cCode, $requestedColor) === 0) {
+                    $matchedCode = strtoupper($cCode);
+                    $matchedName = (string)($c['colorName'] ?? '');
+                    $surcharge = max(0, (int)($c['surcharge'] ?? 0));
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                return null;
+            }
+        }
+
+        return [
+            'product_id' => $variant['productID'],
+            'variant_id' => $variant['variantId'],
+            'product_name_snapshot' => $variant['productName'],
+            'variant_name_snapshot' => $variant['name'],
+            'color_code' => $matchedCode,
+            'color_name_snapshot' => $matchedName,
+            'unit_price' => (int)round($variant['price'] + $surcharge),
+        ];
+    }
+
+    /**
+     * Tra cứu gọn nhiều sản phẩm chỉ bằng MỘT lệnh `find` + `$in` + `projection` (T1-12, tránh N+1).
+     * Vẫn trả về cả sản phẩm đã ẩn (`isActive = false`) để lịch sử đơn, lái thử, admin duyệt review
+     * luôn hiển thị được tên/ảnh sản phẩm cũ. ID không tồn tại sẽ không có trong mảng kết quả.
+     *
+     * Ví dụ dùng cho T3 (lịch sử đơn / `TestDrive`) và T1-17 (`CommentAdminController` tab reviews):
+     *   $map = Product::getManyByIds(['165', '166'], ['name', 'slug', 'images']);
+     *   $productName = $map[$row['product_id']]['name'] ?? ('#' . $row['product_id']);
+     *
+     * @param array<int|string> $productIds
+     * @param string[]          $fields Các trường cấp gốc cần lấy từ Mongo
+     * @return array<string, array<string, mixed>> Map theo `productID` (chuỗi)
+     */
+    public static function getManyByIds(array $productIds, array $fields = ['name', 'slug', 'images']): array
+    {
+        $ids = [];
+        foreach ($productIds as $id) {
+            if (!is_scalar($id)) {
+                continue;
+            }
+            $str = trim((string)$id);
+            if ($str !== '' && !isset($ids[$str])) {
+                $ids[$str] = $str;
+            }
+        }
+        if ($ids === []) {
+            return [];
+        }
+
+        $projection = ['_id' => 0, 'productID' => 1];
+        foreach ($fields as $field) {
+            $field = trim((string)$field);
+            if ($field !== '' && $field !== '_id' && preg_match('/^[a-zA-Z0-9_.]+$/', $field) === 1) {
+                $projection[$field] = 1;
+            }
+        }
+
+        $out = [];
+        $cursor = self::collection()->find(
+            ['productID' => ['$in' => array_values($ids)]],
+            ['projection' => $projection]
+        );
+        foreach ($cursor as $doc) {
+            $pid = (string)($doc['productID'] ?? '');
+            if ($pid === '') {
+                continue;
+            }
+            if (isset($doc['images']) && is_array($doc['images'])) {
+                $doc['images'] = array_values($doc['images']);
+            }
+            $out[$pid] = $doc;
+        }
+
+        return $out;
     }
 
     /**
@@ -619,6 +836,23 @@ class Product
     // Writes
     // ------------------------------------------------------------------
 
+    /**
+     * Dịch lỗi ghi MongoDB (121: vi phạm $jsonSchema validator, 11000: trùng unique index)
+     * sang InvalidArgumentException có thông báo rõ nghĩa cho tầng Controller.
+     */
+    private static function throwWriteException(MongoDB\Driver\Exception\BulkWriteException $e): never
+    {
+        $errs = $e->getWriteResult()->getWriteErrors();
+        $code = $errs ? $errs[0]->getCode() : (int)$e->getCode();
+        error_log(sprintf('Product MongoDB write error (%d): %s', $code, $e->getMessage()));
+
+        $message = $code === 11000
+            ? 'Slug hoặc mã phiên bản đã tồn tại.'
+            : 'Dữ liệu sản phẩm không hợp lệ.';
+
+        throw new InvalidArgumentException($message, $code, $e);
+    }
+
     public static function create($categoryId, $name, $slug, $description, $specs, $price, $images, $isActive)
     {
         $counter = Db::mongo()->selectCollection('counters')->findOneAndUpdate(
@@ -629,31 +863,35 @@ class Product
         $id = (int)$counter['seq'];
         $variantId = self::defaultVariantId($id);
 
-        self::collection()->insertOne([
-            'productID' => (string)$id,
-            'categoryID' => (int)$categoryId,
-            'name' => (string)$name,
-            'slug' => (string)$slug,
-            'description' => $description,
-            'basePrice' => (float)$price,
-            'images' => array_values((array)$images),
-            'isActive' => (bool)$isActive,
-            'attributes' => self::attributesFromSpecs((array)$specs),
-            'variants' => [[
-                'variantId' => $variantId,
-                'name' => 'Tiêu chuẩn',
-                'price' => (float)$price,
-                'isActive' => true,
-                'attributes' => (object)[],
-                'colors' => [],
-            ]],
-            'avgRating' => 0.0,
-            'totalReviews' => 0,
-            'totalSold' => 0,
-            'reviews' => [],
-            'createdAt' => self::now(),
-            'updatedAt' => self::now(),
-        ]);
+        try {
+            self::collection()->insertOne([
+                'productID' => (string)$id,
+                'categoryID' => (int)$categoryId,
+                'name' => (string)$name,
+                'slug' => (string)$slug,
+                'description' => $description,
+                'basePrice' => (float)$price,
+                'images' => array_values((array)$images),
+                'isActive' => (bool)$isActive,
+                'attributes' => self::attributesFromSpecs((array)$specs),
+                'variants' => [[
+                    'variantId' => $variantId,
+                    'name' => 'Tiêu chuẩn',
+                    'price' => (float)$price,
+                    'isActive' => true,
+                    'attributes' => (object)[],
+                    'colors' => [],
+                ]],
+                'avgRating' => 0.0,
+                'totalReviews' => 0,
+                'totalSold' => 0,
+                'reviews' => [],
+                'createdAt' => self::now(),
+                'updatedAt' => self::now(),
+            ]);
+        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+            self::throwWriteException($e);
+        }
 
         // Mỗi variant cần 1 dòng tồn kho bên PG
         InventoryService::ensureRows((string)$id, [$variantId => null]);
@@ -663,7 +901,10 @@ class Product
 
     private static function attributesFromSpecs(array $specs): object
     {
-        $rangeKm = self::extractRangeKm(array_diff_key($specs, ['rangeKm' => true]));
+        $hasRangeText = isset($specs['range']) && trim((string)$specs['range']) !== '';
+        $rangeKm = $hasRangeText
+            ? self::extractRangeKm(array_diff_key($specs, ['rangeKm' => true]))
+            : self::extractRangeKm($specs);
         if ($rangeKm > 0) {
             $specs['rangeKm'] = $rangeKm;
         } else {
@@ -683,18 +924,40 @@ class Product
         array $images,
         int $isActive
     ): bool {
-        $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
+        $existing = self::collection()->findOne(
+            ['productID' => (string)$id],
+            ['projection' => ['variants' => 1]]
+        );
+        if (!$existing) {
+            return false;
+        }
+
+        $variants = is_array($existing['variants'] ?? null) ? $existing['variants'] : [];
+        $set = [
             'categoryID' => $categoryId,
             'name' => $name,
             'slug' => $slug,
             'description' => $description,
             'attributes' => self::attributesFromSpecs($specs),
-            'basePrice' => $price,
-            'variants.0.price' => $price,
             'images' => array_values($images),
             'isActive' => (bool)$isActive,
             'updatedAt' => self::now(),
-        ]]);
+        ];
+
+        // Xe 1 phiên bản giữ hành vi cũ; xe nhiều phiên bản không ghi đè variants.0.price
+        // mà tính lại basePrice = giá nhỏ nhất của các phiên bản đang bật.
+        if (count($variants) <= 1) {
+            $set['basePrice'] = $price;
+            $set['variants.0.price'] = $price;
+        } else {
+            $set['basePrice'] = self::basePriceOf($variants);
+        }
+
+        try {
+            $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => $set]);
+        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+            self::throwWriteException($e);
+        }
 
         return $result->getMatchedCount() > 0;
     }
@@ -708,6 +971,14 @@ class Product
         return $result->getMatchedCount() > 0;
     }
 
+    /**
+     * Kiểm tra sản phẩm đã phát sinh đơn hàng chưa (để chỉ ẩn thay vì xóa vật lý).
+     *
+     * Lưu ý kiến trúc (T1-10): Hàm này đang đọc trực tiếp bảng PG `order_items` ngay trong
+     * model Mongo `Product` do không có khóa ngoại liên DB. Cần thống nhất với T3 (chủ phần
+     * đọc của `Order.php`) xem giữ nguyên tại đây hay tách sang `Order::hasProduct()`
+     * (T1 không tự ý sửa `Order.php`).
+     */
     public static function hasOrders(int $id): bool
     {
         $stmt = Db::pg()->prepare('SELECT EXISTS (SELECT 1 FROM order_items WHERE product_id = ?)');
@@ -715,6 +986,13 @@ class Product
         return (bool)$stmt->fetchColumn();
     }
 
+    /**
+     * Xóa sản phẩm chưa có đơn hàng trên Mongo và dọn các bản ghi tham chiếu logic bên PG.
+     *
+     * Lưu ý kiến trúc (T1-10): Đang trực tiếp xóa các dòng tham chiếu ở bảng PG (`cart_items`,
+     * `wishlist_items` và `inventory` qua `InventoryService::deleteProduct`) ngay trong model
+     * Mongo để bù cho việc không có `ON DELETE CASCADE` giữa hai hệ quản trị CSDL.
+     */
     public static function deleteById(int $id): bool
     {
         $deleted = self::collection()->deleteOne(['productID' => (string)$id])->getDeletedCount() > 0;
@@ -834,24 +1112,28 @@ class Product
             return 0;
         }
 
-        self::collection()->insertOne([
-            'productID' => (string)$id,
-            'categoryID' => (int)$data['category_id'],
-            'name' => (string)$data['name'],
-            'slug' => (string)$data['slug'],
-            'description' => $data['description'] ?? null,
-            'basePrice' => self::basePriceOf($variants),
-            'images' => array_values((array)($data['images'] ?? [])),
-            'isActive' => !empty($data['is_active']),
-            'attributes' => (object)(array)($data['attributes'] ?? []),
-            'variants' => $variants,
-            'avgRating' => 0.0,
-            'totalReviews' => 0,
-            'totalSold' => 0,
-            'reviews' => [],
-            'createdAt' => isset($data['created_at']) && $data['created_at'] instanceof MongoDB\BSON\UTCDateTime ? $data['created_at'] : self::now(),
-            'updatedAt' => self::now(),
-        ]);
+        try {
+            self::collection()->insertOne([
+                'productID' => (string)$id,
+                'categoryID' => (int)$data['category_id'],
+                'name' => (string)$data['name'],
+                'slug' => (string)$data['slug'],
+                'description' => $data['description'] ?? null,
+                'basePrice' => self::basePriceOf($variants),
+                'images' => array_values((array)($data['images'] ?? [])),
+                'isActive' => !empty($data['is_active']),
+                'attributes' => (object)(array)($data['attributes'] ?? []),
+                'variants' => $variants,
+                'avgRating' => 0.0,
+                'totalReviews' => 0,
+                'totalSold' => 0,
+                'reviews' => [],
+                'createdAt' => isset($data['created_at']) && $data['created_at'] instanceof MongoDB\BSON\UTCDateTime ? $data['created_at'] : self::now(),
+                'updatedAt' => self::now(),
+            ]);
+        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+            self::throwWriteException($e);
+        }
 
         InventoryService::ensureRows((string)$id, $stock);
         return $id;
@@ -888,18 +1170,22 @@ class Product
                 InventoryService::ensureRows((string)$id, $new);
             }
             InventoryService::removeRowsExcept((string)$id, array_keys($stock));
-            $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
-                'categoryID' => (int)$data['category_id'],
-                'name' => (string)$data['name'],
-                'slug' => (string)$data['slug'],
-                'description' => $data['description'] ?? null,
-                'basePrice' => self::basePriceOf($variants),
-                'images' => array_values((array)($data['images'] ?? [])),
-                'isActive' => !empty($data['is_active']),
-                'attributes' => (object)(array)($data['attributes'] ?? []),
-                'variants' => $variants,
-                'updatedAt' => self::now(),
-            ]]);
+            try {
+                $result = self::collection()->updateOne(['productID' => (string)$id], ['$set' => [
+                    'categoryID' => (int)$data['category_id'],
+                    'name' => (string)$data['name'],
+                    'slug' => (string)$data['slug'],
+                    'description' => $data['description'] ?? null,
+                    'basePrice' => self::basePriceOf($variants),
+                    'images' => array_values((array)($data['images'] ?? [])),
+                    'isActive' => !empty($data['is_active']),
+                    'attributes' => (object)(array)($data['attributes'] ?? []),
+                    'variants' => $variants,
+                    'updatedAt' => self::now(),
+                ]]);
+            } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+                self::throwWriteException($e);
+            }
             if (!$result->getMatchedCount()) throw new ConcurrentUpdateException((string)$id);
             return true;
         });

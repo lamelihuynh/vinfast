@@ -25,12 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var inputSlug = document.getElementById('modal_slug');
   var inputPrice = document.getElementById('modal_price');
   var inputDescription = document.getElementById('modal_description');
-  var inputRange = document.getElementById('modal_range');
-  var inputPower = document.getElementById('modal_power');
-  var inputAcceleration = document.getElementById('modal_acceleration');
-  var inputMaxSpeed = document.getElementById('modal_max_speed');
-  var inputBattery = document.getElementById('modal_battery');
-  var inputDepositAmount = document.getElementById('modal_deposit_amount');
   var inputIsActive = document.getElementById('modal_is_active');
   var inputImages = document.getElementById('modal_images');
   var inputMainImage = document.getElementById('modal_main_image');
@@ -52,6 +46,8 @@ document.addEventListener('DOMContentLoaded', function () {
       categoryDefs = {};
     }
   }
+  var dynamicAttrsSection = document.getElementById('dynamicAttrsSection');
+  var dynamicAttrsTitle = document.getElementById('dynamicAttrsTitle');
   var attrsContainer = document.getElementById('accessoryAttrsContainer');
   var variantsTable = document.getElementById('accessoryVariantsTable');
   var btnAddVariant = document.getElementById('btnAddVariant');
@@ -157,7 +153,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('') + '</div>';
     } else {
       var type = def.type === 'number' ? 'number' : 'text';
-      var extra = def.type === 'number' ? ' step="any"' : ' maxlength="255"';
+      var extra = def.type === 'number'
+        ? (key === 'deposit_amount' ? ' min="0" step="1000"' : ' step="any"')
+        : ' maxlength="255"';
       html = '<label class="form-label" for="' + id + '">' + attrLabelHtml(def) + '</label>' +
         '<div class="input-group"><input type="' + type + '" class="form-control" name="' + name + '" id="' + id + '"' + extra + req +
         ' value="' + escapeHtml(value == null ? '' : value) + '">' + unit + '</div>';
@@ -324,19 +322,38 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /** Render khối phụ kiện/xe theo category đang chọn. state: {specs, variants} hoặc null (lấy từ DOM hiện tại). */
+  /** Render khối thuộc tính động (cho cả xe và phụ kiện, T1-14) và bảng phiên bản (cho phụ kiện). */
   function applyCategory(state) {
     var prevKind = currentKind;
-    var kind = kindOfCategory(inputCategory.value);
+    var catId = inputCategory.value;
+    var def = categoryDef(catId);
+    var kind = kindOfCategory(catId);
     currentKind = kind;
 
-    if (kind === 'accessory') {
-      if (!state) {
-        state = prevKind === 'accessory'
-          ? { specs: readAttrsState(), variants: readVariantsState() }
-          : { specs: asObject(currentProduct && currentProduct.specs), variants: (currentProduct && currentProduct.variants) || [] };
+    if (!state) {
+      var baseSpecs = Object.assign({}, asObject(currentProduct && currentProduct.specs), readAttrsState());
+      var baseVariants = prevKind === 'accessory'
+        ? readVariantsState()
+        : ((currentProduct && currentProduct.variants) || []);
+      state = { specs: baseSpecs, variants: baseVariants };
+    }
+
+    if (def) {
+      if (dynamicAttrsTitle) {
+        dynamicAttrsTitle.textContent = kind === 'accessory' ? 'Thuộc tính' : 'Thông số kỹ thuật & Đặt cọc';
       }
-      renderAttrs(categoryDef(inputCategory.value), asObject(state.specs));
+      renderAttrs(def, asObject(state.specs));
+      if (dynamicAttrsSection) {
+        setSectionEnabled(dynamicAttrsSection, true);
+      }
+    } else {
+      attrsContainer.innerHTML = '';
+      if (dynamicAttrsSection) {
+        setSectionEnabled(dynamicAttrsSection, false);
+      }
+    }
+
+    if (kind === 'accessory') {
       renderVariants(state.variants);
     }
 
@@ -477,12 +494,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputSlug.value = '';
     inputPrice.value = '';
     inputDescription.value = '';
-    inputRange.value = '';
-    inputPower.value = '';
-    inputAcceleration.value = '';
-    inputMaxSpeed.value = '';
-    inputBattery.value = '';
-    if (inputDepositAmount) inputDepositAmount.value = '';
     inputIsActive.checked = true;
     inputImages.value = '';
     inputMainImage.value = '';
@@ -515,18 +526,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputSlug.value = state.slug || '';
     inputPrice.value = state.price || '';
     inputDescription.value = state.description || '';
-    inputRange.value = state.range || '';
-    inputPower.value = state.power || '';
-    inputAcceleration.value = state.acceleration || '';
-    inputMaxSpeed.value = state.max_speed || '';
-    inputBattery.value = state.battery || '';
-    if (inputDepositAmount) {
-      if (isEditMode) {
-        inputDepositAmount.value = String(state.deposit_amount || '');
-      } else {
-        inputDepositAmount.value = '';
-      }
-    }
     inputIsActive.checked = Number(state.is_active || 0) === 1 || state.is_active === true || state.is_active === '1';
 
     // Use state images/colors if available, otherwise empty
@@ -548,12 +547,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inputSlug.value = product.slug || '';
     inputPrice.value = product.price || '';
     inputDescription.value = product.description || '';
-    inputRange.value = product.range || '';
-    inputPower.value = product.power || '';
-    inputAcceleration.value = product.acceleration || '';
-    inputMaxSpeed.value = product.max_speed || '';
-    inputBattery.value = product.battery || '';
-    if (inputDepositAmount) inputDepositAmount.value = String(product.deposit_amount || 15000000);
     // render table editor for existing images
     currentProduct = product;
     renderColorImageTable(product);

@@ -21,15 +21,15 @@ class ProductAdminController
         $old = is_array($_SESSION['old'] ?? null) ? $_SESSION['old'] : [];
         unset($_SESSION['old']);
 
-        $q = trim((string)($_GET['q'] ?? ''));
-        $cat = (int)($_GET['cat'] ?? 0);
-        $status = trim((string)($_GET['status'] ?? 'all'));
-        $priceMinRaw = trim((string)($_GET['price_min'] ?? ''));
-        $priceMaxRaw = trim((string)($_GET['price_max'] ?? ''));
-        $price_min = $priceMinRaw === '' ? null : (float)str_replace([',', ' '], '', $priceMinRaw);
-        $price_max = $priceMaxRaw === '' ? null : (float)str_replace([',', ' '], '', $priceMaxRaw);
-        $sort = trim((string)($_GET['sort'] ?? 'default'));
-        $kind = trim((string)($_GET['kind'] ?? 'all'));
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $cat = (int) ($_GET['cat'] ?? 0);
+        $status = trim((string) ($_GET['status'] ?? 'all'));
+        $priceMinRaw = trim((string) ($_GET['price_min'] ?? ''));
+        $priceMaxRaw = trim((string) ($_GET['price_max'] ?? ''));
+        $price_min = $priceMinRaw === '' ? null : (float) str_replace([',', ' '], '', $priceMinRaw);
+        $price_max = $priceMaxRaw === '' ? null : (float) str_replace([',', ' '], '', $priceMaxRaw);
+        $sort = trim((string) ($_GET['sort'] ?? 'default'));
+        $kind = trim((string) ($_GET['kind'] ?? 'all'));
         if (!in_array($kind, Category::KINDS, true)) {
             $kind = 'all';
         }
@@ -38,7 +38,7 @@ class ProductAdminController
             $status = 'all';
         }
 
-        $page = max(1, (int)($_GET['page'] ?? 1));
+        $page = max(1, (int) ($_GET['page'] ?? 1));
 
         $filters = [
             'search' => $q,
@@ -124,27 +124,23 @@ class ProductAdminController
             }
 
             $row = [
-                'id' => (int)($p['id'] ?? 0),
-                'kind' => (string)($p['kind'] ?? 'vehicle'),
-                'category_id' => (int)($p['category_id'] ?? 0),
-                'name' => (string)($p['name'] ?? ''),
-                'slug' => (string)($p['slug'] ?? ''),
-                'price' => (float)($p['price'] ?? 0),
-                'description' => (string)($p['description'] ?? ''),
-                'is_active' => (int)($p['is_active'] ?? 0),
-                'range' => (string)($specs['range'] ?? ''),
-                'power' => (string)($specs['power'] ?? ''),
-                'acceleration' => (string)($specs['acceleration'] ?? ''),
-                'max_speed' => (string)($specs['max_speed'] ?? ''),
-                'battery' => (string)($specs['battery'] ?? ''),
-                'deposit_amount' => max(0, (int)($specs['deposit_amount'] ?? 15000000)),
+                'id' => (int) ($p['id'] ?? 0),
+                'kind' => (string) ($p['kind'] ?? 'vehicle'),
+                'category_id' => (int) ($p['category_id'] ?? 0),
+                'name' => (string) ($p['name'] ?? ''),
+                'slug' => (string) ($p['slug'] ?? ''),
+                'price' => (float) ($p['price'] ?? 0),
+                'description' => (string) ($p['description'] ?? ''),
+                'is_active' => (int) ($p['is_active'] ?? 0),
                 'exterior_colors' => $exteriorColors,
                 'images' => array_values($localImages),
+                'specs' => $specs,
             ];
 
             if (($p['kind'] ?? 'vehicle') === 'accessory') {
-                $row['specs'] = $specs;
                 $row['variants'] = $this->mapVariantsForModal($p);
+            } else {
+                $row['specs']['deposit_amount'] = max(0, (int) ($specs['deposit_amount'] ?? 15000000));
             }
 
             return $row;
@@ -155,25 +151,25 @@ class ProductAdminController
     private function mapVariantsForModal(array $product): array
     {
         $variants = is_array($product['variants'] ?? null) ? $product['variants'] : [];
-        $inventory = InventoryService::byProduct((string)($product['id'] ?? ''));
+        $inventory = InventoryService::byProduct((string) ($product['id'] ?? ''));
 
         $rows = [];
         foreach ($variants as $v) {
             if (!is_array($v)) {
                 continue;
             }
-            $variantId = (string)($v['variantId'] ?? '');
+            $variantId = (string) ($v['variantId'] ?? '');
             $inv = $inventory[$variantId] ?? null;
             $rows[] = [
                 'variant_id' => $variantId,
-                'name' => (string)($v['name'] ?? ''),
-                'price' => (float)($v['price'] ?? 0),
+                'name' => (string) ($v['name'] ?? ''),
+                'price' => (float) ($v['price'] ?? 0),
                 'is_active' => !empty($v['isActive']) ? 1 : 0,
                 'attributes' => is_array($v['attributes'] ?? null) ? $v['attributes'] : [],
-                'stock' => $inv !== null ? (string)$inv['stock'] : '',
+                'stock' => $inv !== null ? (string) $inv['stock'] : '',
                 'version_orig' => $inv['version'] ?? '',
-                'stock_orig' => $inv !== null ? (string)$inv['stock'] : '',
-                'reserved' => (int)($inv['reserved'] ?? 0),
+                'stock_orig' => $inv !== null ? (string) $inv['stock'] : '',
+                'reserved' => (int) ($inv['reserved'] ?? 0),
             ];
         }
         return $rows;
@@ -184,14 +180,47 @@ class ProductAdminController
     {
         $defs = [];
         foreach (Category::allById() as $id => $c) {
-            $defs[(string)$id] = [
-                'id' => (int)$id,
-                'name' => (string)$c['name'],
-                'kind' => (string)$c['kind'],
-                'dynamic_attributes' => array_values($this->normalizeAttrDefs($c['dynamic_attributes'] ?? [])),
+            $kind = (string) ($c['kind'] ?? 'vehicle');
+            $dynDefs = $kind === 'vehicle'
+                ? $this->vehicleAttrDefs((int) $id)
+                : $this->normalizeAttrDefs($c['dynamic_attributes'] ?? []);
+            $defs[(string) $id] = [
+                'id' => (int) $id,
+                'name' => (string) $c['name'],
+                'kind' => $kind,
+                'dynamic_attributes' => array_values($dynDefs),
                 'variant_attributes' => array_values($this->normalizeAttrDefs($c['variant_attributes'] ?? [])),
             ];
         }
+        return $defs;
+    }
+
+    /**
+     * Thuộc tính động cấp sản phẩm cho category xe (T1-14):
+     * luôn đảm bảo có `deposit_amount` kiểu number và là trường bắt buộc (`required = true`).
+     */
+    private function vehicleAttrDefs(int $categoryId): array
+    {
+        $category = Category::allById()[$categoryId] ?? [];
+        $defs = $this->normalizeAttrDefs($category['dynamic_attributes'] ?? []);
+
+        if (isset($defs['deposit_amount'])) {
+            $defs['deposit_amount']['type'] = 'number';
+            $defs['deposit_amount']['required'] = true;
+            if ($defs['deposit_amount']['unit'] === '') {
+                $defs['deposit_amount']['unit'] = 'VND';
+            }
+        } else {
+            $defs['deposit_amount'] = [
+                'key' => 'deposit_amount',
+                'label' => 'Số tiền đặt cọc',
+                'type' => 'number',
+                'unit' => 'VND',
+                'required' => true,
+                'options' => [],
+            ];
+        }
+
         return $defs;
     }
 
@@ -199,25 +228,25 @@ class ProductAdminController
     private function normalizeAttrDefs($defs): array
     {
         $out = [];
-        foreach ((array)$defs as $d) {
+        foreach ((array) $defs as $d) {
             if (!is_array($d)) {
                 continue;
             }
-            $key = trim((string)($d['key'] ?? ''));
+            $key = trim((string) ($d['key'] ?? ''));
             if ($key === '' || !preg_match('/^[A-Za-z0-9_]+$/', $key)) {
                 continue;
             }
-            $type = (string)($d['type'] ?? 'string');
+            $type = (string) ($d['type'] ?? 'string');
             if (!in_array($type, ['string', 'number', 'boolean', 'enum', 'text', 'list'], true)) {
                 $type = 'string';
             }
             $out[$key] = [
                 'key' => $key,
-                'label' => (string)($d['label'] ?? $key),
+                'label' => (string) ($d['label'] ?? $key),
                 'type' => $type,
-                'unit' => (string)($d['unit'] ?? ''),
+                'unit' => (string) ($d['unit'] ?? ''),
                 'required' => !empty($d['required']),
-                'options' => array_values(array_map('strval', (array)($d['options'] ?? []))),
+                'options' => array_values(array_map('strval', (array) ($d['options'] ?? []))),
             ];
         }
         return $out;
@@ -228,7 +257,7 @@ class ProductAdminController
     {
         Auth::verifyCsrf();
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = (int) ($_POST['id'] ?? 0);
         $isEdit = $id > 0;
         $existing = $isEdit ? Product::getByIdAdmin($id) : null;
 
@@ -238,7 +267,7 @@ class ProductAdminController
             exit;
         }
 
-        $categoryId = (int)($_POST['category_id'] ?? 0);
+        $categoryId = (int) ($_POST['category_id'] ?? 0);
         if ($categoryId > 0 && Category::kindOf($categoryId) === 'accessory') {
             $this->saveAccessory($id, is_array($existing) ? $existing : [], $categoryId);
             return;
@@ -246,22 +275,59 @@ class ProductAdminController
 
         $payload = $this->collectPayload();
         $errors = $this->validatePayload($payload, $id);
+        $attrDefs = $payload['category_id'] > 0 ? $this->vehicleAttrDefs($payload['category_id']) : [];
+        $castedAttrs = $attrDefs ? $this->castAttributes($attrDefs, $payload['raw_attrs'], $errors, '') : [];
+
+        if (isset($castedAttrs['deposit_amount'])) {
+            if ((float) $castedAttrs['deposit_amount'] < 0) {
+                $errors[] = 'Số tiền đặt cọc không được âm.';
+            } else {
+                $castedAttrs['deposit_amount'] = (int) round((float) $castedAttrs['deposit_amount']);
+            }
+        }
+
+        // Giữ lại các khóa cũ không nằm trong danh sách thuộc tính động của form (như features, segment hoặc thuộc tính đã ẩn)
+        $preservedSpecs = [];
+        if ($isEdit && is_array($existing['specs'] ?? null)) {
+            $preservedSpecs = array_diff_key($existing['specs'], $attrDefs, ['rangeKm' => true]);
+        }
+        $payload['attributes'] = $preservedSpecs + $castedAttrs + ['deposit_non_refundable' => 1];
+
+        $oldState = [
+            'id' => $id,
+            'kind' => 'vehicle',
+            'category_id' => $payload['category_id'],
+            'name' => $payload['name'],
+            'slug' => $payload['slug'],
+            'price' => $payload['price'],
+            'description' => $payload['description'],
+            'is_active' => $payload['is_active'],
+            'specs' => $payload['raw_attrs'],
+            'exterior_colors' => $this->buildExteriorColorRows($payload),
+        ];
 
         if (!empty($errors)) {
             $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $payload + ['id' => $id];
+            $_SESSION['old'] = $oldState + ['existing_images' => $this->postedExistingImages()];
             header('Location: ' . ADMIN_URL . 'products');
             exit;
         }
 
-        $allImages = $this->collectImages($payload, is_array($existing) ? $existing : [], $payload + ['id' => $id]);
+        $allImages = $this->collectImages($payload, is_array($existing) ? $existing : [], $oldState);
 
-        if ($isEdit) {
-            $this->persistUpdate($id, is_array($existing) ? $existing : [], $payload, $allImages);
-            $_SESSION['flash'] = 'Sản phẩm đã được cập nhật thành công.';
-        } else {
-            $this->persistCreate($payload, $allImages);
-            $_SESSION['flash'] = 'Sản phẩm đã được tạo thành công.';
+        try {
+            if ($isEdit) {
+                $this->persistUpdate($id, is_array($existing) ? $existing : [], $payload, $allImages);
+                $_SESSION['flash'] = 'Sản phẩm đã được cập nhật thành công.';
+            } else {
+                $this->persistCreate($payload, $allImages);
+                $_SESSION['flash'] = 'Sản phẩm đã được tạo thành công.';
+            }
+        } catch (InvalidArgumentException $e) {
+            $_SESSION['errors'] = [$e->getMessage()];
+            $_SESSION['old'] = $oldState + ['existing_images' => $allImages];
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
         }
         header('Location: ' . ADMIN_URL . 'products');
         exit;
@@ -270,7 +336,7 @@ class ProductAdminController
     private function postedExistingImages(): array
     {
         return array_values(array_unique(array_filter(
-            array_map('trim', array_map('strval', (array)($_POST['existing_images'] ?? []))),
+            array_map('trim', array_map('strval', (array) ($_POST['existing_images'] ?? []))),
             static fn(string $img): bool => $img !== '' && !preg_match('/^https?:\/\//i', $img)
         )));
     }
@@ -309,7 +375,7 @@ class ProductAdminController
 
         $errors = [];
         $name = $this->cleanText($_POST['name'] ?? '');
-        $slug = $this->slugify((string)($_POST['slug'] ?? ''));
+        $slug = $this->slugify((string) ($_POST['slug'] ?? ''));
         if ($slug === '' && $name !== '') {
             $slug = Product::slugify($name);
         }
@@ -381,22 +447,27 @@ class ProductAdminController
             ], $variants),
         ];
 
-        if ($isEdit) {
-            try {
+        try {
+            if ($isEdit) {
                 $ok = Product::updateWithVariants($id, $data);
-            } catch (ConcurrentUpdateException $e) {
-                $_SESSION['errors'] = ['Tồn kho đã thay đổi bởi thao tác khác, vui lòng tải lại trang và thử lại.'];
-                header('Location: ' . ADMIN_URL . 'products');
-                exit;
-            }
-            if ($ok) {
-                $oldImages = is_array($existing['images'] ?? null) ? $existing['images'] : [];
-                foreach (array_diff($oldImages, $allImages) as $img) {
-                    $this->deleteUploadedImage((string)$img);
+                if ($ok) {
+                    $oldImages = is_array($existing['images'] ?? null) ? $existing['images'] : [];
+                    foreach (array_diff($oldImages, $allImages) as $img) {
+                        $this->deleteUploadedImage((string) $img);
+                    }
                 }
+            } else {
+                $ok = Product::createWithVariants($data) > 0;
             }
-        } else {
-            $ok = Product::createWithVariants($data) > 0;
+        } catch (ConcurrentUpdateException $e) {
+            $_SESSION['errors'] = ['Tồn kho đã thay đổi bởi thao tác khác, vui lòng tải lại trang và thử lại.'];
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
+        } catch (InvalidArgumentException $e) {
+            $_SESSION['errors'] = [$e->getMessage()];
+            $_SESSION['old'] = $oldState + ['existing_images' => $allImages];
+            header('Location: ' . ADMIN_URL . 'products');
+            exit;
         }
 
         if ($ok) {
@@ -428,7 +499,7 @@ class ProductAdminController
 
             $name = $this->cleanText($row['name'] ?? '');
             if ($name === '' && $attrs) {
-                $name = implode(' / ', array_map(static fn($v): string => is_bool($v) ? ($v ? 'Có' : 'Không') : (is_array($v) ? implode(', ', $v) : (string)$v), $attrs));
+                $name = implode(' / ', array_map(static fn($v): string => is_bool($v) ? ($v ? 'Có' : 'Không') : (is_array($v) ? implode(', ', $v) : (string) $v), $attrs));
             }
             if ($name === '') {
                 $errors[] = $label . ': vui lòng nhập tên phiên bản.';
@@ -436,23 +507,23 @@ class ProductAdminController
                 $errors[] = $label . ': tên tối đa 120 ký tự.';
             }
 
-            $priceRaw = trim(str_replace([',', ' '], '', is_scalar($row['price'] ?? null) ? (string)$row['price'] : ''));
-            if ($priceRaw === '' || !is_numeric($priceRaw) || (float)$priceRaw < 0) {
+            $priceRaw = trim(str_replace([',', ' '], '', is_scalar($row['price'] ?? null) ? (string) $row['price'] : ''));
+            if ($priceRaw === '' || !is_numeric($priceRaw) || (float) $priceRaw < 0) {
                 $errors[] = $label . ': giá phải là số lớn hơn hoặc bằng 0.';
             }
 
-            $stockRaw = trim(is_scalar($row['stock'] ?? null) ? (string)$row['stock'] : '');
-            $stockOrig = trim(is_scalar($row['stock_orig'] ?? null) ? (string)$row['stock_orig'] : '');
+            $stockRaw = trim(is_scalar($row['stock'] ?? null) ? (string) $row['stock'] : '');
+            $stockOrig = trim(is_scalar($row['stock_orig'] ?? null) ? (string) $row['stock_orig'] : '');
             $stock = null;
             if ($stockRaw !== '') {
                 if (!ctype_digit($stockRaw)) {
                     $errors[] = $label . ': tồn kho phải là số nguyên không âm.';
-                } elseif ($stockOrig === '' || (int)$stockRaw !== (int)$stockOrig) {
-                    $stock = (int)$stockRaw;
+                } elseif ($stockOrig === '' || (int) $stockRaw !== (int) $stockOrig) {
+                    $stock = (int) $stockRaw;
                 }
             }
 
-            $variantId = trim(is_scalar($row['variant_id'] ?? null) ? (string)$row['variant_id'] : '');
+            $variantId = trim(is_scalar($row['variant_id'] ?? null) ? (string) $row['variant_id'] : '');
             if (!preg_match('/^[A-Za-z0-9_-]{1,80}$/', $variantId)) {
                 $variantId = '';
             }
@@ -460,7 +531,7 @@ class ProductAdminController
             $variants[] = [
                 'variant_id' => $variantId,
                 'name' => $name,
-                'price' => is_numeric($priceRaw) ? max(0, (float)$priceRaw) : 0.0,
+                'price' => is_numeric($priceRaw) ? max(0, (float) $priceRaw) : 0.0,
                 'price_input' => $priceRaw,
                 'is_active' => isset($row['is_active']) ? 1 : 0,
                 'attributes' => $attrs,
@@ -468,7 +539,7 @@ class ProductAdminController
                 'stock_input' => $stockRaw,
                 'stock_orig' => $stockOrig,
                 'version_orig' => filter_var($row['version_orig'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]),
-                'reserved' => max(0, (int)($row['reserved'] ?? 0)),
+                'reserved' => max(0, (int) ($row['reserved'] ?? 0)),
             ];
         }
 
@@ -491,13 +562,13 @@ class ProductAdminController
             $options = $def['options'];
 
             if ($def['type'] === 'boolean') {
-                $out[$key] = is_scalar($raw) && !in_array((string)$raw, ['', '0'], true);
+                $out[$key] = is_scalar($raw) && !in_array((string) $raw, ['', '0'], true);
                 continue;
             }
 
             if ($def['type'] === 'list') {
                 $values = [];
-                foreach ((array)$raw as $item) {
+                foreach ((array) $raw as $item) {
                     $item = $this->cleanText(is_scalar($item) ? $item : '');
                     if ($item === '' || in_array($item, $values, true)) {
                         continue;
@@ -520,7 +591,7 @@ class ProductAdminController
                             $errors[] = $label . ' phải là số.';
                             continue;
                         }
-                        $out[$key] = preg_match('/^-?\d+$/', $number) ? (int)$number : (float)$number;
+                        $out[$key] = preg_match('/^-?\d+$/', $number) ? (int) $number : (float) $number;
                     } elseif ($def['type'] === 'enum' && $options && !in_array($value, $options, true)) {
                         $errors[] = $label . ': giá trị "' . $value . '" không hợp lệ.';
                         continue;
@@ -544,7 +615,7 @@ class ProductAdminController
 
     private function persistCreate(array $payload, array $allImages): void
     {
-        $productId = (int)Product::create(...$this->buildProductMutationArgs($payload, $allImages));
+        $productId = (int) Product::create(...$this->buildProductMutationArgs($payload, $allImages));
         if ($productId > 0) {
             Product::syncExteriorColors($productId, $this->buildExteriorColorRows($payload));
         }
@@ -559,14 +630,14 @@ class ProductAdminController
         Product::syncExteriorColors($id, $this->buildExteriorColorRows($payload));
 
         foreach ($removedImages as $img) {
-            $this->deleteUploadedImage((string)$img);
+            $this->deleteUploadedImage((string) $img);
         }
     }
 
     public function toggle($id = 0): void
     {
         Auth::verifyCsrf();
-        $id = (int)$id;
+        $id = (int) $id;
         $product = Product::getByIdAdmin($id);
         if (!$product) {
             $_SESSION['errors'] = ['Product not found.'];
@@ -574,7 +645,7 @@ class ProductAdminController
             exit;
         }
 
-        $next = ((int)($product['is_active'] ?? 0) === 1) ? 0 : 1;
+        $next = ((int) ($product['is_active'] ?? 0) === 1) ? 0 : 1;
         Product::setActive($id, $next);
         $_SESSION['flash'] = $next === 1 ? 'Sản phẩm hiện đang được hiển thị.' : 'Sản phẩm hiện đang bị ẩn.';
         header('Location: ' . ADMIN_URL . 'products');
@@ -584,7 +655,7 @@ class ProductAdminController
     public function delete($id = 0): void
     {
         Auth::verifyCsrf();
-        $id = (int)$id;
+        $id = (int) $id;
         $product = Product::getByIdAdmin($id);
         if (!$product) {
             $_SESSION['errors'] = ['Product not found.'];
@@ -603,7 +674,7 @@ class ProductAdminController
         Product::deleteById($id);
 
         foreach ($images as $img) {
-            $this->deleteUploadedImage((string)$img);
+            $this->deleteUploadedImage((string) $img);
         }
 
         $_SESSION['flash'] = 'Sản phẩm đã được xóa thành công.';
@@ -613,18 +684,21 @@ class ProductAdminController
 
     private function collectPayload(): array
     {
+        $rawAttrs = [];
+        if (is_array($_POST['attrs'] ?? null)) {
+            $rawAttrs = $_POST['attrs'];
+        } elseif (is_array($_POST['attributes'] ?? null)) {
+            $rawAttrs = $_POST['attributes'];
+        }
+
         return [
-            'category_id' => (int)($_POST['category_id'] ?? 0),
+            'category_id' => (int) ($_POST['category_id'] ?? 0),
             'name' => $this->cleanText($_POST['name'] ?? ''),
-            'slug' => $this->slugify((string)($_POST['slug'] ?? ''), $this->cleanText($_POST['name'] ?? '')),
-            'price' => (float)($_POST['price'] ?? 0),
+            'slug' => $this->slugify((string) ($_POST['slug'] ?? ''), $this->cleanText($_POST['name'] ?? '')),
+            'price' => (float) ($_POST['price'] ?? 0),
             'description' => $this->cleanText($_POST['description'] ?? ''),
-            'range' => $this->cleanText($_POST['range'] ?? ''),
-            'power' => $this->cleanText($_POST['power'] ?? ''),
-            'acceleration' => $this->cleanText($_POST['acceleration'] ?? ''),
-            'max_speed' => $this->cleanText($_POST['max_speed'] ?? ''),
-            'battery' => $this->cleanText($_POST['battery'] ?? ''),
-            'deposit_amount' => max(0, (int)($_POST['deposit_amount'] ?? 15000000)),
+            'raw_attrs' => $rawAttrs,
+            'attributes' => [],
             'modal_default_image' => $this->cleanText($_POST['modal_default_image'] ?? ''),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
         ];
@@ -639,16 +713,11 @@ class ProductAdminController
         if (!$payload['name']) {
             $errors[] = 'Product name is required.';
         }
-        if ($this->strLength((string)$payload['name']) > 120) {
+        if ($this->strLength((string) $payload['name']) > 120) {
             $errors[] = 'Product name must be at most 120 characters.';
         }
-        if ($this->strLength((string)$payload['description']) > 2000) {
+        if ($this->strLength((string) $payload['description']) > 2000) {
             $errors[] = 'Description must be at most 2000 characters.';
-        }
-        foreach (['range', 'power', 'acceleration', 'max_speed', 'battery'] as $field) {
-            if ($this->strLength((string)($payload[$field] ?? '')) > 120) {
-                $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be at most 120 characters.';
-            }
         }
         if (!$payload['slug']) {
             $errors[] = 'Slug is required.';
@@ -656,7 +725,7 @@ class ProductAdminController
         if ($payload['price'] <= 0) {
             $errors[] = 'Price must be greater than 0.';
         }
-        if (Product::slugExists($payload['slug'], $id > 0 ? $id : null)) {
+        if ($payload['slug'] && Product::slugExists($payload['slug'], $id > 0 ? $id : null)) {
             $errors[] = 'Slug already exists.';
         }
         return $errors;
@@ -669,12 +738,12 @@ class ProductAdminController
 
     private function cleanText(mixed $value): string
     {
-        return trim(strip_tags((string)$value));
+        return trim(strip_tags((string) $value));
     }
 
     private function buildExteriorColorRows(array $payload): array
     {
-        $defaultImage = ltrim(trim((string)($payload['modal_default_image'] ?? '')), '/');
+        $defaultImage = ltrim(trim((string) ($payload['modal_default_image'] ?? '')), '/');
         $codes = is_array($_POST['color_code'] ?? null) ? $_POST['color_code'] : [];
         $names = is_array($_POST['color_name'] ?? null) ? $_POST['color_name'] : [];
         $hexes = is_array($_POST['color_hex'] ?? null) ? $_POST['color_hex'] : [];
@@ -684,13 +753,13 @@ class ProductAdminController
         $rows = [];
         $rowCount = max(count($codes), count($names), count($hexes), count($surcharges), count($images));
         for ($i = 0; $i < $rowCount; $i++) {
-            $code = strtoupper(trim((string)($codes[$i] ?? '')));
-            $name = trim((string)($names[$i] ?? ''));
+            $code = strtoupper(trim((string) ($codes[$i] ?? '')));
+            $name = trim((string) ($names[$i] ?? ''));
             if ($code === '' || $name === '') {
                 continue;
             }
 
-            $image = ltrim(trim((string)($images[$i] ?? '')), '/');
+            $image = ltrim(trim((string) ($images[$i] ?? '')), '/');
             $row = [
                 'code' => $code,
                 'name' => $name,
@@ -700,12 +769,12 @@ class ProductAdminController
             if ($image !== '') {
                 $row['image'] = $image;
             }
-            $hex = strtoupper(trim((string)($hexes[$i] ?? '')));
+            $hex = strtoupper(trim((string) ($hexes[$i] ?? '')));
             if ($hex !== '') {
                 $row['hex'] = str_starts_with($hex, '#') ? $hex : '#' . $hex;
             }
 
-            $surcharge = max(0, (int)preg_replace('/\D+/', '', (string)($surcharges[$i] ?? '')));
+            $surcharge = max(0, (int) preg_replace('/\D+/', '', (string) ($surcharges[$i] ?? '')));
             if ($surcharge > 0) {
                 $row['surcharge'] = $surcharge;
             }
@@ -733,43 +802,34 @@ class ProductAdminController
 
     private function buildSpecs(array $payload): array
     {
-        $specs = [
-            'range' => $payload['range'],
-            'power' => $payload['power'],
-            'acceleration' => $payload['acceleration'],
-            'max_speed' => $payload['max_speed'],
-            'battery' => $payload['battery'],
-            'deposit_amount' => max(0, (int)($payload['deposit_amount'] ?? 15000000)),
-            'deposit_non_refundable' => 1,
-        ];
+        $specs = is_array($payload['attributes'] ?? null)
+            ? $payload['attributes']
+            : ['deposit_non_refundable' => 1];
 
-        return array_filter($specs, static function ($v): bool {
+        return array_filter($specs, static function (mixed $v): bool {
             if (is_string($v)) {
                 return trim($v) !== '';
             }
-
             if (is_array($v)) {
-                return !empty($v);
+                return $v !== [];
             }
-
             if (is_int($v) || is_float($v) || is_bool($v)) {
                 return true;
             }
-
             return false;
         });
     }
 
     private function resolveMainImage(array $allImages, array $newImages): string
     {
-        $postedMain = ltrim(trim((string)($_POST['main_image'] ?? '')), '/');
+        $postedMain = ltrim(trim((string) ($_POST['main_image'] ?? '')), '/');
         if ($postedMain && in_array($postedMain, $allImages, true)) {
             return $postedMain;
         }
 
-        $mainNewIndex = (int)($_POST['main_new_index'] ?? -1);
+        $mainNewIndex = (int) ($_POST['main_new_index'] ?? -1);
         if ($mainNewIndex >= 0 && isset($newImages[$mainNewIndex])) {
-            $candidate = (string)$newImages[$mainNewIndex];
+            $candidate = (string) $newImages[$mainNewIndex];
             if ($candidate && in_array($candidate, $allImages, true)) {
                 return $candidate;
             }
@@ -825,13 +885,13 @@ class ProductAdminController
     private function resolveImageFamilyFromPayload(array $payload, array $existing): string
     {
         // 1. Use the slug being saved (trimmed, lowercased)
-        $slug = strtolower(trim((string)($payload['slug'] ?? '')));
+        $slug = strtolower(trim((string) ($payload['slug'] ?? '')));
         if ($slug !== '') {
             return $slug;
         }
 
         // 2. Fall back to existing record's slug
-        $existingSlug = strtolower(trim((string)($existing['slug'] ?? '')));
+        $existingSlug = strtolower(trim((string) ($existing['slug'] ?? '')));
         if ($existingSlug !== '') {
             return $existingSlug;
         }
@@ -849,7 +909,7 @@ class ProductAdminController
         }
 
         // 4. Last resort: derive from product name via ImageHelper
-        $name = (string)($payload['name'] ?? '');
+        $name = (string) ($payload['name'] ?? '');
         $family = ImageHelper::extractFamily($name);
         return $family !== '' ? 'vinfast-' . $family : 'products';
     }
@@ -857,14 +917,14 @@ class ProductAdminController
     private function buildProductMutationArgs(array $payload, array $allImages): array
     {
         return [
-            (int)$payload['category_id'],
-            (string)$payload['name'],
-            (string)$payload['slug'],
-            (string)$payload['description'],
+            (int) $payload['category_id'],
+            (string) $payload['name'],
+            (string) $payload['slug'],
+            (string) $payload['description'],
             $this->buildSpecs($payload),
-            (float)$payload['price'],
+            (float) $payload['price'],
             $allImages,
-            (int)$payload['is_active'],
+            (int) $payload['is_active'],
         ];
     }
 

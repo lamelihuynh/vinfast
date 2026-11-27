@@ -87,77 +87,135 @@ foreach ($images as $imgRel) {
     $imageUrls[] = $resolveImageUrl((string)$imgRel);
 }
 
-$exteriorColorsRaw = is_array($product['exterior_colors'] ?? null) ? $product['exterior_colors'] : [];
-$colorOptions = [];
-foreach ($exteriorColorsRaw as $row) {
-    if (!is_array($row)) {
-        continue;
-    }
+$resolveColorOptions = static function (array $rawRows) use ($resolveImageUrl, $productFamily, &$imageUrls): array {
+    $indexed = [];
+    foreach (array_values($rawRows) as $idx => $row) {
+        if (!is_array($row)) {
+            continue;
+        }
 
-    $code = strtoupper(trim((string)($row['code'] ?? '')));
-    $name = trim((string)($row['name'] ?? ''));
-    $hex = strtoupper(trim((string)($row['hex'] ?? '')));
-    $img = trim((string)($row['image'] ?? ''));
+        $code = strtoupper(trim((string)($row['code'] ?? $row['colorCode'] ?? $row['color_code'] ?? '')));
+        $name = trim((string)($row['name'] ?? $row['colorName'] ?? $row['color_name'] ?? ''));
+        $hex = strtoupper(trim((string)($row['hex'] ?? $row['colorHex'] ?? $row['color_hex'] ?? '')));
+        $img = trim((string)($row['image'] ?? $row['imagePath'] ?? $row['image_path'] ?? ''));
 
-    if ($code === '' || $name === '') {
-        continue;
-    }
+        if ($code === '' || $name === '') {
+            continue;
+        }
 
-    $imageUrl = '';
-    if ($img !== '') {
-        $imageUrl = $resolveImageUrl($img);
-    }
+        $imageUrl = '';
+        if ($img !== '') {
+            $imageUrl = $resolveImageUrl($img);
+        }
 
-    if ($imageUrl === '' && $productFamily !== '') {
-        $codeImageCandidates = [
-            'uploads/products/' . $productFamily . '/' . strtolower($code) . '.webp',
-            'uploads/products/' . $productFamily . '/' . strtolower($code) . '.jpg',
-            'uploads/products/' . $productFamily . '/' . strtolower($code) . '.jpeg',
-            'uploads/products/' . $productFamily . '/' . strtolower($code) . '.png',
-        ];
+        if ($imageUrl === '' && $productFamily !== '') {
+            $codeImageCandidates = [
+                'uploads/products/' . $productFamily . '/' . strtolower($code) . '.webp',
+                'uploads/products/' . $productFamily . '/' . strtolower($code) . '.jpg',
+                'uploads/products/' . $productFamily . '/' . strtolower($code) . '.jpeg',
+                'uploads/products/' . $productFamily . '/' . strtolower($code) . '.png',
+            ];
 
-        foreach ($codeImageCandidates as $candidate) {
-            if (is_file(ROOT . '/public/images/' . $candidate)) {
-                $imageUrl = BASE_URL . 'public/images/' . $candidate;
-                break;
+            foreach ($codeImageCandidates as $candidate) {
+                if (is_file(ROOT . '/public/images/' . $candidate)) {
+                    $imageUrl = BASE_URL . 'public/images/' . $candidate;
+                    break;
+                }
             }
         }
+
+        if ($imageUrl === '') {
+            foreach ($imageUrls as $galleryUrl) {
+                $path = parse_url((string)$galleryUrl, PHP_URL_PATH);
+                $filename = is_string($path) ? basename($path) : '';
+                $basename = strtoupper((string)pathinfo($filename, PATHINFO_FILENAME));
+                if ($basename !== '' && $basename === $code) {
+                    $imageUrl = $galleryUrl;
+                    break;
+                }
+            }
+        }
+
+        if ($imageUrl !== '' && !in_array($imageUrl, $imageUrls, true)) {
+            $imageUrls[] = $imageUrl;
+        }
+
+        $indexed[$code] = [
+            'code' => $code,
+            'name' => $name,
+            'hex' => preg_match('/^#?[A-F0-9]{3,8}$/i', $hex) ? ('#' . ltrim($hex, '#')) : '',
+            'image' => $imageUrl,
+            'surcharge' => max(0, (int)($row['surcharge'] ?? 0)),
+            'isDefault' => !empty($row['isDefault'] ?? $row['is_default'] ?? false),
+            'sortOrder' => (int)($row['sortOrder'] ?? $row['sort_order'] ?? $idx),
+        ];
     }
 
-    $colorOptions[$code] = [
-        'code' => $code,
-        'name' => $name,
-        'hex' => preg_match('/^#?[A-F0-9]{3,6}$/i', $hex) ? ('#' . ltrim($hex, '#')) : '',
-        'image' => $imageUrl,
-        'surcharge' => max(0, (int)($row['surcharge'] ?? 0)),
-    ];
-}
+    $list = array_values($indexed);
+    usort($list, static function (array $a, array $b): int {
+        if ($a['sortOrder'] === $b['sortOrder']) {
+            return strcasecmp($a['code'], $b['code']);
+        }
+        return $a['sortOrder'] <=> $b['sortOrder'];
+    });
 
-$colorOptions = array_values($colorOptions);
-
-foreach ($colorOptions as &$colorOption) {
-    if (!empty($colorOption['image'])) {
-        continue;
-    }
-
-    $targetCode = strtoupper((string)$colorOption['code']);
-    foreach ($imageUrls as $galleryUrl) {
-        $path = parse_url((string)$galleryUrl, PHP_URL_PATH);
-        $filename = is_string($path) ? basename($path) : '';
-        $basename = strtoupper((string)pathinfo($filename, PATHINFO_FILENAME));
-        if ($basename !== '' && $basename === $targetCode) {
-            $colorOption['image'] = $galleryUrl;
+    $hasDefault = false;
+    foreach ($list as $item) {
+        if (!empty($item['isDefault'])) {
+            $hasDefault = true;
             break;
         }
     }
-}
-unset($colorOption);
+    if (!$hasDefault && !empty($list)) {
+        $list[0]['isDefault'] = true;
+    }
 
-foreach ($colorOptions as $c) {
-    if (($c['image'] ?? '') !== '' && !in_array($c['image'], $imageUrls, true)) {
-        $imageUrls[] = $c['image'];
+    return array_map(static function (array $item): array {
+        unset($item['sortOrder']);
+        return $item;
+    }, $list);
+};
+
+$rawActiveVariants = isset($activeVariants) && is_array($activeVariants) ? $activeVariants : [];
+if (empty($rawActiveVariants)) {
+    foreach ((array)($product['variants'] ?? []) as $v) {
+        if (is_array($v) && !empty($v['isActive']) && !empty($v['variantId'])) {
+            $rawActiveVariants[] = $v;
+        }
     }
 }
+
+$jsVariants = [];
+foreach ($rawActiveVariants as $v) {
+    $vColorsRaw = is_array($v['colors'] ?? null) ? $v['colors'] : [];
+    $jsVariants[] = [
+        'variantId' => (string)$v['variantId'],
+        'name' => (string)($v['name'] ?? 'Tiêu chuẩn'),
+        'price' => (float)($v['price'] ?? $product['price'] ?? 0),
+        'colors' => $resolveColorOptions($vColorsRaw),
+    ];
+}
+
+if (empty($jsVariants)) {
+    $fallbackColors = is_array($product['exterior_colors'] ?? null) ? $product['exterior_colors'] : [];
+    $jsVariants[] = [
+        'variantId' => (string)($product['default_variant_id'] ?? ($productId . '-STD')),
+        'name' => 'Tiêu chuẩn',
+        'price' => (float)($product['price'] ?? 0),
+        'colors' => $resolveColorOptions($fallbackColors),
+    ];
+}
+
+$selectedVariantId = isset($selectedVariantId) && is_string($selectedVariantId) ? trim($selectedVariantId) : '';
+$selectedVariant = $jsVariants[0];
+foreach ($jsVariants as $vItem) {
+    if ($vItem['variantId'] === $selectedVariantId) {
+        $selectedVariant = $vItem;
+        break;
+    }
+}
+$selectedVariantId = (string)$selectedVariant['variantId'];
+$colorOptions = $selectedVariant['colors'];
 
 if (empty($imageUrls)) {
     $imageUrls[] = BASE_URL . 'public/images/products/default.jpg';
@@ -166,12 +224,21 @@ if (empty($imageUrls)) {
 $mainImage = $imageUrls[0];
 
 $defaultColor = null;
-if (!empty($colorOptions)) {
-    $defaultColor = $colorOptions[0];
-    if (!empty($defaultColor['image'])) {
-        $mainImage = $defaultColor['image'];
+foreach ($colorOptions as $cOpt) {
+    if (!empty($cOpt['isDefault'])) {
+        $defaultColor = $cOpt;
+        break;
     }
 }
+if ($defaultColor === null && !empty($colorOptions)) {
+    $defaultColor = $colorOptions[0];
+}
+if ($defaultColor !== null && !empty($defaultColor['image'])) {
+    $mainImage = $defaultColor['image'];
+}
+$colorCode = (string)($defaultColor['code'] ?? '');
+$colorName = (string)($defaultColor['name'] ?? '');
+$selectedColorSurcharge = (int)($defaultColor['surcharge'] ?? 0);
 
 $categoryText = (string)($specs['category'] ?? ($specs['segment'] ?? 'Xe điện VinFast'));
 $powerText = (string)($specs['power'] ?? ($specs['motor_power'] ?? ($specs['max_power'] ?? 'N/A')));
@@ -250,7 +317,8 @@ if (empty($specRows)) {
 }
 
 
-$priceText = number_format((float)($product['price'] ?? 0), 0, ',', '.');
+$initialDisplayPrice = (float)($selectedVariant['price'] ?? $product['price'] ?? 0) + $selectedColorSurcharge;
+$priceText = number_format($initialDisplayPrice, 0, ',', '.');
 
 $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 $productsCssVersion = AssetHelper::getVersion('public/css/frontend/products.css');
@@ -286,6 +354,7 @@ if (function_exists('mb_strlen')) {
 
         <?php include ROOT . '/app/views/frontend/products/partials/detail/tabs.php'; ?>
     </div>
+    <script id="vfPdVariantsData" type="application/json"><?= json_encode($jsVariants, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
 </section>
 
 <script src="<?= BASE_URL ?>public/js/frontend/products.js?v=<?= htmlspecialchars($productsJsVersion) ?>"></script>

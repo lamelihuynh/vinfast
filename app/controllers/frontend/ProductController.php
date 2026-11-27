@@ -230,10 +230,29 @@ class ProductController
             return;
         }
 
+        $activeVariants = array_values(array_filter(
+            is_array($product['variants'] ?? null) ? $product['variants'] : [],
+            static fn($v): bool => is_array($v) && !empty($v['isActive']) && !empty($v['variantId'])
+        ));
+
+        $requestedVariantId = trim((string)($_GET['variant'] ?? ''));
+        $selectedVariant = $activeVariants[0] ?? null;
+        if ($requestedVariantId !== '') {
+            foreach ($activeVariants as $v) {
+                if ((string)$v['variantId'] === $requestedVariantId) {
+                    $selectedVariant = $v;
+                    break;
+                }
+            }
+        }
+        $selectedVariantId = (string)($selectedVariant['variantId'] ?? ($product['default_variant_id'] ?? ''));
+
         SEO::set($product['name'] ?? 'Product Detail', 'Chi tiết xe VinFast', 'vinfast, chi tiết xe');
         View::render('frontend/products/detail', [
-            'product'      => $product,
-            'isWishlisted' => $isWishlisted,
+            'product'           => $product,
+            'activeVariants'    => $activeVariants,
+            'selectedVariantId' => $selectedVariantId,
+            'isWishlisted'      => $isWishlisted,
         ]);
     }
 
