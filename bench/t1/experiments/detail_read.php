@@ -191,13 +191,15 @@ SQL;
 $stmtJoin4 = $pdo->prepare($sqlJoin4);
 $stmtJsonAgg = $pdo->prepare($sqlJsonAgg);
 
-/** @return array{data: array, rows: int, bytes: int} */
+// Mỗi hàm đọc trả `raw` = dữ liệu thô nhận từ DB; byte được tính bằng bench_payload_bytes()
+// sau khi bấm giờ xong, để latency chỉ gồm truy vấn + ghép mảng, không gồm json_encode.
+
+/** @return array{data: array, rows: int, raw: mixed} */
 $readMongo = static function (string $pid) use ($productsColl): array {
     $doc = $productsColl->findOne(['productID' => $pid]);
     if (!$doc) {
-        return ['data' => [], 'rows' => 0, 'bytes' => 0];
+        return ['data' => [], 'rows' => 0, 'raw' => null];
     }
-    $bytes = strlen((string)json_encode($doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     $out = [
         'product_id'  => (string)$doc['productID'],
         'category_id' => (int)$doc['categoryID'],
@@ -210,18 +212,17 @@ $readMongo = static function (string $pid) use ($productsColl): array {
         'attributes'  => is_array($doc['attributes'] ?? null) ? $doc['attributes'] : [],
         'variants'    => is_array($doc['variants'] ?? null) ? $doc['variants'] : [],
     ];
-    return ['data' => $out, 'rows' => 1, 'bytes' => $bytes];
+    return ['data' => $out, 'rows' => 1, 'raw' => $doc];
 };
 
-/** @return array{data: array, rows: int, bytes: int} */
+/** @return array{data: array, rows: int, raw: mixed} */
 $readSqlJoin4 = static function (string $pid) use ($stmtJoin4): array {
     $stmtJoin4->execute([':pid' => $pid]);
     $rows = $stmtJoin4->fetchAll(PDO::FETCH_ASSOC);
     $rowCount = count($rows);
     if ($rowCount === 0) {
-        return ['data' => [], 'rows' => 0, 'bytes' => 0];
+        return ['data' => [], 'rows' => 0, 'raw' => null];
     }
-    $bytes = strlen((string)json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
     $first = $rows[0];
     $variantsMap = [];
@@ -281,17 +282,16 @@ $readSqlJoin4 = static function (string $pid) use ($stmtJoin4): array {
         'variants'    => array_values($variantsMap),
     ];
 
-    return ['data' => $out, 'rows' => $rowCount, 'bytes' => $bytes];
+    return ['data' => $out, 'rows' => $rowCount, 'raw' => $rows];
 };
 
-/** @return array{data: array, rows: int, bytes: int} */
+/** @return array{data: array, rows: int, raw: mixed} */
 $readSqlJsonAgg = static function (string $pid) use ($stmtJsonAgg): array {
     $stmtJsonAgg->execute([':pid' => $pid]);
     $row = $stmtJsonAgg->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
-        return ['data' => [], 'rows' => 0, 'bytes' => 0];
+        return ['data' => [], 'rows' => 0, 'raw' => null];
     }
-    $bytes = strlen((string)json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
     $variants = json_decode((string)($row['variants_json'] ?? '[]'), true);
     $rawAttrs = json_decode((string)($row['attrs_json'] ?? '[]'), true);
@@ -322,7 +322,7 @@ $readSqlJsonAgg = static function (string $pid) use ($stmtJsonAgg): array {
         'variants'    => is_array($variants) ? $variants : [],
     ];
 
-    return ['data' => $out, 'rows' => 1, 'bytes' => $bytes];
+    return ['data' => $out, 'rows' => 1, 'raw' => $row];
 };
 
 // ---------------------------------------------------------------------------
@@ -376,9 +376,10 @@ foreach ($variants as $vName => $meta) {
         $ms = bench_time(static function () use ($fn, $pid, &$res): void {
             $res = $fn($pid);
         });
+        $bytes = $res['raw'] !== null ? bench_payload_bytes($res['raw']) : 0;
         $latencies[] = $ms;
         $rowsSum += $res['rows'];
-        $bytesSum += $res['bytes'];
+        $bytesSum += $bytes;
 
         bench_csv($csvFile, BENCH_RAW_HEADER, [
             'detail_read',
@@ -389,7 +390,7 @@ foreach ($variants as $vName => $meta) {
             $r,
             sprintf('%.4f', $ms),
             $res['rows'],
-            $res['bytes'],
+            $bytes,
             bench_now_iso(),
         ]);
     }

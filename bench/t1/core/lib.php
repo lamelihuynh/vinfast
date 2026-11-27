@@ -91,6 +91,15 @@ function bench_time(callable $fn): float
 }
 
 /**
+ * Kích thước payload (byte JSON) của dữ liệu một lần đọc trả về.
+ * Gọi SAU bench_time(), không gọi bên trong closure đo, để latency không lẫn thời gian json_encode.
+ */
+function bench_payload_bytes(mixed $payload): int
+{
+    return strlen((string)json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
+
+/**
  * Phân vị Nearest-Rank cho $p thuộc [0, 100].
  * @param float[]|int[] $xs
  */

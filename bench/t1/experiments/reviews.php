@@ -282,7 +282,7 @@ try {
                         ['projection' => ['_id' => 0, 'reviews' => ['$slice' => [0, 10]]]]
                     );
                     $revs = is_array($doc['reviews'] ?? null) ? $doc['reviews'] : [];
-                    return ['rows' => count($revs), 'bytes' => strlen((string)json_encode($revs, JSON_UNESCAPED_UNICODE)), 'cleanup' => null];
+                    return ['rows' => count($revs), 'raw' => $revs, 'cleanup' => null];
                 },
             ],
             'sql_read_page1' => [
@@ -290,7 +290,7 @@ try {
                 'run' => static function (string $pid) use ($stmtPage1): array {
                     $stmtPage1->execute([':pid' => $pid]);
                     $rows = $stmtPage1->fetchAll(PDO::FETCH_ASSOC);
-                    return ['rows' => count($rows), 'bytes' => strlen((string)json_encode($rows, JSON_UNESCAPED_UNICODE)), 'cleanup' => null];
+                    return ['rows' => count($rows), 'raw' => $rows, 'cleanup' => null];
                 },
             ],
             'hybrid_page1' => [
@@ -301,7 +301,7 @@ try {
                         ['projection' => ['_id' => 0, 'avgRating' => 1, 'totalReviews' => 1, 'reviews' => 1]]
                     );
                     $revs = is_array($doc['reviews'] ?? null) ? $doc['reviews'] : [];
-                    return ['rows' => count($revs), 'bytes' => strlen((string)json_encode($doc, JSON_UNESCAPED_UNICODE)), 'cleanup' => null];
+                    return ['rows' => count($revs), 'raw' => $doc, 'cleanup' => null];
                 },
             ],
             'embedded_read_mid' => [
@@ -312,7 +312,7 @@ try {
                         ['projection' => ['_id' => 0, 'reviews' => ['$slice' => [$midOffset, 10]]]]
                     );
                     $revs = is_array($doc['reviews'] ?? null) ? $doc['reviews'] : [];
-                    return ['rows' => count($revs), 'bytes' => strlen((string)json_encode($revs, JSON_UNESCAPED_UNICODE)), 'cleanup' => null];
+                    return ['rows' => count($revs), 'raw' => $revs, 'cleanup' => null];
                 },
             ],
             'sql_offset_mid' => [
@@ -322,7 +322,7 @@ try {
                     $stmtOffsetMid->bindValue(':off', $midOffset, PDO::PARAM_INT);
                     $stmtOffsetMid->execute();
                     $rows = $stmtOffsetMid->fetchAll(PDO::FETCH_ASSOC);
-                    return ['rows' => count($rows), 'bytes' => strlen((string)json_encode($rows, JSON_UNESCAPED_UNICODE)), 'cleanup' => null];
+                    return ['rows' => count($rows), 'raw' => $rows, 'cleanup' => null];
                 },
             ],
             'sql_keyset_mid' => [
@@ -334,7 +334,7 @@ try {
                     $stmtKeysetMid->bindValue(':cid', (int)$cur['id'], PDO::PARAM_INT);
                     $stmtKeysetMid->execute();
                     $rows = $stmtKeysetMid->fetchAll(PDO::FETCH_ASSOC);
-                    return ['rows' => count($rows), 'bytes' => strlen((string)json_encode($rows, JSON_UNESCAPED_UNICODE)), 'cleanup' => null];
+                    return ['rows' => count($rows), 'raw' => $rows, 'cleanup' => null];
                 },
             ],
             'embedded_write_one' => [
@@ -390,7 +390,7 @@ try {
                         ['$match' => ['productID' => $pid]],
                         ['$project' => ['_id' => 0, 'n' => ['$size' => '$reviews'], 'avg' => ['$avg' => '$reviews.rating']]],
                     ])->toArray();
-                    return ['rows' => 1, 'bytes' => strlen((string)json_encode($res)), 'cleanup' => null];
+                    return ['rows' => 1, 'raw' => $res, 'cleanup' => null];
                 },
             ],
             'sql_avg' => [
@@ -398,7 +398,7 @@ try {
                 'run' => static function (string $pid) use ($stmtAvg): array {
                     $stmtAvg->execute([':pid' => $pid]);
                     $row = $stmtAvg->fetch(PDO::FETCH_ASSOC);
-                    return ['rows' => 1, 'bytes' => strlen((string)json_encode($row)), 'cleanup' => null];
+                    return ['rows' => 1, 'raw' => $row, 'cleanup' => null];
                 },
             ],
         ];
@@ -428,6 +428,8 @@ try {
                 if ($res['cleanup'] !== null) {
                     ($res['cleanup'])();
                 }
+                // Thao tác ghi khai báo sẵn 'bytes'; thao tác đọc trả 'raw', đếm byte ngoài đoạn bấm giờ
+                $bytes = $res['bytes'] ?? bench_payload_bytes($res['raw'] ?? null);
 
                 $latencies[] = $ms;
                 $lastRows = $res['rows'];
@@ -441,7 +443,7 @@ try {
                     $run,
                     sprintf('%.4f', $ms),
                     $res['rows'],
-                    $res['bytes'],
+                    $bytes,
                     bench_now_iso(),
                 ]);
             }
