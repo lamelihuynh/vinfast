@@ -170,6 +170,11 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
       </div>
     </div>
 
+    <div id="danhgia" class="bg-white rounded-lg border border-slate-100 p-5 mt-6">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">Đánh giá sản phẩm (<?= (int)($product['total_reviews'] ?? 0) ?>)</h2>
+      <?php include ROOT . '/app/views/frontend/products/partials/detail/review-section.php'; ?>
+    </div>
+
     <?php $related = array_values(array_filter($related, static fn($r) => (int)$r['id'] !== (int)$product['id'])); ?>
     <?php if ($related): ?>
       <h2 class="text-lg font-bold text-slate-900 mt-8 mb-3">Cùng danh mục</h2>

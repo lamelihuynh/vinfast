@@ -8,14 +8,60 @@
  */
 class CommentAdminController 
 {
+    private const REVIEW_PER_PAGE = 20;
+
     public function index(): void
     {
-        $counts = Comment::getCounts();
+        $tab = (($_GET['tab'] ?? 'news') === 'reviews') ? 'reviews' : 'news';
+        $newsCounts = Comment::getCounts();
+        $reviewCounts = ProductReview::getCounts();
+
+        if ($tab === 'reviews') {
+            $status = trim((string)($_GET['status'] ?? 'all'));
+            if (!in_array($status, ['all', 'pending', 'approved'], true)) {
+                $status = 'all';
+            }
+            $filterStatus = $status === 'all' ? null : $status;
+            $page = max(1, (int)($_GET['page'] ?? 1));
+
+            $total = ProductReview::countAdminList($filterStatus);
+            $pg = new Pagination($total, $page, self::REVIEW_PER_PAGE);
+            $reviews = ProductReview::getAdminList($filterStatus, $pg->current, $pg->perPage);
+
+            // T1-12 & T1-17: Lấy tên/slug sản phẩm cho cả trang chỉ bằng 1 lệnh find $in duy nhất
+            $productIds = array_column($reviews, 'product_id');
+            $productsMap = Product::getManyByIds($productIds, ['name', 'slug']);
+
+            $queryParams = ['tab' => 'reviews'];
+            if ($status !== 'all') {
+                $queryParams['status'] = $status;
+            }
+            $pageUrl = ADMIN_URL . 'comments?' . http_build_query($queryParams) . '&page=';
+
+            SEO::set('Quản lý đánh giá sản phẩm');
+            View::render('admin/comments/index', [
+                'tab'          => 'reviews',
+                'counts'       => $reviewCounts,
+                'newsCounts'   => $newsCounts,
+                'reviewCounts' => $reviewCounts,
+                'reviews'      => $reviews,
+                'productsMap'  => $productsMap,
+                'reviewStatus' => $status,
+                'pg'           => $pg,
+                'pageUrl'      => $pageUrl,
+            ], 'admin');
+            return;
+        }
+
         $allComments = Comment::getAllAdmin();
 
+        SEO::set('Quản lý bình luận tin tức');
         View::render('admin/comments/index', [
-            'comments' => $allComments,
-            'counts'   => $counts
+            'tab'          => 'news',
+            'comments'     => $allComments,
+            'counts'       => $newsCounts,
+            'newsCounts'   => $newsCounts,
+            'reviewCounts' => $reviewCounts,
         ], 'admin');
     }
 
@@ -55,5 +101,83 @@ class CommentAdminController
 
         header('Location: ' . ADMIN_URL . 'comment');
         exit;
+    }
+
+    // ------------------------------------------------------------------
+    // Đánh giá sản phẩm (T1-17: POST + CSRF -> ReviewService đồng bộ PG & Mongo)
+    // ------------------------------------------------------------------
+
+    public function reviewApprove($id = 0): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: ' . ADMIN_URL . 'comments?tab=reviews');
+            exit;
+        }
+
+        Auth::verifyCsrf();
+        $id = (int)$id;
+
+        if ($id > 0 && ReviewService::approve($id)) {
+            $_SESSION['flash'] = 'Đã duyệt đánh giá sản phẩm và cập nhật điểm trung bình.';
+        } else {
+            $_SESSION['errors'] = ['Không tìm thấy hoặc không thể duyệt đánh giá này.'];
+        }
+
+        header('Location: ' . $this->reviewReturnUrl());
+        exit;
+    }
+
+    public function reviewReject($id = 0): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: ' . ADMIN_URL . 'comments?tab=reviews');
+            exit;
+        }
+
+        Auth::verifyCsrf();
+        $id = (int)$id;
+
+        if ($id > 0 && ReviewService::reject($id)) {
+            $_SESSION['flash'] = 'Đã chuyển đánh giá về trạng thái ẩn (chờ duyệt) và cập nhật lại tóm tắt.';
+        } else {
+            $_SESSION['errors'] = ['Không tìm thấy hoặc không thể bỏ duyệt đánh giá này.'];
+        }
+
+        header('Location: ' . $this->reviewReturnUrl());
+        exit;
+    }
+
+    public function reviewDelete($id = 0): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: ' . ADMIN_URL . 'comments?tab=reviews');
+            exit;
+        }
+
+        Auth::verifyCsrf();
+        $id = (int)$id;
+
+        if ($id > 0 && ReviewService::delete($id)) {
+            $_SESSION['flash'] = 'Đã xóa đánh giá sản phẩm và cập nhật điểm trung bình.';
+        } else {
+            $_SESSION['errors'] = ['Không tìm thấy hoặc không thể xóa đánh giá này.'];
+        }
+
+        header('Location: ' . $this->reviewReturnUrl());
+        exit;
+    }
+
+    private function reviewReturnUrl(): string
+    {
+        $status = trim((string)($_POST['return_status'] ?? ''));
+        $page = max(1, (int)($_POST['return_page'] ?? 1));
+        $params = ['tab' => 'reviews'];
+        if (in_array($status, ['pending', 'approved'], true)) {
+            $params['status'] = $status;
+        }
+        if ($page > 1) {
+            $params['page'] = $page;
+        }
+        return ADMIN_URL . 'comments?' . http_build_query($params);
     }
 }
