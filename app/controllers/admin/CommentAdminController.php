@@ -29,8 +29,17 @@ class CommentAdminController
             $reviews = ProductReview::getAdminList($filterStatus, $pg->current, $pg->perPage);
 
             // T1-12 & T1-17: Lấy tên/slug sản phẩm cho cả trang chỉ bằng 1 lệnh find $in duy nhất
+            // Review nằm ở PG, tên sản phẩm nằm ở Mongo. Mongo lỗi thì trang vẫn phải mở được để admin
+            // duyệt tiếp (thao tác duyệt chỉ cần PG); view hiện "Sản phẩm #id" kèm cảnh báo.
             $productIds = array_column($reviews, 'product_id');
-            $productsMap = Product::getManyByIds($productIds, ['name', 'slug']);
+            $catalogUnavailable = false;
+            try {
+                $productsMap = Product::getManyByIds($productIds, ['name', 'slug']);
+            } catch (MongoDB\Driver\Exception\Exception $e) {
+                error_log('CommentAdminController reviews: không đọc được tên sản phẩm từ Mongo: ' . $e->getMessage());
+                $productsMap = [];
+                $catalogUnavailable = true;
+            }
 
             $queryParams = ['tab' => 'reviews'];
             if ($status !== 'all') {
@@ -46,6 +55,7 @@ class CommentAdminController
                 'reviewCounts' => $reviewCounts,
                 'reviews'      => $reviews,
                 'productsMap'  => $productsMap,
+                'catalogUnavailable' => $catalogUnavailable,
                 'reviewStatus' => $status,
                 'pg'           => $pg,
                 'pageUrl'      => $pageUrl,

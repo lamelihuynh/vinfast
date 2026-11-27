@@ -103,32 +103,38 @@ class ProductReview
 
     /**
      * Phân trang danh sách đánh giá đã duyệt trên trang chi tiết sản phẩm (T1-16).
-     * Hỗ trợ cả OFFSET (`$page`, `$perPage`) và Keyset (`$beforeCreatedAt`, `$beforeId`).
+     * Hỗ trợ cả OFFSET (`$page`, `$perPage`) và Keyset (`$beforeId`).
+     *
+     * Keyset chỉ nhận id của bài cuối đang hiển thị; mốc `(created_at, id)` được đọc lại từ chính bảng PG.
+     * Không nhận timestamp từ client: mốc trong `reviews[]` nhúng bên Mongo chỉ chính xác tới mili giây
+     * (PG lưu micro giây), dùng nó sẽ bỏ sót bài, và chuỗi thời gian sai định dạng làm câu SQL lỗi.
+     * Id không thuộc sản phẩm này thì trả mảng rỗng.
      */
     public static function getApprovedByProduct(
         string $productId,
         int $page = 1,
         int $perPage = 10,
-        ?string $beforeCreatedAt = null,
         ?int $beforeId = null
     ): array {
         $page = max(1, $page);
         $perPage = max(1, min(50, $perPage));
 
-        if ($beforeCreatedAt !== null && trim($beforeCreatedAt) !== '' && $beforeId !== null && $beforeId > 0) {
+        if ($beforeId !== null && $beforeId > 0) {
             $stmt = Db::pg()->prepare(
                 'SELECT ' . self::SELECT_COLS . ', u.name AS author_name, u.avatar AS author_avatar
                    FROM product_reviews r
                    JOIN users u ON u.id = r.user_id
                   WHERE r.product_id = :pid
                     AND r.is_approved
-                    AND (r.created_at, r.id) < (CAST(:before_ts AS timestamptz), :before_id)
+                    AND (r.created_at, r.id) < (
+                        SELECT c.created_at, c.id FROM product_reviews c
+                         WHERE c.id = :before_id AND c.product_id = :cursor_pid)
                   ORDER BY r.created_at DESC, r.id DESC
                   LIMIT :lim'
             );
             $stmt->bindValue(':pid', trim($productId), PDO::PARAM_STR);
-            $stmt->bindValue(':before_ts', trim($beforeCreatedAt), PDO::PARAM_STR);
             $stmt->bindValue(':before_id', $beforeId, PDO::PARAM_INT);
+            $stmt->bindValue(':cursor_pid', trim($productId), PDO::PARAM_STR);
             $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];

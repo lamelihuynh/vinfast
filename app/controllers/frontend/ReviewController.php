@@ -90,9 +90,10 @@ class ReviewController
      * Lý do chọn phân trang (T1-16):
      *   - Trang 1 (5 bài đầu tiên) đã đọc trực tiếp từ mảng nhúng `products.reviews[]` bên Mongo (0 query PG).
      *   - Từ trang 2 trở đi (`?page=2`, `PER_PAGE = 5`), hỗ trợ cả hai chế độ:
-     *     1. Keyset pagination (`?before_ts=...&before_id=...`) với điều kiện `(created_at, id) < (...)`
+     *     1. Keyset pagination (`?before_id=...`, id bài cuối đang hiển thị) với điều kiện `(created_at, id) < (...)`
      *        trên partial index `idx_reviews_product_approved`: giữ độ trễ ổn định O(log N) kể cả khi sản phẩm
      *        có hàng chục nghìn review và không bị trùng/trượt dòng nếu có bài mới vừa được duyệt.
+     *        Mốc `created_at` được đọc lại từ PG theo id (xem `ProductReview::getApprovedByProduct`).
      *     2. OFFSET pagination (`?page=n`): đơn giản cho URL đánh số trang trực tiếp khi số trang nhỏ.
      */
     public function list($productId = ''): void
@@ -105,15 +106,13 @@ class ReviewController
         }
 
         $page = max(1, (int)($_GET['page'] ?? 2));
-        $beforeTs = isset($_GET['before_ts']) ? trim((string)$_GET['before_ts']) : null;
-        $beforeId = isset($_GET['before_id']) ? (int)$_GET['before_id'] : null;
+        $beforeId = isset($_GET['before_id']) ? (int)$_GET['before_id'] : 0;
 
         $reviews = ProductReview::getApprovedByProduct(
             $pid,
             $page,
             self::PER_PAGE,
-            ($beforeTs !== null && $beforeTs !== '') ? $beforeTs : null,
-            ($beforeId !== null && $beforeId > 0) ? $beforeId : null
+            $beforeId > 0 ? $beforeId : null
         );
 
         header('Content-Type: text/html; charset=UTF-8');

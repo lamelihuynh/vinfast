@@ -255,16 +255,12 @@
       var params = new URLSearchParams();
       params.set('page', String(nextPage));
 
-      // Gửi kèm keyset cursor của bài cuối đang hiển thị để truy vấn O(log N) ổn định trên PostgreSQL
+      // Gửi id bài cuối đang hiển thị làm keyset cursor; server tự đọc lại mốc created_at chính xác từ PostgreSQL
       var items = reviewListEl.querySelectorAll('.vf-review-item');
       var lastItem = items.length ? items[items.length - 1] : null;
-      if (lastItem) {
-        var lastId = lastItem.getAttribute('data-review-id') || '';
-        var lastTs = lastItem.getAttribute('data-created-at') || '';
-        if (lastId && lastTs) {
-          params.set('before_id', lastId);
-          params.set('before_ts', lastTs);
-        }
+      var lastId = lastItem ? (lastItem.getAttribute('data-review-id') || '') : '';
+      if (/^[1-9][0-9]*$/.test(lastId)) {
+        params.set('before_id', lastId);
       }
 
       loadMoreReviewsBtn.disabled = true;

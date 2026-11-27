@@ -7,7 +7,16 @@ $reviews = isset($reviews) && is_array($reviews) ? $reviews : [];
 $productsMap = isset($productsMap) && is_array($productsMap) ? $productsMap : [];
 $reviewStatus = isset($reviewStatus) ? (string)$reviewStatus : 'all';
 $currentPage = isset($pg) && is_object($pg) ? (int)$pg->current : 1;
+$catalogUnavailable = !empty($catalogUnavailable);
 ?>
+
+<?php if ($catalogUnavailable): ?>
+    <div class="alert alert-warning mb-3" role="alert">
+        Không kết nối được MongoDB nên chưa hiện được tên sản phẩm. Bạn vẫn duyệt, từ chối, xóa đánh giá bình thường
+        (lưu ở PostgreSQL). Điểm trung bình trên trang sản phẩm sẽ cập nhật khi MongoDB hoạt động lại; nếu vẫn lệch,
+        chạy <code>php bench/t1/tools/reviews_resync.php</code>.
+    </div>
+<?php endif; ?>
 
 <style>
     .vf-rev-icon-btn {
