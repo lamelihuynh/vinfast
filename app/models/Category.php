@@ -326,8 +326,10 @@ class Category
             return false;
         }
 
+        // Lọc theo key để danh mục không có thuộc tính này không khớp: nếu không, `$set updatedAt`
+        // luôn làm modifiedCount = 1 và controller báo "đã gỡ" dù không gỡ gì.
         $res = self::collection()->updateOne(
-            ['categoryID' => $id],
+            ['categoryID' => $id, "{$field}.key" => $key],
             [
                 '$pull' => [$field => ['key' => $key]],
                 '$set' => ['updatedAt' => new MongoDB\BSON\UTCDateTime()],
