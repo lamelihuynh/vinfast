@@ -48,53 +48,6 @@ class Order
         " . self::FIRST_ITEM_JOIN . "
         JOIN users u ON o.user_id = u.id";
 
-    /**
-     * Tạo đơn 1 sản phẩm (luồng đặt cọc cũ). Ghi orders + order_items trong 1 transaction.
-     * Số tiền của đơn đặt cọc = deposit_base_amount / deposit_amount trong note.
-     * (OrderService::place của T4 sẽ thay hàm này cho luồng checkout giỏ hàng.)
-     */
-    public static function create($userId, $productId, $type = 'deposit', $note = null)
-    {
-        $product = Product::getByIdAdmin((int)$productId);
-        if (!$product) {
-            return false;
-        }
-
-        $noteArr = self::decodeOrderNote($note);
-        if ($noteArr === [] && trim((string)$note) !== '') {
-            $noteArr = ['text' => (string)$note];
-        }
-
-        $paymentStatus = (string)($noteArr['payment_status'] ?? 'pending_verify');
-        if (!in_array($paymentStatus, self::ALLOWED_PAYMENT_STATUSES, true)) {
-            $paymentStatus = 'pending_verify';
-        }
-
-        $amount = max(0, (float)($noteArr['deposit_base_amount'] ?? $noteArr['deposit_amount'] ?? $product['price'] ?? 0));
-        $variantId = (string)$product['default_variant_id'];
-        $variantName = trim((string)($noteArr['variant_name'] ?? '')) ?: 'Tiêu chuẩn';
-        $colorCode = trim((string)($noteArr['color']['code'] ?? '')) ?: null;
-        $colorName = trim((string)($noteArr['color']['name'] ?? '')) ?: null;
-
-        try {
-            return Db::transaction(static function (PDO $pdo) use ($userId, $type, $paymentStatus, $amount, $noteArr, $product, $variantId, $variantName, $colorCode, $colorName): int {
-                $stmt = $pdo->prepare("INSERT INTO orders (user_id, type, status, payment_status, subtotal_amount, total_amount, note)
-                    VALUES (?, ?, 'pending', ?, ?, ?, CAST(? AS jsonb)) RETURNING id");
-                $stmt->execute([(int)$userId, $type === 'purchase' ? 'purchase' : 'deposit', $paymentStatus, $amount, $amount, self::encodeOrderNote($noteArr)]);
-                $orderId = (int)$stmt->fetchColumn();
-
-                $item = $pdo->prepare('INSERT INTO order_items (order_id, product_id, variant_id, product_name_snapshot, variant_name_snapshot, color_code, color_name_snapshot, unit_price, quantity)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
-                $item->execute([$orderId, (string)$product['id'], $variantId, (string)$product['name'], $variantName, $colorCode, $colorName, $amount]);
-
-                return $orderId;
-            });
-        } catch (Throwable $e) {
-            error_log('Order::create: ' . $e->getMessage());
-            return false;
-        }
-    }
-
     public static function getByUserId($userId, $page = 1, $perPage = 10)
     {
         global $pdo;

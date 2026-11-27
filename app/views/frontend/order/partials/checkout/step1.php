@@ -60,6 +60,7 @@ $initialBasePriceText = number_format($initialBasePrice, 0, ',', '.') . ' VNĐ';
     </div>
 
     <input type="hidden" name="variant_name" value="<?= htmlspecialchars((string)($selectedVariant['name'] ?? $productName)) ?>" data-variant-input>
+    <input type="hidden" name="variant_id" value="<?= htmlspecialchars((string)($selectedVariant['id'] ?? '')) ?>" data-variant-id-input>
     <input type="hidden" name="interior_code" value="<?= htmlspecialchars((string)$selectedInteriorCode) ?>" data-interior-input>
     <input type="hidden" name="color_code" value="<?= htmlspecialchars((string)$colorCode) ?>" data-color-code-input>
 
@@ -87,7 +88,8 @@ $initialBasePriceText = number_format($initialBasePrice, 0, ',', '.') . ' VNĐ';
                 <?php endforeach; ?>
             </div>
         </div>
-    <?php elseif (!empty($variantChoices)): ?>
+    <?php endif; ?>
+    <?php if (count($variantChoices) > 1 || count($variantSwitchChoices) <= 1): ?>
         <div class="rounded-xl border border-slate-100 p-4">
             <p class="mb-2 text-[12px] font-semibold text-slate-800">Phiên bản</p>
             <div class="space-y-2">
@@ -95,11 +97,12 @@ $initialBasePriceText = number_format($initialBasePrice, 0, ',', '.') . ' VNĐ';
                     <?php
                     $vName = (string)($variantItem['name'] ?? 'VinFast');
                     $vPrice = (float)($variantItem['price'] ?? 0);
-                    $isVariantActive = strcasecmp($vName, (string)($selectedVariant['name'] ?? '')) === 0;
+                    $isVariantActive = ($variantItem['id'] ?? '') === ($selectedVariant['id'] ?? '');
                     ?>
                     <button
                         type="button"
                         data-variant-btn
+                        data-variant-id="<?= htmlspecialchars((string)($variantItem['id'] ?? '')) ?>"
                         data-variant-name="<?= htmlspecialchars($vName) ?>"
                         data-variant-price="<?= htmlspecialchars((string)$vPrice) ?>"
                         class="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition <?= $isVariantActive ? 'border-vfNavy bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50' ?>">

@@ -5,7 +5,7 @@
 | `t1/` | Data storage | So sánh catalog SQL chuẩn hóa vs Mongo document; review embedded vs bảng riêng |
 | `t2/` | Indexing | `EXPLAIN ANALYZE` / `explain('executionStats')` trước–sau index |
 | `t3/` | Query processing | Dashboard SQL vs aggregation pipeline; join trong DB vs join ở backend |
-| `t4/` | Transaction | Kịch bản rollback checkout, coupon hết quota |
+| `t4/` | Transaction | [Demo checkout và smoke rollback](t4/README.md) |
 | `t5/` | Concurrency | k6 tranh chấp tồn kho (pessimistic / optimistic / atomic / naive), isolation 2 session |
 | `results/` | Tất cả | CSV kết quả: `<topic>_<thi-nghiem>_<size>.csv` |
 

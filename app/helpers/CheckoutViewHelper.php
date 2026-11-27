@@ -27,35 +27,18 @@ class CheckoutViewHelper
         $images = is_array($product['images'] ?? null) ? $product['images'] : [];
         $rawExteriorColors = is_array($product['exterior_colors'] ?? null) ? $product['exterior_colors'] : [];
         $rawInteriorColors = is_array($specs['interior_colors'] ?? null) ? $specs['interior_colors'] : [];
-        $rawVariants = is_array($specs['variants'] ?? null) ? $specs['variants'] : [];
-
         $variantChoices = [];
-        foreach ($rawVariants as $row) {
-            if (!is_array($row)) {
-                continue;
+        foreach ($product['variants'] ?? [] as $row) {
+            if (!empty($row['isActive'])) {
+                $variantChoices[] = [
+                    'id' => (string)$row['variantId'],
+                    'name' => (string)$row['name'],
+                    'price' => (float)$row['price'],
+                ];
             }
-
-            $variantName = trim((string)($row['name'] ?? ''));
-            $variantPrice = (float)($row['price'] ?? 0);
-            if ($variantName === '') {
-                continue;
-            }
-
-            if ($variantPrice <= 0) {
-                $variantPrice = (float)($product['price'] ?? 0);
-            }
-
-            $variantChoices[] = [
-                'name' => $variantName,
-                'price' => $variantPrice,
-            ];
         }
-
-        if (empty($variantChoices)) {
-            $variantChoices[] = [
-                'name' => $productName,
-                'price' => (float)($product['price'] ?? 0),
-            ];
+        if ($variantChoices === []) {
+            $variantChoices[] = ['id' => '', 'name' => $productName, 'price' => (float)($product['price'] ?? 0)];
         }
 
         $colorChoices = [];
@@ -279,7 +262,7 @@ class CheckoutViewHelper
 
         $selectedVariant = $variantChoices[0];
         foreach ($variantChoices as $variantRow) {
-            if (strcasecmp((string)($variantRow['name'] ?? ''), $selectedVariantName) === 0) {
+            if (($variantRow['id'] ?? '') !== '' && ($variantRow['id'] ?? '') === ($formData['variant_id'] ?? '')) {
                 $selectedVariant = $variantRow;
                 break;
             }

@@ -5,7 +5,7 @@
  *
  * Biến: $product (Product::formatProduct), $category (Category::allById()[id]),
  *       $inventory (InventoryService::byProduct), $related (sản phẩm cùng category)
- * Nút "Thêm vào giỏ" để sẵn form POST cart/add — T4 (Transaction) hiện thực CartController.
+ * Gửi phiên bản và số lượng đã chọn đến CartController.
  */
 $product = $product ?? [];
 $category = $category ?? [];
@@ -141,12 +141,12 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
 
           <div class="flex items-center gap-3">
             <input type="number" name="quantity" value="1" min="1" max="99" class="w-20 border border-slate-200 rounded-md px-3 py-2 text-sm">
-            <button id="accAddBtn" type="submit" disabled title="Giỏ hàng đang được phát triển (Topic 4)"
+            <button id="accAddBtn" type="submit" <?= (int)($defaultVariant['available'] ?? 0) < 1 ? 'disabled' : '' ?>
               class="flex-1 bg-vfNavy text-white rounded-md py-2.5 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">
               <i class="fa-solid fa-cart-plus mr-1"></i> Thêm vào giỏ
             </button>
           </div>
-          <p class="text-[11px] text-slate-400">Giỏ hàng và thanh toán phụ kiện sẽ mở trong bản cập nhật tới.</p>
+
         </form>
       </div>
     </div>
@@ -194,6 +194,7 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
   var priceEl = document.getElementById('accPrice');
   var stockEl = document.getElementById('accStock');
   var idInput = document.getElementById('accVariantId');
+  var addButton = document.getElementById('accAddBtn');
   var fmt = function (n) { return Math.round(n).toLocaleString('vi-VN') + ' VND'; };
 
   function current() {
@@ -210,6 +211,7 @@ $productsJsVersion = AssetHelper::getVersion('public/js/frontend/products.js');
   function render() {
     var v = current();
     idInput.value = v ? v.id : '';
+    addButton.disabled = !v || v.available < 1;
     priceEl.textContent = v ? fmt(v.price) : 'Không có phiên bản này';
     if (!v) { stockEl.textContent = ''; return; }
     stockEl.textContent = v.available > 0 ? ('Còn ' + v.available + ' sản phẩm') : 'Hết hàng';

@@ -69,7 +69,10 @@ function applySchema(PDO $pdo): void
 $hasSchema = (bool)$pdo->query("SELECT to_regclass('public.users') IS NOT NULL")->fetchColumn();
 if (!$hasSchema || $force) {
     applySchema($pdo);
-} elseif ((int)$pdo->query('SELECT count(*) FROM users')->fetchColumn() > 0) {
+}
+// Apply the additive migration even on an existing seeded volume.
+$pdo->exec((string)file_get_contents(ROOT . '/database/postgres/005_order_idempotency.sql'));
+if ($hasSchema && !$force && (int)$pdo->query('SELECT count(*) FROM users')->fetchColumn() > 0) {
     out('seed: PostgreSQL đã có dữ liệu, bỏ qua (dùng --force để seed lại).');
     if ($size !== null) {
         out("generate: bỏ qua --size={$size} vì DB đã có dữ liệu (dùng --force --size={$size}).");

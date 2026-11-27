@@ -4,3 +4,5 @@
 class OutOfStockException extends RuntimeException {}
 
 class ConcurrentUpdateException extends RuntimeException {}
+
+class CouponException extends RuntimeException {}

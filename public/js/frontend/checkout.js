@@ -29,6 +29,7 @@
   var colorChoices = form.querySelectorAll('[data-color-choice]');
   var variantButtons = form.querySelectorAll('[data-variant-btn]');
   var variantInput = form.querySelector('[data-variant-input]');
+  var variantIdInput = form.querySelector('[data-variant-id-input]');
   var interiorRadios = form.querySelectorAll('[data-interior-radio]');
   var interiorInput = form.querySelector('[data-interior-input]');
   var switchButtons = form.querySelectorAll('[data-switch-product]');
@@ -89,6 +90,8 @@
     
     var step2Data = {
       _csrf: csrfToken,
+      checkout_token: form.elements.checkout_token.value,
+      variant_id: variantIdInput ? variantIdInput.value : '',
       full_name: form.querySelector('[name="full_name"]') ? form.querySelector('[name="full_name"]').value : '',
       phone: form.querySelector('[name="phone"]') ? form.querySelector('[name="phone"]').value : '',
       email: form.querySelector('[name="email"]') ? form.querySelector('[name="email"]').value : '',
@@ -103,14 +106,12 @@
       agree_terms: form.querySelector('[name="agree_terms"]:checked') ? '1' : '',
     };
 
-    console.log('Saving step2 data:', step2Data);
 
     var request = new XMLHttpRequest();
     request.open('POST', window.location.pathname + '?save_checkout_step2=1', true);
     request.setRequestHeader('Content-Type', 'application/json');
     request.setRequestHeader('X-CSRF-Token', csrfToken);
     request.onload = function() {
-      console.log('Step2 data saved. Response:', request.responseText);
       // Update step 3 display with latest form data
       updateStep3Display(step2Data);
       // Call callback after data is saved
@@ -344,6 +345,7 @@
   function setActiveVariant(btn) {
     if (!btn) return;
 
+    if (variantIdInput) variantIdInput.value = btn.getAttribute('data-variant-id') || '';
     var variantName = btn.getAttribute('data-variant-name') || '';
     var variantPrice = btn.getAttribute('data-variant-price') || '0';
 

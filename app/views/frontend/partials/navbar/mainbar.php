@@ -41,6 +41,7 @@
               </div>
             </div>
             <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>user/profile"><i class="fa-regular fa-user w-4"></i>Thông tin tài khoản</a>
+            <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>cart"><i class="fa-solid fa-cart-shopping w-4"></i>Giỏ hàng (<?= $cartCount ?>)</a>
             <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>wishlist"><i class="fa-regular fa-heart w-4"></i>Sản phẩm yêu thích</a>
             <a class="flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] text-slate-700 hover:bg-slate-50" href="<?= BASE_URL ?>user/orders"><i class="fa-regular fa-clock w-4"></i>Lịch sử đơn hàng</a>
             <?php if (Auth::isAdmin()): ?>

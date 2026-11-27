@@ -65,8 +65,15 @@ class UserAdminController {
             if ((int)$target['id'] === (int)Auth::id()) {
                 $_SESSION['errors'] = ['Không thể xóa tài khoản của chính mình.'];
             } else {
-                $this->user->delete($id);
-                $_SESSION['flash'] = 'Đã xóa tài khoản.';
+                try {
+                    $this->user->delete($id);
+                    $_SESSION['flash'] = 'Đã xóa tài khoản.';
+                } catch (PDOException $e) {
+                    if (($e->errorInfo[0] ?? $e->getCode()) !== '23503') {
+                        throw $e;
+                    }
+                    $_SESSION['errors'] = ['Tài khoản có dữ liệu liên quan (ví dụ đơn hàng) và không thể xóa.'];
+                }
             }
         }
 

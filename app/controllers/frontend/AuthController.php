@@ -140,12 +140,22 @@ class AuthController
             exit;
         }
 
-        $ok = $this->user->create([
-            'name' => $name,
-            'email' => $email,
-            'password' => password_hash($password, PASSWORD_BCRYPT),
-            'role' => 'member',
-        ]);
+        try {
+            $ok = $this->user->create([
+                'name' => $name,
+                'email' => $email,
+                'password' => password_hash($password, PASSWORD_BCRYPT),
+                'role' => 'member',
+            ]);
+        } catch (PDOException $e) {
+            if (($e->errorInfo[0] ?? $e->getCode()) !== '23505') {
+                throw $e;
+            }
+            $_SESSION['errors'] = ['Email đã tồn tại.'];
+            $_SESSION['old'] = ['name' => $name, 'email' => $email];
+            header('Location: ' . BASE_URL . 'auth/register', true, 303);
+            exit;
+        }
 
         if (!$ok) {
             $_SESSION['errors'] = ['Không thể tạo tài khoản. Vui lòng thử lại.'];
